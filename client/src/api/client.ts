@@ -14,6 +14,18 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json();
 }
 
+async function uploadRequest<T>(path: string, formData: FormData): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || res.statusText);
+  }
+  return res.json();
+}
+
 export const api = {
   // Settings
   getSettings: () => request<Record<string, unknown>>('/settings'),
@@ -99,4 +111,29 @@ export const api = {
   getTodayRotation: () => request<unknown[]>('/sessions/rotation/today'),
   markRotationPracticed: (rotationId: string) =>
     request(`/sessions/rotation/${rotationId}/practiced`, { method: 'POST' }),
+
+  // Files
+  uploadFile: (file: File, metadata?: { linked_type?: string; linked_id?: string; notes?: string; tags?: string[] }) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    if (metadata?.linked_type) fd.append('linked_type', metadata.linked_type);
+    if (metadata?.linked_id) fd.append('linked_id', metadata.linked_id);
+    if (metadata?.notes) fd.append('notes', metadata.notes);
+    if (metadata?.tags) fd.append('tags', JSON.stringify(metadata.tags));
+    return uploadRequest<unknown>('/files', fd);
+  },
+  getFiles: (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return request<unknown[]>(`/files${qs}`);
+  },
+  getFile: (id: string) => request(`/files/${id}`),
+  updateFile: (id: string, data: unknown) =>
+    request(`/files/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteFile: (id: string) =>
+    request(`/files/${id}`, { method: 'DELETE' }),
+  linkFile: (id: string, linked_type: string, linked_id: string) =>
+    request(`/files/${id}/link`, { method: 'POST', body: JSON.stringify({ linked_type, linked_id }) }),
+  unlinkFile: (id: string) =>
+    request(`/files/${id}/link`, { method: 'DELETE' }),
+  getFileDownloadUrl: (id: string) => `/api/files/${id}/download`,
 };

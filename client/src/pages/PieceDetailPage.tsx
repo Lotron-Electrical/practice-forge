@@ -9,6 +9,7 @@ import { Input, Textarea, Select } from '../components/ui/Input';
 import { PIECE_STATUS_CONFIG, SECTION_STATUS_CONFIG, PRIORITY_CONFIG } from '../core/constants';
 import { api } from '../api/client';
 import type { Piece, Section, TechnicalDemand, TaxonomyCategory, PieceStatus, Priority, SectionStatus } from '../core/types';
+import { LinkedFiles } from '../components/ui/LinkedFiles';
 import { Plus, Trash2, ArrowLeft, ChevronRight } from 'lucide-react';
 
 export function PieceDetailPage() {
@@ -251,6 +252,13 @@ export function PieceDetailPage() {
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
+          {/* Linked Files */}
+          <Card>
+            <CardHeader><h2 className="text-base font-semibold">Files</h2></CardHeader>
+            <CardContent>
+              <LinkedFiles linkedType="piece" linkedId={piece.id} />
             </CardContent>
           </Card>
         </div>

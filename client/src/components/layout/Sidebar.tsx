@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Music, BookOpen, ListMusic, Mic, BarChart3, Users, Settings, ChevronLeft, ChevronRight, Tags, Timer, X } from 'lucide-react';
+import { LayoutDashboard, Music, BookOpen, ListMusic, FolderOpen, Mic, BarChart3, Users, Settings, ChevronLeft, ChevronRight, Tags, Timer, X } from 'lucide-react';
 import { useState } from 'react';
 
 const navItems = [
@@ -9,6 +9,7 @@ const navItems = [
   { to: '/excerpts', icon: ListMusic, label: 'Excerpts' },
   { to: '/taxonomy', icon: Tags, label: 'Taxonomy' },
   { to: '/session', icon: Timer, label: 'Session' },
+  { to: '/media', icon: FolderOpen, label: 'Media' },
   { to: '/record', icon: Mic, label: 'Record' },
   { to: '/audits', icon: BarChart3, label: 'Audits' },
   { to: '/community', icon: Users, label: 'Community' },

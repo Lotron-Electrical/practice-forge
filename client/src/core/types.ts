@@ -98,6 +98,26 @@ export interface Excerpt {
   updated_at: string;
 }
 
+export type FileType = 'sheet_music_digital' | 'sheet_music_scanned' | 'audio' | 'video' | 'document';
+export type ProcessingStatus = 'pending' | 'processing' | 'complete' | 'failed' | 'needs_review';
+export type LinkedType = 'piece' | 'section' | 'excerpt' | 'exercise' | 'freeform';
+
+export interface UploadedFile {
+  id: string;
+  original_filename: string;
+  file_type: FileType;
+  mime_type: string;
+  file_size_bytes: number;
+  file_path: string;
+  uploaded_at: string;
+  processing_status: ProcessingStatus;
+  processing_output: unknown;
+  linked_type: LinkedType | null;
+  linked_id: string | null;
+  tags: string[];
+  notes: string;
+}
+
 export interface Settings {
   theme: string;
   fontSize: number;
