@@ -92,13 +92,13 @@ export function PiecesPage() {
                   borderColor={`var(${statusConf.colorVar})`}
                   className="hover:shadow-pf-lg transition-shadow cursor-pointer"
                 >
-                  <CardContent className="flex items-center gap-4">
+                  <CardContent className="flex flex-col sm:flex-row sm:items-center gap-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
+                      <div className="flex items-center gap-3 mb-1 flex-wrap">
                         <span className="font-semibold">{piece.title}</span>
                         <Badge color={priorityConf.label === 'High' ? 'var(--pf-status-needs-work)' : priorityConf.label === 'Medium' ? 'var(--pf-accent-gold)' : 'var(--pf-text-secondary)'}>{priorityConf.label}</Badge>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-[var(--pf-text-secondary)]">
+                      <div className="flex items-center gap-4 text-sm text-[var(--pf-text-secondary)] flex-wrap">
                         <span>{piece.composer}</span>
                         <DifficultyDots value={piece.difficulty} />
                         <span>{piece.sections.length} sections</span>

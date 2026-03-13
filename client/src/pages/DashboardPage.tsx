@@ -74,7 +74,7 @@ export function DashboardPage() {
 
   return (
     <div>
-      <div className="flex items-baseline gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 mb-6">
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <span className="text-[var(--pf-text-secondary)]">{today}</span>
       </div>
@@ -82,7 +82,7 @@ export function DashboardPage() {
       {/* Top row: Session + Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <Card>
-          <CardContent className="flex items-center justify-between">
+          <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold mb-1">Today's Session</h2>
               <p className="text-sm text-[var(--pf-text-secondary)]">
@@ -107,7 +107,7 @@ export function DashboardPage() {
 
         <Card>
           <CardContent>
-            <div className="grid grid-cols-4 gap-4 text-center">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
               <div>
                 <div className="text-2xl font-bold">{stats.weekHours}<span className="text-sm font-normal text-[var(--pf-text-secondary)]">h</span></div>
                 <div className="text-xs text-[var(--pf-text-secondary)]">This week</div>

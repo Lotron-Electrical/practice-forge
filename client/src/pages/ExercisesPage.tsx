@@ -80,8 +80,8 @@ export function ExercisesPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        <div className="relative flex-1 min-w-[200px]">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 mb-6">
+        <div className="relative w-full sm:w-auto sm:flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--pf-text-secondary)]" />
           <input
             type="text"
@@ -162,7 +162,7 @@ export function ExercisesPage() {
                       <h3 className="font-semibold text-sm">{ex.title}</h3>
                       {ex.source && <p className="text-xs text-[var(--pf-text-secondary)]">{ex.source}</p>}
                     </div>
-                    <div className="hidden group-hover:flex gap-1">
+                    <div className="flex sm:hidden sm:group-hover:flex gap-1">
                       <button onClick={() => openEdit(ex)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)]"><Pencil size={14} /></button>
                       <button onClick={() => handleDelete(ex.id)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-status-needs-work)]"><Trash2 size={14} /></button>
                     </div>

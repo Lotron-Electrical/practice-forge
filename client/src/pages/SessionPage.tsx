@@ -132,12 +132,12 @@ export function SessionPage() {
             <Clock size={48} className="mx-auto mb-4" style={{ color: 'var(--pf-accent-gold)' }} />
             <h2 className="text-xl font-semibold mb-2">Plan your session</h2>
             <p className="text-[var(--pf-text-secondary)] mb-6">Choose your available time and the planner will build a structured session based on your pieces, exercises, and excerpt rotation.</p>
-            <div className="flex items-center justify-center gap-4 mb-6">
+            <div className="flex items-center justify-center gap-2 sm:gap-4 mb-6 flex-wrap">
               {[30, 45, 60, 90, 120].map(m => (
                 <button
                   key={m}
                   onClick={() => setDuration(m)}
-                  className={`px-4 py-2 rounded-pf text-sm font-medium transition-colors ${duration === m ? 'text-white' : 'text-[var(--pf-text-primary)] border border-[var(--pf-border-color)]'}`}
+                  className={`px-3 sm:px-4 py-2 rounded-pf text-sm font-medium transition-colors ${duration === m ? 'text-white' : 'text-[var(--pf-text-primary)] border border-[var(--pf-border-color)]'}`}
                   style={duration === m ? { backgroundColor: 'var(--pf-accent-gold)' } : undefined}
                 >
                   {m} min
@@ -164,7 +164,7 @@ export function SessionPage() {
           <CardContent className="text-center py-10">
             <CheckCircle size={56} className="mx-auto mb-4" style={{ color: 'var(--pf-status-ready)' }} />
             <h2 className="text-xl font-semibold mb-2">Well done!</h2>
-            <div className="flex justify-center gap-8 mb-4 text-sm">
+            <div className="flex justify-center gap-4 sm:gap-8 mb-4 text-sm">
               <div><span className="text-2xl font-bold">{session.actual_duration_min || session.planned_duration_min}</span><br /><span className="text-[var(--pf-text-secondary)]">minutes</span></div>
               <div><span className="text-2xl font-bold">{completed}</span><br /><span className="text-[var(--pf-text-secondary)]">completed</span></div>
               <div><span className="text-2xl font-bold">{skipped}</span><br /><span className="text-[var(--pf-text-secondary)]">skipped</span></div>

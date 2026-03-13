@@ -103,22 +103,24 @@ export function ExcerptsPage() {
             const sConf = EXCERPT_STATUS_CONFIG[ex.status];
             return (
               <Card key={ex.id} borderColor={`var(${sConf.colorVar})`} className="group">
-                <CardContent className="flex items-center gap-4">
-                  <div className="flex-1">
+                <CardContent className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-1">
                       <span className="font-semibold text-sm">{ex.title}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-[var(--pf-text-secondary)]">
+                    <div className="flex items-center gap-3 text-xs text-[var(--pf-text-secondary)] flex-wrap">
                       <span>{ex.composer}</span>
                       {ex.full_work_title && <span>{ex.full_work_title}</span>}
                       {ex.location_in_score && <span>{ex.location_in_score}</span>}
                     </div>
                   </div>
-                  <DifficultyDots value={ex.difficulty} />
-                  <StatusIndicator {...sConf} size="sm" />
-                  <div className="hidden group-hover:flex gap-1">
-                    <button onClick={() => openEdit(ex)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)]"><Pencil size={14} /></button>
-                    <button onClick={() => handleDelete(ex.id)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-status-needs-work)]"><Trash2 size={14} /></button>
+                  <div className="flex items-center gap-3">
+                    <DifficultyDots value={ex.difficulty} />
+                    <StatusIndicator {...sConf} size="sm" />
+                    <div className="flex sm:hidden sm:group-hover:flex gap-1">
+                      <button onClick={() => openEdit(ex)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)]"><Pencil size={14} /></button>
+                      <button onClick={() => handleDelete(ex.id)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-status-needs-work)]"><Trash2 size={14} /></button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
