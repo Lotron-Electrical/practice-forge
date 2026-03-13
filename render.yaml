@@ -11,3 +11,14 @@ services:
         value: 10000
       - key: NODE_ENV
         value: production
+      - key: ANALYSIS_SERVICE_URL
+        sync: false
+  - type: web
+    name: practice-forge-analysis
+    runtime: docker
+    dockerfilePath: analysis-service/Dockerfile
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANALYSIS_PORT
+        value: 8001

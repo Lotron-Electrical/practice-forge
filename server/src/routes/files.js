@@ -143,4 +143,27 @@ router.delete('/:id/link', async (req, res) => {
   res.json(await queryOne('SELECT * FROM uploaded_files WHERE id = $1', [req.params.id]));
 });
 
+// GET — serve MusicXML content for OSMD rendering
+router.get('/:id/musicxml', async (req, res) => {
+  const file = await queryOne('SELECT * FROM uploaded_files WHERE id = $1', [req.params.id]);
+  if (!file) return res.status(404).json({ error: 'Not found' });
+
+  // For digital sheet music, serve the file directly
+  if (file.file_type === 'sheet_music_digital') {
+    const filePath = path.resolve(DATA_DIR, file.file_path);
+    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found on disk' });
+    res.setHeader('Content-Type', 'application/xml');
+    return res.sendFile(filePath);
+  }
+
+  // For scanned sheet music, check for OMR-produced MusicXML
+  const omr = await queryOne('SELECT * FROM omr_results WHERE file_id = $1 ORDER BY created_at DESC LIMIT 1', [req.params.id]);
+  if (!omr || !omr.musicxml_path) return res.status(404).json({ error: 'No MusicXML available. Run OMR first.' });
+
+  const xmlPath = path.resolve(DATA_DIR, omr.musicxml_path);
+  if (!fs.existsSync(xmlPath)) return res.status(404).json({ error: 'MusicXML file not found on disk' });
+  res.setHeader('Content-Type', 'application/xml');
+  res.sendFile(xmlPath);
+});
+
 export default router;

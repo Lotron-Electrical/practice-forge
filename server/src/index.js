@@ -15,6 +15,7 @@ import exercisesRouter from './routes/exercises.js';
 import excerptsRouter from './routes/excerpts.js';
 import sessionsRouter from './routes/sessions.js';
 import filesRouter from './routes/files.js';
+import analysisRouter from './routes/analysis.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -30,6 +31,7 @@ app.use('/api/exercises', exercisesRouter);
 app.use('/api/excerpts', excerptsRouter);
 app.use('/api/sessions', sessionsRouter);
 app.use('/api/files', filesRouter);
+app.use('/api/analysis', analysisRouter);
 
 // Serve uploaded data files
 app.use('/data', express.static(path.resolve(__dirname, '..', '..', 'data')));

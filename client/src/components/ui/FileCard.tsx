@@ -1,5 +1,6 @@
+import { useNavigate } from 'react-router-dom';
 import type { UploadedFile } from '../../core/types';
-import { FileMusic, FileAudio, Video, FileText, Pencil, Trash2, Download } from 'lucide-react';
+import { FileMusic, FileAudio, Video, FileText, Pencil, Trash2, Download, Sparkles } from 'lucide-react';
 import { api } from '../../api/client';
 
 const TYPE_ICONS: Record<string, typeof FileMusic> = {
@@ -31,6 +32,7 @@ interface FileCardProps {
 }
 
 export function FileCard({ file, onEdit, onDelete }: FileCardProps) {
+  const navigate = useNavigate();
   const Icon = TYPE_ICONS[file.file_type] || FileText;
   const statusColor = STATUS_COLORS[file.processing_status] || 'var(--pf-text-secondary)';
 
@@ -48,6 +50,11 @@ export function FileCard({ file, onEdit, onDelete }: FileCardProps) {
           </div>
         </div>
         <div className="flex sm:hidden sm:group-hover:flex gap-1">
+          {(file.file_type === 'sheet_music_digital' || file.file_type === 'sheet_music_scanned') && (
+            <button onClick={() => navigate(`/scores/${file.id}`)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-accent-teal)]" title="Analyse">
+              <Sparkles size={14} />
+            </button>
+          )}
           {onEdit && <button onClick={() => onEdit(file)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)]"><Pencil size={14} /></button>}
           <a href={api.getFileDownloadUrl(file.id)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)]"><Download size={14} /></a>
           {onDelete && <button onClick={() => onDelete(file.id)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-status-needs-work)]"><Trash2 size={14} /></button>}
@@ -63,6 +70,11 @@ export function FileCard({ file, onEdit, onDelete }: FileCardProps) {
         {file.linked_type && (
           <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--pf-accent-teal)', color: 'white' }}>
             {file.linked_type}
+          </span>
+        )}
+        {(file.file_type === 'sheet_music_digital' || file.file_type === 'sheet_music_scanned') && file.processing_status === 'complete' && (
+          <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--pf-accent-teal)', color: 'white' }}>
+            analysed
           </span>
         )}
       </div>

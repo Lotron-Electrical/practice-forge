@@ -136,4 +136,23 @@ export const api = {
   unlinkFile: (id: string) =>
     request(`/files/${id}/link`, { method: 'DELETE' }),
   getFileDownloadUrl: (id: string) => `/api/files/${id}/download`,
+
+  // Analysis
+  triggerOmr: (fileId: string) =>
+    request(`/analysis/trigger-omr/${fileId}`, { method: 'POST' }),
+  triggerAnalysis: (fileId: string) =>
+    request(`/analysis/trigger-analysis/${fileId}`, { method: 'POST' }),
+  triggerClaudeEnhance: (analysisId: string, confirmed?: boolean) =>
+    request(`/analysis/trigger-claude/${analysisId}`, { method: 'POST', body: JSON.stringify({ confirmed }) }),
+  getOmrResult: (fileId: string) =>
+    request(`/analysis/omr/${fileId}`),
+  getAnalysisResult: (fileId: string) =>
+    request(`/analysis/results/${fileId}`),
+  getAnalysisDemands: (analysisId: string) =>
+    request<unknown[]>(`/analysis/demands/${analysisId}`),
+  importDemand: (demandId: string, pieceId: string) =>
+    request(`/analysis/demands/${demandId}/import`, { method: 'POST', body: JSON.stringify({ piece_id: pieceId }) }),
+  getAnalysisStatus: (fileId: string) =>
+    request(`/analysis/status/${fileId}`),
+  getMusicXmlUrl: (fileId: string) => `/api/files/${fileId}/musicxml`,
 };

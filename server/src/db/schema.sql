@@ -171,3 +171,58 @@ CREATE TABLE IF NOT EXISTS excerpt_rotation_log (
 
 CREATE INDEX IF NOT EXISTS idx_rotation_date ON excerpt_rotation_log(date);
 CREATE INDEX IF NOT EXISTS idx_rotation_excerpt ON excerpt_rotation_log(excerpt_id);
+
+-- Phase 7: Sheet Music Intelligence Engine
+
+CREATE TABLE IF NOT EXISTS omr_results (
+  id TEXT PRIMARY KEY,
+  file_id TEXT NOT NULL REFERENCES uploaded_files(id) ON DELETE CASCADE,
+  musicxml_path TEXT,
+  confidence REAL,
+  page_count INTEGER,
+  measure_count INTEGER,
+  extracted_title TEXT,
+  extracted_composer TEXT,
+  error_message TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_omr_file ON omr_results(file_id);
+
+CREATE TABLE IF NOT EXISTS analysis_results (
+  id TEXT PRIMARY KEY,
+  file_id TEXT NOT NULL REFERENCES uploaded_files(id) ON DELETE CASCADE,
+  omr_result_id TEXT REFERENCES omr_results(id) ON DELETE SET NULL,
+  analysis_type TEXT NOT NULL DEFAULT 'full',
+  key_signature TEXT,
+  time_signature TEXT,
+  tempo_marking TEXT,
+  difficulty_estimate INTEGER,
+  register_low TEXT,
+  register_high TEXT,
+  total_measures INTEGER,
+  analysis_data JSONB NOT NULL DEFAULT '{}',
+  claude_analysis JSONB,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','processing','complete','failed')),
+  error_message TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_analysis_file ON analysis_results(file_id);
+
+CREATE TABLE IF NOT EXISTS analysis_demands (
+  id TEXT PRIMARY KEY,
+  analysis_id TEXT NOT NULL REFERENCES analysis_results(id) ON DELETE CASCADE,
+  description TEXT NOT NULL,
+  category_id TEXT REFERENCES taxonomy_categories(id) ON DELETE SET NULL,
+  difficulty INTEGER,
+  bar_range TEXT,
+  confidence REAL,
+  imported BOOLEAN NOT NULL DEFAULT FALSE,
+  imported_demand_id TEXT REFERENCES technical_demands(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_analysis_demands_analysis ON analysis_demands(analysis_id);

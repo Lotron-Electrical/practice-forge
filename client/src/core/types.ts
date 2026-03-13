@@ -135,3 +135,146 @@ export interface Settings {
     buffer: number;
   };
 }
+
+// Phase 7: Sheet Music Intelligence Engine
+
+export interface OmrResult {
+  id: string;
+  file_id: string;
+  musicxml_path: string | null;
+  confidence: number | null;
+  page_count: number | null;
+  measure_count: number | null;
+  extracted_title: string | null;
+  extracted_composer: string | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ScalePattern {
+  scale_type: string;
+  key: string;
+  bar_range: string;
+  confidence: number;
+}
+
+export interface ArpeggioPattern {
+  chord_type: string;
+  key: string;
+  bar_range: string;
+  confidence: number;
+}
+
+export interface IntervalAnalysis {
+  largest: string;
+  most_common: string;
+  distribution: Record<string, number>;
+}
+
+export interface RhythmAnalysis {
+  complexity_score: number;
+  time_changes: Array<{ time_sig: string; measure: number }>;
+  has_syncopation: boolean;
+  shortest_duration: string;
+  longest_duration: string;
+}
+
+export interface DynamicMarking {
+  marking: string;
+  measure: number;
+}
+
+export interface TempoMarking {
+  text: string;
+  bpm: number | null;
+  measure: number;
+}
+
+export interface ArticulationInfo {
+  type: string;
+  count: number;
+}
+
+export interface StructureInfo {
+  form: string | null;
+  sections: Array<{ name: string; start_measure: number; end_measure: number }>;
+  has_repeats: boolean;
+  total_measures: number;
+}
+
+export interface RegisterAnalysis {
+  lowest_note: string;
+  highest_note: string;
+  range_semitones: number;
+  register_changes: number;
+}
+
+export interface MusicPattern {
+  pattern_type: string;
+  description: string;
+  bar_range: string;
+  occurrences: number;
+}
+
+export interface AnalysisData {
+  scales: ScalePattern[];
+  arpeggios: ArpeggioPattern[];
+  intervals: IntervalAnalysis | null;
+  rhythm: RhythmAnalysis | null;
+  dynamics: DynamicMarking[];
+  tempo_markings: TempoMarking[];
+  articulations: ArticulationInfo[];
+  structure: StructureInfo | null;
+  register: RegisterAnalysis | null;
+  patterns: MusicPattern[];
+}
+
+export interface FluteAnalysis {
+  breathing_points: Array<{ measure: number; beat: number; suggestion: string }>;
+  alternate_fingerings: Array<{ note: string; measure: number; fingering: string }>;
+  tone_color_notes: string[];
+  technique_warnings: Array<{ description: string; measure: number; suggestion: string }>;
+  practice_suggestions: string[];
+}
+
+export interface AnalysisResult {
+  id: string;
+  file_id: string;
+  omr_result_id: string | null;
+  analysis_type: string;
+  key_signature: string | null;
+  time_signature: string | null;
+  tempo_marking: string | null;
+  difficulty_estimate: number | null;
+  register_low: string | null;
+  register_high: string | null;
+  total_measures: number | null;
+  analysis_data: AnalysisData;
+  claude_analysis: FluteAnalysis | null;
+  status: string;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AnalysisDemand {
+  id: string;
+  analysis_id: string;
+  description: string;
+  category_id: string | null;
+  difficulty: number | null;
+  bar_range: string | null;
+  confidence: number | null;
+  imported: boolean;
+  imported_demand_id: string | null;
+  created_at: string;
+}
+
+export type HighlightMode = 'none' | 'scales' | 'arpeggios' | 'difficulty' | 'dynamics';
+
+export interface AnalysisStatus {
+  file: UploadedFile;
+  omr: OmrResult | null;
+  analysis: AnalysisResult | null;
+}

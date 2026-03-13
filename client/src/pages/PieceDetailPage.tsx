@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { StatusIndicator } from '../components/ui/StatusIndicator';
@@ -8,14 +8,16 @@ import { Badge } from '../components/ui/Badge';
 import { Input, Textarea, Select } from '../components/ui/Input';
 import { PIECE_STATUS_CONFIG, SECTION_STATUS_CONFIG, PRIORITY_CONFIG } from '../core/constants';
 import { api } from '../api/client';
-import type { Piece, Section, TechnicalDemand, TaxonomyCategory, PieceStatus, Priority, SectionStatus } from '../core/types';
+import type { Piece, Section, TechnicalDemand, TaxonomyCategory, PieceStatus, Priority, SectionStatus, UploadedFile } from '../core/types';
 import { LinkedFiles } from '../components/ui/LinkedFiles';
-import { Plus, Trash2, ArrowLeft, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, ChevronRight, Sparkles } from 'lucide-react';
 
 export function PieceDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [piece, setPiece] = useState<Piece | null>(null);
   const [categories, setCategories] = useState<TaxonomyCategory[]>([]);
+  const [linkedFiles, setLinkedFiles] = useState<UploadedFile[]>([]);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<Partial<Piece>>({});
 
@@ -35,6 +37,7 @@ export function PieceDetailPage() {
       setForm(p);
     }).catch(() => {});
     api.getTaxonomy().then(d => setCategories(d as TaxonomyCategory[])).catch(() => {});
+    if (id) api.getFiles({ linked_type: 'piece', linked_id: id }).then(d => setLinkedFiles(d as UploadedFile[])).catch(() => {});
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
@@ -137,7 +140,15 @@ export function PieceDetailPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Technical Demands</h2>
-                <Button variant="ghost" size="sm" onClick={() => setShowDemandForm(true)}><Plus size={14} /> Add</Button>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => {
+                    const sheetMusic = linkedFiles.find(f => f.file_type === 'sheet_music_digital' || f.file_type === 'sheet_music_scanned');
+                    if (sheetMusic) navigate(`/scores/${sheetMusic.id}`);
+                  }} disabled={!linkedFiles.some(f => f.file_type === 'sheet_music_digital' || f.file_type === 'sheet_music_scanned')}>
+                    <Sparkles size={14} /> Auto-detect
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setShowDemandForm(true)}><Plus size={14} /> Add</Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
