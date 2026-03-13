@@ -1,0 +1,255 @@
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader } from '../components/ui/Card';
+import { StatusIndicator } from '../components/ui/StatusIndicator';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
+import { PIECE_STATUS_CONFIG, PRIORITY_CONFIG, EXCERPT_STATUS_CONFIG } from '../core/constants';
+import { api } from '../api/client';
+import type { Piece, Excerpt } from '../core/types';
+import { Play, Clock, Flame, Target, AlertTriangle, CheckCircle } from 'lucide-react';
+
+interface Stats {
+  weekHours: number;
+  weekSessions: number;
+  streak: number;
+}
+
+interface RotationEntry {
+  id: string;
+  excerpt_id: string;
+  practiced: number;
+  title: string;
+  composer: string;
+  status: string;
+  difficulty: number;
+}
+
+export function DashboardPage() {
+  const [pieces, setPieces] = useState<Piece[]>([]);
+  const [stats, setStats] = useState<Stats>({ weekHours: 0, weekSessions: 0, streak: 0 });
+  const [rotation, setRotation] = useState<RotationEntry[]>([]);
+  const [excerpts, setExcerpts] = useState<Excerpt[]>([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    api.getPieces().then(d => setPieces(d as Piece[])).catch(() => {});
+    api.getSessionStats().then(d => setStats(d as Stats)).catch(() => {});
+    api.getTodayRotation().then(d => setRotation(d as RotationEntry[])).catch(() => {});
+    api.getExcerpts().then(d => setExcerpts(d as Excerpt[])).catch(() => {});
+  }, []);
+
+  const activePieces = pieces.filter(p => p.status !== 'archived');
+  const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  // Alerts
+  const alerts: { color: string; text: string }[] = [];
+  for (const p of activePieces) {
+    if (p.target_date) {
+      const days = Math.ceil((new Date(p.target_date).getTime() - Date.now()) / 86400000);
+      if (days <= 7 && days >= 0) {
+        const notReady = p.sections.filter(s => s.status !== 'polished' && s.status !== 'solid');
+        if (notReady.length > 0) {
+          alerts.push({ color: 'var(--pf-status-needs-work)', text: `${p.title} target in ${days} days — ${notReady.length} section${notReady.length > 1 ? 's' : ''} still need work` });
+        }
+      }
+    }
+  }
+  const staleExcerpts = excerpts.filter(e => {
+    if (!e.last_practiced) return true;
+    const days = Math.ceil((Date.now() - new Date(e.last_practiced).getTime()) / 86400000);
+    return days > 20;
+  });
+  if (staleExcerpts.length > 0) {
+    alerts.push({ color: 'var(--pf-accent-gold)', text: `${staleExcerpts.length} excerpt${staleExcerpts.length > 1 ? 's' : ''} not practiced in 20+ days` });
+  }
+
+  // Excerpt status counts for donut
+  const excerptCounts = {
+    audition_ready: excerpts.filter(e => e.status === 'audition_ready').length,
+    solid: excerpts.filter(e => e.status === 'solid').length,
+    acceptable: excerpts.filter(e => e.status === 'acceptable').length,
+    needs_work: excerpts.filter(e => e.status === 'needs_work').length,
+  };
+
+  return (
+    <div>
+      <div className="flex items-baseline gap-4 mb-6">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <span className="text-[var(--pf-text-secondary)]">{today}</span>
+      </div>
+
+      {/* Top row: Session + Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <Card>
+          <CardContent className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold mb-1">Today's Session</h2>
+              <p className="text-sm text-[var(--pf-text-secondary)]">
+                {activePieces.length} active piece{activePieces.length !== 1 ? 's' : ''} &middot; {rotation.length} excerpt{rotation.length !== 1 ? 's' : ''} in rotation
+              </p>
+              {/* Category mini-bar */}
+              <div className="flex gap-0.5 mt-3 h-2 w-48 rounded-full overflow-hidden">
+                <div className="h-full" style={{ flex: 10, backgroundColor: 'var(--pf-accent-gold)' }} />
+                <div className="h-full" style={{ flex: 10, backgroundColor: 'var(--pf-accent-teal)' }} />
+                <div className="h-full" style={{ flex: 25, backgroundColor: 'var(--pf-accent-teal)' }} />
+                <div className="h-full" style={{ flex: 35, backgroundColor: 'var(--pf-status-in-progress)' }} />
+                <div className="h-full" style={{ flex: 15, backgroundColor: 'var(--pf-accent-lavender)' }} />
+                <div className="h-full" style={{ flex: 5, backgroundColor: 'var(--pf-text-secondary)' }} />
+              </div>
+              <p className="text-xs text-[var(--pf-text-secondary)] mt-1">Warm-up → Fundamentals → Technique → Repertoire → Excerpts</p>
+            </div>
+            <Button onClick={() => navigate('/session')}>
+              <Play size={16} /> Start Session
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent>
+            <div className="grid grid-cols-4 gap-4 text-center">
+              <div>
+                <div className="text-2xl font-bold">{stats.weekHours}<span className="text-sm font-normal text-[var(--pf-text-secondary)]">h</span></div>
+                <div className="text-xs text-[var(--pf-text-secondary)]">This week</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{stats.weekSessions}</div>
+                <div className="text-xs text-[var(--pf-text-secondary)]">Sessions</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold flex items-center justify-center gap-1">
+                  {stats.streak}
+                  {stats.streak > 0 && <Flame size={18} style={{ color: 'var(--pf-accent-gold)' }} />}
+                </div>
+                <div className="text-xs text-[var(--pf-text-secondary)]">Day streak</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{activePieces.length}</div>
+                <div className="text-xs text-[var(--pf-text-secondary)]">Pieces</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Middle row: Active Pieces + Excerpt Readiness */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-semibold">Active Pieces</h2>
+                <Link to="/pieces" className="text-xs" style={{ color: 'var(--pf-accent-gold)' }}>View all</Link>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {activePieces.length === 0 ? (
+                <p className="text-sm text-[var(--pf-text-secondary)]">No pieces yet. <Link to="/pieces" className="underline">Add your first piece</Link>.</p>
+              ) : (
+                <div className="space-y-3">
+                  {activePieces.slice(0, 5).map(piece => {
+                    const statusConf = PIECE_STATUS_CONFIG[piece.status];
+                    const priorityConf = PRIORITY_CONFIG[piece.priority];
+                    const daysUntil = piece.target_date
+                      ? Math.ceil((new Date(piece.target_date).getTime() - Date.now()) / 86400000)
+                      : null;
+                    return (
+                      <Link key={piece.id} to={`/pieces/${piece.id}`} className="flex items-center gap-3 py-2 hover:bg-[var(--pf-bg-hover)] rounded-pf-sm px-2 -mx-2 transition-colors">
+                        <Badge color={piece.priority === 'high' ? 'var(--pf-status-needs-work)' : piece.priority === 'medium' ? 'var(--pf-accent-gold)' : 'var(--pf-text-secondary)'}>{priorityConf.label}</Badge>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">{piece.title}</div>
+                          <div className="text-xs text-[var(--pf-text-secondary)]">{piece.composer}</div>
+                        </div>
+                        {piece.sections.length > 0 && (
+                          <div className="flex gap-0.5 w-28">
+                            {piece.sections.map(s => {
+                              const cv = s.status === 'polished' ? '--pf-status-ready' : s.status === 'solid' ? '--pf-status-solid' : s.status === 'working_on' ? '--pf-status-in-progress' : '--pf-status-not-started';
+                              return <div key={s.id} className="flex-1 h-2 rounded-full" style={{ backgroundColor: `var(${cv})` }} />;
+                            })}
+                          </div>
+                        )}
+                        {daysUntil != null && (
+                          <span className={`text-xs font-medium ${daysUntil <= 7 ? 'text-[var(--pf-status-needs-work)]' : 'text-[var(--pf-text-secondary)]'}`}>
+                            {daysUntil > 0 ? `${daysUntil}d` : 'Due'}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Excerpt Readiness */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold">Excerpt Readiness</h2>
+              <Link to="/excerpts" className="text-xs" style={{ color: 'var(--pf-accent-gold)' }}>View all</Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {excerpts.length === 0 ? (
+              <p className="text-sm text-[var(--pf-text-secondary)]">No excerpts yet.</p>
+            ) : (
+              <>
+                {/* Simple status breakdown */}
+                <div className="flex items-center justify-center mb-4">
+                  <div className="text-3xl font-bold" style={{ color: 'var(--pf-accent-gold)' }}>{excerpts.length}</div>
+                  <span className="text-sm text-[var(--pf-text-secondary)] ml-2">total</span>
+                </div>
+                <div className="space-y-1.5 text-sm">
+                  {Object.entries(excerptCounts).map(([status, count]) => {
+                    if (count === 0) return null;
+                    const conf = EXCERPT_STATUS_CONFIG[status as keyof typeof EXCERPT_STATUS_CONFIG];
+                    return (
+                      <div key={status} className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: `var(${conf.colorVar})` }} />
+                        <span className="flex-1">{conf.label}</span>
+                        <span className="font-medium">{count}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Today's rotation */}
+                {rotation.length > 0 && (
+                  <div className="mt-4 pt-3 border-t border-[var(--pf-border-color)]">
+                    <h3 className="text-xs font-semibold text-[var(--pf-text-secondary)] mb-2">TODAY'S ROTATION</h3>
+                    {rotation.map(r => {
+                      const sConf = EXCERPT_STATUS_CONFIG[r.status as keyof typeof EXCERPT_STATUS_CONFIG] || EXCERPT_STATUS_CONFIG.needs_work;
+                      return (
+                        <div key={r.id} className="flex items-center gap-2 py-1 text-sm">
+                          <div className="w-1 h-4 rounded-full" style={{ backgroundColor: `var(${sConf.colorVar})` }} />
+                          <span className="flex-1 truncate">{r.title}</span>
+                          {r.practiced ? <CheckCircle size={14} style={{ color: 'var(--pf-status-ready)' }} /> : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Bottom row: Alerts */}
+      {alerts.length > 0 && (
+        <Card>
+          <CardHeader><h2 className="text-base font-semibold">Alerts & Nudges</h2></CardHeader>
+          <CardContent className="space-y-2">
+            {alerts.map((alert, i) => (
+              <div key={i} className="flex items-start gap-3 text-sm">
+                <div className="w-1 h-5 rounded-full flex-shrink-0 mt-0.5" style={{ backgroundColor: alert.color }} />
+                <span>{alert.text}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
