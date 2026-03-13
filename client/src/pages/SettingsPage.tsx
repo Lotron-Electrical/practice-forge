@@ -210,6 +210,9 @@ export function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Version */}
+      <p className="text-xs text-[var(--pf-text-secondary)] text-center mt-8">Practice Forge v0.7.0</p>
     </div>
   );
 }
