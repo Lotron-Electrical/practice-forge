@@ -14,6 +14,7 @@ import { ScoreAnalysisPage } from './pages/ScoreAnalysisPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { RecordingPage } from './pages/RecordingPage';
 import { LoginPage } from './pages/LoginPage';
+import { TutorialPage } from './pages/TutorialPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AssessmentsPage } from './pages/AssessmentsPage';
 import { CommunityPage } from './pages/CommunityPage';
@@ -53,6 +54,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="login" element={<LoginPage />} />
+      <Route path="tutorial" element={<TutorialPage />} />
       <Route element={<RequireAuth><MainLayout /></RequireAuth>}>
         <Route index element={<DashboardPage />} />
         <Route path="pieces" element={<PiecesPage />} />

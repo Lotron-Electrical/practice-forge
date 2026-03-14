@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../auth/AuthContext';
-import { LogIn, UserPlus } from 'lucide-react';
+import { LogIn, UserPlus, HelpCircle } from 'lucide-react';
 
 export function LoginPage() {
   const { login, register, isAuthenticated } = useAuth();
@@ -114,6 +114,16 @@ export function LoginPage() {
             </form>
           </CardContent>
         </Card>
+        {/* Tutorial link */}
+        <div className="text-center mt-4">
+          <Link
+            to="/tutorial"
+            className="inline-flex items-center gap-1.5 text-sm text-[var(--pf-text-secondary)] hover:text-[var(--pf-accent-gold)] transition-colors"
+          >
+            <HelpCircle size={14} />
+            New here? See how it works
+          </Link>
+        </div>
       </div>
     </div>
   );
