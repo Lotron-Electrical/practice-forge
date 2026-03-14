@@ -6,7 +6,9 @@ import { DifficultyDots } from '../components/ui/DifficultyDots';
 import { Input, Textarea, Select } from '../components/ui/Input';
 import { api } from '../api/client';
 import type { Exercise, TaxonomyCategory, ExerciseSourceType } from '../core/types';
-import { Plus, Search, BookOpen, X, Trash2, Pencil } from 'lucide-react';
+import { useDebounce } from '../hooks/useDebounce';
+import { GenerateExerciseModal } from '../components/composition/GenerateExerciseModal';
+import { Plus, Search, BookOpen, X, Trash2, Pencil, Wand2 } from 'lucide-react';
 import { MUSICAL_KEYS } from '../core/constants';
 
 export function ExercisesPage() {
@@ -17,18 +19,21 @@ export function ExercisesPage() {
   const [filterSource, setFilterSource] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showGenerate, setShowGenerate] = useState(false);
   const [form, setForm] = useState({
     title: '', source: '', source_type: 'manual' as ExerciseSourceType,
     category_id: '', key: '', difficulty: '', description: '', tags: '',
   });
 
+  const debouncedSearch = useDebounce(search, 300);
+
   const load = useCallback(() => {
     const params: Record<string, string> = {};
     if (filterCat) params.category_id = filterCat;
     if (filterSource) params.source_type = filterSource;
-    if (search) params.search = search;
+    if (debouncedSearch) params.search = debouncedSearch;
     api.getExercises(params).then(d => setExercises(d as Exercise[])).catch(() => {});
-  }, [filterCat, filterSource, search]);
+  }, [filterCat, filterSource, debouncedSearch]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { api.getTaxonomy().then(d => setCategories(d as TaxonomyCategory[])).catch(() => {}); }, []);
@@ -66,6 +71,7 @@ export function ExercisesPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!confirm('Delete this exercise?')) return;
     await api.deleteExercise(id);
     load();
   };
@@ -76,7 +82,10 @@ export function ExercisesPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Exercise Library</h1>
-        <Button size="sm" onClick={openCreate}><Plus size={16} /> Add Exercise</Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="secondary" onClick={() => setShowGenerate(true)}><Wand2 size={16} /> Generate</Button>
+          <Button size="sm" onClick={openCreate}><Plus size={16} /> Add Exercise</Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -185,6 +194,13 @@ export function ExercisesPage() {
           })}
         </div>
       )}
+
+      {/* Generate exercise modal */}
+      <GenerateExerciseModal
+        open={showGenerate}
+        onClose={() => setShowGenerate(false)}
+        onSaved={load}
+      />
     </div>
   );
 }

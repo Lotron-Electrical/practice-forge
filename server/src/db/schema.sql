@@ -136,6 +136,7 @@ CREATE TABLE IF NOT EXISTS practice_sessions (
   rating TEXT CHECK(rating IN ('good','okay','bad') OR rating IS NULL),
   notes TEXT DEFAULT '',
   time_allocation TEXT DEFAULT '{}',
+  started_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -226,3 +227,222 @@ CREATE TABLE IF NOT EXISTS analysis_demands (
 );
 
 CREATE INDEX IF NOT EXISTS idx_analysis_demands_analysis ON analysis_demands(analysis_id);
+
+-- Phase: Resource Finder
+
+CREATE TABLE IF NOT EXISTS resources (
+  id TEXT PRIMARY KEY,
+  linked_type TEXT NOT NULL CHECK(linked_type IN ('piece','excerpt')),
+  linked_id TEXT NOT NULL,
+  resource_type TEXT NOT NULL CHECK(resource_type IN ('score','recording','article','other')),
+  title TEXT NOT NULL,
+  url TEXT NOT NULL,
+  source TEXT NOT NULL CHECK(source IN ('imslp','youtube','wikipedia','manual')),
+  description TEXT DEFAULT '',
+  thumbnail_url TEXT,
+  attribution TEXT DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_resources_linked ON resources(linked_type, linked_id);
+
+-- Phase 10: Audio Listening & Feedback Engine
+
+CREATE TABLE IF NOT EXISTS audio_recordings (
+  id TEXT PRIMARY KEY,
+  file_id TEXT REFERENCES uploaded_files(id) ON DELETE SET NULL,
+  session_id TEXT REFERENCES practice_sessions(id) ON DELETE SET NULL,
+  block_id TEXT,
+  linked_type TEXT CHECK(linked_type IN ('piece','section','excerpt','exercise','freeform') OR linked_type IS NULL),
+  linked_id TEXT,
+  title TEXT NOT NULL DEFAULT '',
+  duration_seconds REAL,
+  target_bpm INTEGER,
+  target_key TEXT,
+  score_file_id TEXT,
+  start_bar INTEGER,
+  end_bar INTEGER,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_recordings_linked ON audio_recordings(linked_type, linked_id);
+CREATE INDEX IF NOT EXISTS idx_recordings_session ON audio_recordings(session_id);
+
+CREATE TABLE IF NOT EXISTS audio_analyses (
+  id TEXT PRIMARY KEY,
+  recording_id TEXT NOT NULL REFERENCES audio_recordings(id) ON DELETE CASCADE,
+  pitch_accuracy_pct REAL,
+  rhythm_accuracy_pct REAL,
+  dynamic_range_db REAL,
+  avg_rms REAL,
+  avg_spectral_centroid REAL,
+  avg_spectral_flatness REAL,
+  pitch_stability REAL,
+  overall_rating TEXT CHECK(overall_rating IN ('needs_work','acceptable','solid','excellent')),
+  analysis_data JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_audio_analysis_recording ON audio_analyses(recording_id);
+
+-- Phase 13: Audits & Assessments
+
+CREATE TABLE IF NOT EXISTS assessments (
+  id TEXT PRIMARY KEY,
+  type TEXT NOT NULL CHECK(type IN ('piece_audit','excerpt_spot_check','technique_assessment','weekly_review')),
+  piece_id TEXT REFERENCES pieces(id) ON DELETE SET NULL,
+  status TEXT NOT NULL DEFAULT 'in_progress' CHECK(status IN ('in_progress','completed')),
+  overall_score REAL,
+  overall_rating TEXT CHECK(overall_rating IN ('needs_work','acceptable','solid','excellent') OR overall_rating IS NULL),
+  results JSONB NOT NULL DEFAULT '{}',
+  notes TEXT DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_assessments_type ON assessments(type);
+CREATE INDEX IF NOT EXISTS idx_assessments_piece ON assessments(piece_id);
+
+CREATE TABLE IF NOT EXISTS assessment_recordings (
+  id TEXT PRIMARY KEY,
+  assessment_id TEXT NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+  recording_id TEXT REFERENCES audio_recordings(id) ON DELETE SET NULL,
+  target_type TEXT NOT NULL CHECK(target_type IN ('piece','section','excerpt','exercise')),
+  target_id TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  score REAL,
+  bar_results JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_assessment_recordings ON assessment_recordings(assessment_id);
+
+-- Phase 17: Community & Challenges
+
+CREATE TABLE IF NOT EXISTS follows (
+  follower_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  following_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (follower_id, following_id)
+);
+CREATE INDEX IF NOT EXISTS idx_follows_follower ON follows(follower_id);
+CREATE INDEX IF NOT EXISTS idx_follows_following ON follows(following_id);
+
+CREATE TABLE IF NOT EXISTS challenges (
+  id TEXT PRIMARY KEY,
+  type TEXT NOT NULL CHECK(type IN ('excerpt_duel','scale_sprint','sight_reading','practice_marathon','technique_showdown','weekly')),
+  creator_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  content_type TEXT CHECK(content_type IN ('excerpt','scale','exercise','passage','freeform')),
+  content_id TEXT,
+  description TEXT NOT NULL DEFAULT '',
+  notation_data TEXT,
+  deadline TIMESTAMPTZ NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','active','completed','expired','cancelled')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_challenges_creator ON challenges(creator_id);
+CREATE INDEX IF NOT EXISTS idx_challenges_status ON challenges(status);
+
+CREATE TABLE IF NOT EXISTS challenge_participants (
+  id TEXT PRIMARY KEY,
+  challenge_id TEXT NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'invited' CHECK(status IN ('invited','accepted','declined','submitted')),
+  recording_id TEXT REFERENCES audio_recordings(id) ON DELETE SET NULL,
+  score REAL,
+  rank INTEGER,
+  submitted_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_challenge_participants_challenge ON challenge_participants(challenge_id);
+CREATE INDEX IF NOT EXISTS idx_challenge_participants_user ON challenge_participants(user_id);
+
+CREATE TABLE IF NOT EXISTS feed_events (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  event_type TEXT NOT NULL CHECK(event_type IN ('challenge_result','achievement','milestone','shared_recording','weekly_leaderboard')),
+  title TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  data JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_feed_events_user ON feed_events(user_id);
+CREATE INDEX IF NOT EXISTS idx_feed_events_created ON feed_events(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS achievements (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  achievement_key TEXT NOT NULL,
+  earned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, achievement_key)
+);
+CREATE INDEX IF NOT EXISTS idx_achievements_user ON achievements(user_id);
+
+-- Phase 18: Community Excerpt Library + Theme Gallery
+
+CREATE TABLE IF NOT EXISTS community_themes (
+  id TEXT PRIMARY KEY,
+  creator_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  base_theme TEXT DEFAULT 'light',
+  tokens JSONB NOT NULL,
+  tags TEXT DEFAULT '[]',
+  favorites_count INTEGER DEFAULT 0,
+  downloads_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_community_themes_creator ON community_themes(creator_id);
+
+CREATE TABLE IF NOT EXISTS theme_favorites (
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  theme_id TEXT NOT NULL REFERENCES community_themes(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, theme_id)
+);
+
+CREATE TABLE IF NOT EXISTS excerpt_community_ratings (
+  id TEXT PRIMARY KEY,
+  excerpt_id TEXT NOT NULL REFERENCES excerpts(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  difficulty_rating INTEGER CHECK(difficulty_rating BETWEEN 1 AND 10),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(excerpt_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_excerpt_ratings_excerpt ON excerpt_community_ratings(excerpt_id);
+
+CREATE TABLE IF NOT EXISTS excerpt_community_notes (
+  id TEXT PRIMARY KEY,
+  excerpt_id TEXT NOT NULL REFERENCES excerpts(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  note TEXT NOT NULL,
+  upvotes INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_excerpt_notes_excerpt ON excerpt_community_notes(excerpt_id);
+
+-- Phase 16: Authentication + User Profiles
+
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  display_name TEXT NOT NULL DEFAULT '',
+  instrument TEXT NOT NULL DEFAULT 'Flute',
+  level TEXT NOT NULL DEFAULT 'student' CHECK(level IN ('student','advanced_student','pre_professional','professional')),
+  institution TEXT,
+  bio TEXT,
+  avatar_url TEXT,
+  privacy_settings JSONB NOT NULL DEFAULT '{"profile_visible":false,"stats_visible":false,"recordings_shareable":false,"activity_visible":false}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- Phase 14: Analytics — add started_at to practice_sessions
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'practice_sessions' AND column_name = 'started_at'
+  ) THEN
+    ALTER TABLE practice_sessions ADD COLUMN started_at TIMESTAMPTZ;
+  END IF;
+END $$;

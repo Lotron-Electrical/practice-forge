@@ -271,6 +271,292 @@ export interface AnalysisDemand {
   created_at: string;
 }
 
+// Resource Finder
+
+export type ResourceType = 'score' | 'recording' | 'article' | 'other';
+export type ResourceSource = 'imslp' | 'youtube' | 'wikipedia' | 'manual';
+export type ResourceLinkedType = 'piece' | 'excerpt';
+
+export interface Resource {
+  id: string;
+  linked_type: ResourceLinkedType;
+  linked_id: string;
+  resource_type: ResourceType;
+  title: string;
+  url: string;
+  source: ResourceSource;
+  description: string;
+  thumbnail_url: string | null;
+  attribution: string;
+  created_at: string;
+}
+
+export interface ResourceSearchResult {
+  title: string;
+  url: string;
+  source: ResourceSource;
+  resource_type: ResourceType;
+  description: string;
+  thumbnail_url?: string | null;
+}
+
+export interface AutoDiscoverResults {
+  imslp: ResourceSearchResult[];
+  wikipedia: ResourceSearchResult[];
+  youtube: ResourceSearchResult[];
+}
+
+// Phase 13: Audits & Assessments
+
+export type AssessmentType = 'piece_audit' | 'excerpt_spot_check' | 'technique_assessment' | 'weekly_review';
+export type AssessmentStatus = 'in_progress' | 'completed';
+
+export interface Assessment {
+  id: string;
+  type: AssessmentType;
+  piece_id: string | null;
+  status: AssessmentStatus;
+  overall_score: number | null;
+  overall_rating: 'needs_work' | 'acceptable' | 'solid' | 'excellent' | null;
+  results: Record<string, unknown>;
+  notes: string;
+  created_at: string;
+  completed_at: string | null;
+  assessment_recordings?: AssessmentRecording[];
+}
+
+export interface AssessmentRecording {
+  id: string;
+  assessment_id: string;
+  recording_id: string | null;
+  target_type: string;
+  target_id: string;
+  sort_order: number;
+  score: number | null;
+  bar_results: BarResult[] | null;
+  recording_title?: string;
+  duration_seconds?: number;
+  file_id?: string;
+  created_at: string;
+}
+
+export interface WeeklyReviewData {
+  period: { from: string; to: string };
+  sessions_completed: number;
+  total_practice_minutes: number;
+  total_practice_hours: number;
+  category_breakdown: Record<string, number>;
+  status_changes: { pieces: { title: string; status: string }[]; sections: { name: string; status: string; piece_title: string }[] };
+  recordings_made: number;
+  avg_pitch_accuracy: number | null;
+}
+
+// Phase 17: Community & Challenges
+
+export type ChallengeType = 'excerpt_duel' | 'scale_sprint' | 'sight_reading' | 'practice_marathon' | 'technique_showdown' | 'weekly';
+export type ChallengeStatus = 'pending' | 'active' | 'completed' | 'expired' | 'cancelled';
+export type ParticipantStatus = 'invited' | 'accepted' | 'declined' | 'submitted';
+
+export interface Challenge {
+  id: string;
+  type: ChallengeType;
+  creator_id: string;
+  content_type: string | null;
+  content_id: string | null;
+  description: string;
+  notation_data: string | null;
+  deadline: string;
+  status: ChallengeStatus;
+  participants: ChallengeParticipant[];
+  created_at: string;
+}
+
+export interface ChallengeParticipant {
+  id: string;
+  challenge_id: string;
+  user_id: string;
+  status: ParticipantStatus;
+  recording_id: string | null;
+  score: number | null;
+  rank: number | null;
+  submitted_at: string | null;
+  display_name?: string;
+  instrument?: string;
+}
+
+export interface FeedEvent {
+  id: string;
+  user_id: string;
+  event_type: string;
+  title: string;
+  description: string;
+  data: Record<string, unknown>;
+  display_name?: string;
+  instrument?: string;
+  created_at: string;
+}
+
+export interface Achievement {
+  achievement_key: string;
+  earned_at: string;
+}
+
+export interface PublicProfile {
+  id: string;
+  display_name: string;
+  instrument: string;
+  level: string;
+  institution: string | null;
+  bio: string | null;
+  achievements: Achievement[];
+}
+
+// Phase 16: Authentication + User Profiles
+
+export type UserLevel = 'student' | 'advanced_student' | 'pre_professional' | 'professional';
+
+export interface User {
+  id: string;
+  email: string;
+  display_name: string;
+  instrument: string;
+  level: UserLevel;
+  institution: string | null;
+  bio: string | null;
+  avatar_url: string | null;
+  privacy_settings: PrivacySettings;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PrivacySettings {
+  profile_visible: boolean;
+  stats_visible: boolean;
+  recordings_shareable: boolean;
+  activity_visible: boolean;
+}
+
+export interface AuthResponse {
+  user: User;
+  token: string;
+}
+
+// Phase 10: Audio Listening & Feedback Engine
+
+export interface AudioRecording {
+  id: string;
+  file_id: string | null;
+  session_id: string | null;
+  block_id: string | null;
+  linked_type: LinkedType | null;
+  linked_id: string | null;
+  title: string;
+  duration_seconds: number | null;
+  target_bpm: number | null;
+  target_key: string | null;
+  score_file_id: string | null;
+  start_bar: number | null;
+  end_bar: number | null;
+  created_at: string;
+  analysis?: AudioAnalysis | null;
+  // Joined fields
+  file_path?: string;
+  original_filename?: string;
+  pitch_accuracy_pct?: number | null;
+  analysis_rating?: string | null;
+}
+
+export interface AudioAnalysis {
+  id: string;
+  recording_id: string;
+  pitch_accuracy_pct: number | null;
+  rhythm_accuracy_pct: number | null;
+  dynamic_range_db: number | null;
+  avg_rms: number | null;
+  avg_spectral_centroid: number | null;
+  avg_spectral_flatness: number | null;
+  pitch_stability: number | null;
+  overall_rating: 'needs_work' | 'acceptable' | 'solid' | 'excellent' | null;
+  analysis_data: AudioAnalysisData;
+  created_at: string;
+}
+
+export interface AudioAnalysisData {
+  pitch_trace: PitchSample[];
+  dynamics_envelope: DynamicsSample[];
+  problem_spots: ProblemSpot[];
+  bar_results?: BarResult[];
+  note_events?: DetectedNote[];
+}
+
+export interface PitchSample {
+  time: number;
+  frequency: number;
+  note: string;
+  cents_deviation: number;
+  clarity: number;
+}
+
+export interface DynamicsSample {
+  time: number;
+  rms: number;
+  spectral_centroid: number;
+  spectral_flatness: number;
+}
+
+export interface ProblemSpot {
+  time_start: number;
+  time_end: number;
+  type: 'pitch' | 'rhythm' | 'dynamics';
+  description: string;
+  severity: 'minor' | 'moderate' | 'major';
+  bar_number?: number;
+}
+
+export interface DetectedNote {
+  time: number;
+  frequency: number;
+  note: string;
+  duration: number;
+  velocity: number;
+}
+
+export interface BarResult {
+  bar_number: number;
+  pitch_accuracy: number;
+  rhythm_accuracy: number;
+  status: 'accurate' | 'minor_issues' | 'inaccurate';
+}
+
+// Phase 12: Composition & Exercise Generation Engine
+
+export type GenerationType = 'scale' | 'arpeggio' | 'interval' | 'articulation';
+export type AiGenerationType = 'excerpt_prep' | 'warmup' | 'variation' | 'custom_study';
+
+export interface GeneratedExercise {
+  title: string;
+  abc: string;
+  description: string;
+  key: string;
+  difficulty: number;
+  category_hint?: string;
+  tags: string[];
+  generation_method?: 'rule_based' | 'claude_api';
+  prompt_used?: string;
+  cost?: number;
+}
+
+export interface RuleGenerationParams {
+  key?: string;
+  scaleType?: string;
+  chordType?: string;
+  interval?: string;
+  articulation?: string;
+  octaves?: number;
+  tempo?: number;
+  pattern?: string;
+}
+
 export type HighlightMode = 'none' | 'scales' | 'arpeggios' | 'difficulty' | 'dynamics';
 
 export interface AnalysisStatus {
@@ -278,3 +564,50 @@ export interface AnalysisStatus {
   omr: OmrResult | null;
   analysis: AnalysisResult | null;
 }
+
+// Phase 18: Community Excerpt Library + Theme Gallery
+
+export interface CommunityTheme {
+  id: string;
+  creator_id: string;
+  creator_name?: string;
+  name: string;
+  description: string;
+  base_theme: string;
+  tokens: Record<string, string>;
+  tags: string[];
+  favorites_count: number;
+  downloads_count: number;
+  is_favorited?: boolean;
+  created_at: string;
+}
+
+export interface ExcerptCommunityData {
+  avg_difficulty: number | null;
+  rating_count: number;
+  notes: CommunityNote[];
+  user_rating?: number | null;
+}
+
+export interface CommunityNote {
+  id: string;
+  user_id: string;
+  display_name: string;
+  note: string;
+  upvotes: number;
+  created_at: string;
+}
+
+export const ACHIEVEMENT_DEFS: Record<string, { label: string; description: string; icon: string }> = {
+  first_steps: { label: 'First Steps', description: 'Complete your first practice session', icon: 'music' },
+  streak_7: { label: 'Week Warrior', description: '7-day practice streak', icon: 'flame' },
+  streak_30: { label: 'Monthly Master', description: '30-day practice streak', icon: 'flame' },
+  streak_100: { label: 'Century Streak', description: '100-day practice streak', icon: 'flame' },
+  century: { label: 'Century', description: '100 hours total practice', icon: 'clock' },
+  excerpt_explorer: { label: 'Excerpt Explorer', description: 'Practice 50 different excerpts', icon: 'map-pin' },
+  challenge_champion: { label: 'Challenge Champion', description: 'Win 10 challenges', icon: 'trophy' },
+  composers_friend: { label: "Composer's Friend", description: '50 AI-generated exercises', icon: 'sparkles' },
+  community_contributor: { label: 'Community Contributor', description: 'Share 10 tips or recordings', icon: 'heart' },
+  perfectionist: { label: 'Perfectionist', description: 'Score 95%+ on a piece audit', icon: 'diamond' },
+  audition_ready: { label: 'Audition Ready', description: 'All excerpts solid or above', icon: 'star' },
+};

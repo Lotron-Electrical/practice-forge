@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button';
 import { PIECE_STATUS_CONFIG, PRIORITY_CONFIG, EXCERPT_STATUS_CONFIG } from '../core/constants';
 import { api } from '../api/client';
 import type { Piece, Excerpt } from '../core/types';
-import { Play, Clock, Flame, Target, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Play, Clock, Flame, Target, AlertTriangle, CheckCircle, BarChart3, Music, BookOpen, Mic } from 'lucide-react';
 
 interface Stats {
   weekHours: number;
@@ -30,6 +30,8 @@ export function DashboardPage() {
   const [stats, setStats] = useState<Stats>({ weekHours: 0, weekSessions: 0, streak: 0 });
   const [rotation, setRotation] = useState<RotationEntry[]>([]);
   const [excerpts, setExcerpts] = useState<Excerpt[]>([]);
+  const [driftAlerts, setDriftAlerts] = useState<string[]>([]);
+  const [timeAlloc, setTimeAlloc] = useState({ warmup: 15, fundamentals: 10, technique: 20, repertoire: 35, excerpts: 15, buffer: 5 });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -37,6 +39,12 @@ export function DashboardPage() {
     api.getSessionStats().then(d => setStats(d as Stats)).catch(() => {});
     api.getTodayRotation().then(d => setRotation(d as RotationEntry[])).catch(() => {});
     api.getExcerpts().then(d => setExcerpts(d as Excerpt[])).catch(() => {});
+    api.getAnalyticsDrift().then((d: any) => {
+      if (d?.alerts) setDriftAlerts(d.alerts);
+    }).catch(() => {});
+    api.getSettings().then((d: any) => {
+      if (d?.timeAllocation) setTimeAlloc(prev => ({ ...prev, ...d.timeAllocation }));
+    }).catch(() => {});
   }, []);
 
   const activePieces = pieces.filter(p => p.status !== 'archived');
@@ -63,6 +71,9 @@ export function DashboardPage() {
   if (staleExcerpts.length > 0) {
     alerts.push({ color: 'var(--pf-accent-gold)', text: `${staleExcerpts.length} excerpt${staleExcerpts.length > 1 ? 's' : ''} not practiced in 20+ days` });
   }
+  for (const da of driftAlerts) {
+    alerts.push({ color: 'var(--pf-status-needs-work)', text: da });
+  }
 
   // Excerpt status counts for donut
   const excerptCounts = {
@@ -79,6 +90,33 @@ export function DashboardPage() {
         <span className="text-[var(--pf-text-secondary)]">{today}</span>
       </div>
 
+      {/* First-run onboarding */}
+      {activePieces.length === 0 && excerpts.length === 0 && stats.weekSessions === 0 && (
+        <Card className="mb-6">
+          <CardContent className="py-8">
+            <h2 className="text-xl font-semibold text-center mb-2">Welcome to Practice Forge</h2>
+            <p className="text-sm text-[var(--pf-text-secondary)] text-center mb-6 max-w-md mx-auto">Get started in three steps — add your music, then let the app plan your practice sessions.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-lg mx-auto">
+              <Link to="/pieces" className="flex flex-col items-center gap-2 p-4 rounded-pf border border-[var(--pf-border-color)] hover:border-[var(--pf-accent-gold)] transition-colors">
+                <Music size={24} style={{ color: 'var(--pf-accent-gold)' }} />
+                <span className="text-sm font-medium">1. Add a piece</span>
+                <span className="text-xs text-[var(--pf-text-secondary)]">Your repertoire</span>
+              </Link>
+              <Link to="/media" className="flex flex-col items-center gap-2 p-4 rounded-pf border border-[var(--pf-border-color)] hover:border-[var(--pf-accent-teal)] transition-colors">
+                <BookOpen size={24} style={{ color: 'var(--pf-accent-teal)' }} />
+                <span className="text-sm font-medium">2. Upload music</span>
+                <span className="text-xs text-[var(--pf-text-secondary)]">Scores & recordings</span>
+              </Link>
+              <Link to="/session" className="flex flex-col items-center gap-2 p-4 rounded-pf border border-[var(--pf-border-color)] hover:border-[var(--pf-accent-lavender)] transition-colors">
+                <Play size={24} style={{ color: 'var(--pf-accent-lavender)' }} />
+                <span className="text-sm font-medium">3. Start practising</span>
+                <span className="text-xs text-[var(--pf-text-secondary)]">AI-planned sessions</span>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Top row: Session + Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <Card>
@@ -88,14 +126,14 @@ export function DashboardPage() {
               <p className="text-sm text-[var(--pf-text-secondary)]">
                 {activePieces.length} active piece{activePieces.length !== 1 ? 's' : ''} &middot; {rotation.length} excerpt{rotation.length !== 1 ? 's' : ''} in rotation
               </p>
-              {/* Category mini-bar */}
+              {/* Category mini-bar — driven by time allocation settings */}
               <div className="flex gap-0.5 mt-3 h-2 w-48 rounded-full overflow-hidden">
-                <div className="h-full" style={{ flex: 10, backgroundColor: 'var(--pf-accent-gold)' }} />
-                <div className="h-full" style={{ flex: 10, backgroundColor: 'var(--pf-accent-teal)' }} />
-                <div className="h-full" style={{ flex: 25, backgroundColor: 'var(--pf-accent-teal)' }} />
-                <div className="h-full" style={{ flex: 35, backgroundColor: 'var(--pf-status-in-progress)' }} />
-                <div className="h-full" style={{ flex: 15, backgroundColor: 'var(--pf-accent-lavender)' }} />
-                <div className="h-full" style={{ flex: 5, backgroundColor: 'var(--pf-text-secondary)' }} />
+                <div className="h-full" style={{ flex: timeAlloc.warmup, backgroundColor: 'var(--pf-accent-gold)' }} />
+                <div className="h-full" style={{ flex: timeAlloc.fundamentals, backgroundColor: 'var(--pf-accent-teal)' }} />
+                <div className="h-full" style={{ flex: timeAlloc.technique, backgroundColor: 'var(--pf-accent-teal)' }} />
+                <div className="h-full" style={{ flex: timeAlloc.repertoire, backgroundColor: 'var(--pf-status-in-progress)' }} />
+                <div className="h-full" style={{ flex: timeAlloc.excerpts, backgroundColor: 'var(--pf-accent-lavender)' }} />
+                <div className="h-full" style={{ flex: timeAlloc.buffer, backgroundColor: 'var(--pf-text-secondary)' }} />
               </div>
               <p className="text-xs text-[var(--pf-text-secondary)] mt-1">Warm-up → Fundamentals → Technique → Repertoire → Excerpts</p>
             </div>
@@ -127,6 +165,11 @@ export function DashboardPage() {
                 <div className="text-2xl font-bold">{activePieces.length}</div>
                 <div className="text-xs text-[var(--pf-text-secondary)]">Pieces</div>
               </div>
+            </div>
+            <div className="text-center mt-3 pt-3 border-t border-[var(--pf-border-color)]">
+              <Link to="/analytics" className="text-xs font-medium inline-flex items-center gap-1" style={{ color: 'var(--pf-accent-gold)' }}>
+                <BarChart3 size={12} /> View Analytics
+              </Link>
             </div>
           </CardContent>
         </Card>

@@ -1,5 +1,6 @@
 import { Button } from './Button';
 import { AlertTriangle } from 'lucide-react';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface AiCostConfirmProps {
   estimatedCost: string;
@@ -9,9 +10,11 @@ interface AiCostConfirmProps {
 }
 
 export function AiCostConfirm({ estimatedCost, description, onConfirm, onCancel }: AiCostConfirmProps) {
+  const focusTrapRef = useFocusTrap(true, onCancel);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[var(--pf-bg-card)] border border-[var(--pf-border-color)] rounded-pf p-6 max-w-md w-full mx-4 shadow-pf-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" role="dialog" aria-modal="true" aria-label="AI cost confirmation">
+      <div ref={focusTrapRef} className="bg-[var(--pf-bg-card)] border border-[var(--pf-border-color)] rounded-pf p-6 max-w-md w-full mx-4 shadow-pf-lg">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 rounded-full bg-[var(--pf-accent-gold)]/20">
             <AlertTriangle size={20} className="text-[var(--pf-accent-gold)]" />

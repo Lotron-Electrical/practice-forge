@@ -1,20 +1,21 @@
 import { Router } from 'express';
 import { queryAll, queryOne, execute } from '../db/helpers.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 import { v4 as uuid } from 'uuid';
 
 const router = Router();
 
-router.get('/', async (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
   res.json(await queryAll('SELECT * FROM excerpts ORDER BY updated_at DESC'));
-});
+}));
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', asyncHandler(async (req, res) => {
   const ex = await queryOne('SELECT * FROM excerpts WHERE id = $1', [req.params.id]);
   if (!ex) return res.status(404).json({ error: 'Not found' });
   res.json(ex);
-});
+}));
 
-router.post('/', async (req, res) => {
+router.post('/', asyncHandler(async (req, res) => {
   const { title, composer = '', full_work_title = '', location_in_score = '', recording_reference, historical_context = '', performance_notes = '', difficulty, status = 'needs_work', tags = [] } = req.body;
   if (!title) return res.status(400).json({ error: 'title is required' });
   const id = uuid();
@@ -23,9 +24,9 @@ router.post('/', async (req, res) => {
     [id, title, composer, full_work_title, location_in_score, recording_reference || null, historical_context, performance_notes, difficulty || null, status, JSON.stringify(tags)]
   );
   res.status(201).json(await queryOne('SELECT * FROM excerpts WHERE id = $1', [id]));
-});
+}));
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', asyncHandler(async (req, res) => {
   const existing = await queryOne('SELECT * FROM excerpts WHERE id = $1', [req.params.id]);
   if (!existing) return res.status(404).json({ error: 'Not found' });
   const { title, composer, full_work_title, location_in_score, recording_reference, historical_context, performance_notes, difficulty, status, tags } = req.body;
@@ -46,13 +47,15 @@ router.put('/:id', async (req, res) => {
     ]
   );
   res.json(await queryOne('SELECT * FROM excerpts WHERE id = $1', [req.params.id]));
-});
+}));
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', asyncHandler(async (req, res) => {
   if (!(await queryOne('SELECT id FROM excerpts WHERE id = $1', [req.params.id])))
     return res.status(404).json({ error: 'Not found' });
+  await execute("DELETE FROM session_blocks WHERE linked_type = 'excerpt' AND linked_id = $1", [req.params.id]);
+  await execute("DELETE FROM uploaded_files WHERE linked_type = 'excerpt' AND linked_id = $1", [req.params.id]);
   await execute('DELETE FROM excerpts WHERE id = $1', [req.params.id]);
   res.json({ deleted: true });
-});
+}));
 
 export default router;

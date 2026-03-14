@@ -12,7 +12,8 @@ import { OmrReviewPanel } from '../components/analysis/OmrReviewPanel';
 import { useAnalysisPolling } from '../hooks/useAnalysisPolling';
 import { api } from '../api/client';
 import type { UploadedFile, AnalysisDemand, Piece, HighlightMode } from '../core/types';
-import { ChevronRight, Loader, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronRight, Loader, Sparkles, Mic } from 'lucide-react';
 
 export function ScoreAnalysisPage() {
   const { fileId } = useParams<{ fileId: string }>();
@@ -23,6 +24,7 @@ export function ScoreAnalysisPage() {
   const [showCostConfirm, setShowCostConfirm] = useState(false);
   const [estimatedCost, setEstimatedCost] = useState('');
 
+  const navigate = useNavigate();
   const { omrResult, analysisResult, isProcessing, startPolling, refresh } = useAnalysisPolling(fileId);
 
   const loadFile = useCallback(async () => {
@@ -155,6 +157,18 @@ export function ScoreAnalysisPage() {
                 </CardContent>
               </Card>
             </>
+          )}
+
+          {/* Practice with recording button */}
+          {hasMusicXml && fileId && (
+            <div className="flex justify-center">
+              <Button variant="secondary" onClick={() => {
+                const totalMeasures = analysisResult?.total_measures || 999;
+                navigate(`/record?fileId=${fileId}&startBar=1&endBar=${totalMeasures}`);
+              }}>
+                <Mic size={14} /> Practice with recording
+              </Button>
+            </div>
           )}
 
           {/* Trigger analysis for digital files that haven't been analysed */}

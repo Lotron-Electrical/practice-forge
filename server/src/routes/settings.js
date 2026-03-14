@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { queryAll, queryOne, execute } from '../db/helpers.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = Router();
 
 // GET all settings
-router.get('/', async (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
   const rows = await queryAll('SELECT key, value FROM settings');
   const settings = {};
   for (const row of rows) {
@@ -12,10 +13,10 @@ router.get('/', async (req, res) => {
     catch { settings[row.key] = row.value; }
   }
   res.json(settings);
-});
+}));
 
 // PUT update a setting
-router.put('/:key', async (req, res) => {
+router.put('/:key', asyncHandler(async (req, res) => {
   const { key } = req.params;
   const { value } = req.body;
   const serialized = JSON.stringify(value);
@@ -26,6 +27,6 @@ router.put('/:key', async (req, res) => {
     await execute('INSERT INTO settings (key, value) VALUES ($1, $2)', [key, serialized]);
   }
   res.json({ key, value });
-});
+}));
 
 export default router;

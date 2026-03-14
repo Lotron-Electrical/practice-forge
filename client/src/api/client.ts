@@ -2,9 +2,22 @@
 
 const BASE_URL = '/api';
 
+// Token storage for auth
+let authToken: string | null = localStorage.getItem('pf_token');
+
+export function setAuthToken(token: string | null) {
+  authToken = token;
+  if (token) localStorage.setItem('pf_token', token);
+  else localStorage.removeItem('pf_token');
+}
+
+export function getAuthToken() { return authToken; }
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...options.headers as Record<string, string> };
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options.headers as Record<string, string> },
+    headers,
     ...options,
   });
   if (!res.ok) {
@@ -15,8 +28,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 async function uploadRequest<T>(path: string, formData: FormData): Promise<T> {
+  const headers: Record<string, string> = {};
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
   const res = await fetch(`${BASE_URL}${path}`, {
     method: 'POST',
+    headers,
     body: formData,
   });
   if (!res.ok) {
@@ -27,6 +43,17 @@ async function uploadRequest<T>(path: string, formData: FormData): Promise<T> {
 }
 
 export const api = {
+  // Auth
+  register: (data: { email: string; password: string; display_name?: string; instrument?: string; level?: string }) =>
+    request('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
+  login: (email: string, password: string) =>
+    request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+  getMe: () => request('/auth/me'),
+  updateProfile: (data: unknown) =>
+    request('/auth/me', { method: 'PUT', body: JSON.stringify(data) }),
+  changePassword: (current_password: string, new_password: string) =>
+    request('/auth/me/password', { method: 'PUT', body: JSON.stringify({ current_password, new_password }) }),
+
   // Settings
   getSettings: () => request<Record<string, unknown>>('/settings'),
   updateSetting: (key: string, value: unknown) =>
@@ -112,6 +139,22 @@ export const api = {
   markRotationPracticed: (rotationId: string) =>
     request(`/sessions/rotation/${rotationId}/practiced`, { method: 'POST' }),
 
+  // Analytics
+  getAnalyticsTimeByCategory: (period?: string) =>
+    request(`/sessions/analytics/time-by-category${period ? `?period=${period}` : ''}`),
+  getAnalyticsTrends: (period?: string) =>
+    request(`/sessions/analytics/trends${period ? `?period=${period}` : ''}`),
+  getAnalyticsStalledPieces: () =>
+    request<unknown[]>('/sessions/analytics/stalled-pieces'),
+  getAnalyticsDrift: () =>
+    request('/sessions/analytics/drift'),
+  getSessionHistory: (params?: { page?: number; limit?: number; from?: string; to?: string }) => {
+    const qs = params ? '?' + new URLSearchParams(
+      Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])
+    ).toString() : '';
+    return request(`/sessions/analytics/history${qs}`);
+  },
+
   // Files
   uploadFile: (file: File, metadata?: { linked_type?: string; linked_id?: string; notes?: string; tags?: string[] }) => {
     const fd = new FormData();
@@ -155,4 +198,137 @@ export const api = {
   getAnalysisStatus: (fileId: string) =>
     request(`/analysis/status/${fileId}`),
   getMusicXmlUrl: (fileId: string) => `/api/files/${fileId}/musicxml`,
+
+  // Resources
+  getResources: (params: { linked_type: string; linked_id: string }) => {
+    const qs = new URLSearchParams(params).toString();
+    return request<unknown[]>(`/resources?${qs}`);
+  },
+  createResource: (data: unknown) =>
+    request('/resources', { method: 'POST', body: JSON.stringify(data) }),
+  deleteResource: (id: string) =>
+    request(`/resources/${id}`, { method: 'DELETE' }),
+  searchImslp: (q: string) =>
+    request<unknown[]>(`/resources/search/imslp?q=${encodeURIComponent(q)}`),
+  searchWikipedia: (q: string) =>
+    request<unknown[]>(`/resources/search/wikipedia?q=${encodeURIComponent(q)}`),
+  searchYoutube: (q: string) =>
+    request<unknown[]>(`/resources/search/youtube?q=${encodeURIComponent(q)}`),
+  autoDiscover: (data: { title: string; composer?: string }) =>
+    request('/resources/auto-discover', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Recordings
+  createRecording: (audioBlob: Blob, metadata: Record<string, string>) => {
+    const fd = new FormData();
+    fd.append('file', audioBlob, metadata.filename || 'recording.webm');
+    Object.entries(metadata).forEach(([k, v]) => { if (v && k !== 'filename') fd.append(k, v); });
+    return uploadRequest<unknown>('/recordings', fd);
+  },
+  getRecordings: (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return request<unknown[]>(`/recordings${qs}`);
+  },
+  getRecording: (id: string) => request(`/recordings/${id}`),
+  deleteRecording: (id: string) =>
+    request(`/recordings/${id}`, { method: 'DELETE' }),
+  saveAnalysis: (recordingId: string, data: unknown) =>
+    request(`/recordings/${recordingId}/analysis`, { method: 'POST', body: JSON.stringify(data) }),
+  getRecordingAnalysis: (recordingId: string) =>
+    request(`/recordings/${recordingId}/analysis`),
+  getRecordingAudioUrl: (fileId: string) => `/api/files/${fileId}/download`,
+
+  // Assessments
+  createAssessment: (data: { type: string; piece_id?: string; notes?: string }) =>
+    request('/assessments', { method: 'POST', body: JSON.stringify(data) }),
+  getAssessments: (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return request<unknown[]>(`/assessments${qs}`);
+  },
+  getAssessment: (id: string) => request(`/assessments/${id}`),
+  updateAssessment: (id: string, data: unknown) =>
+    request(`/assessments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteAssessment: (id: string) =>
+    request(`/assessments/${id}`, { method: 'DELETE' }),
+  addAssessmentRecording: (assessmentId: string, data: unknown) =>
+    request(`/assessments/${assessmentId}/recordings`, { method: 'POST', body: JSON.stringify(data) }),
+  generateSpotCheck: (count?: number) =>
+    request('/assessments/generate/spot-check', { method: 'POST', body: JSON.stringify({ count }) }),
+  generateWeeklyReview: () =>
+    request('/assessments/generate/weekly-review', { method: 'POST' }),
+  getAuditComparison: (pieceId: string) =>
+    request<unknown[]>(`/assessments/compare/${pieceId}`),
+
+  // Composition / Exercise Generation
+  generateRule: (type: string, params: unknown) =>
+    request('/composition/generate/rule', { method: 'POST', body: JSON.stringify({ type, params }) }),
+  generateFromDemand: (demandId: string) =>
+    request('/composition/generate/from-demand', { method: 'POST', body: JSON.stringify({ demand_id: demandId }) }),
+  generateAi: (type: string, prompt: string, context?: unknown, confirmed?: boolean) =>
+    request('/composition/generate/ai', { method: 'POST', body: JSON.stringify({ type, prompt, context, confirmed }) }),
+  saveGeneratedExercise: (data: unknown) =>
+    request('/composition/generate/save', { method: 'POST', body: JSON.stringify(data) }),
+  generateExcerptPrep: (excerptId: string, confirmed?: boolean) =>
+    request('/composition/generate/excerpt-prep', { method: 'POST', body: JSON.stringify({ excerpt_id: excerptId, confirmed }) }),
+  generateWarmup: (sessionId?: string, confirmed?: boolean) =>
+    request('/composition/generate/warmup', { method: 'POST', body: JSON.stringify({ session_id: sessionId, confirmed }) }),
+
+  // Community
+  followUser: (userId: string) =>
+    request(`/community/follow/${userId}`, { method: 'POST' }),
+  unfollowUser: (userId: string) =>
+    request(`/community/follow/${userId}`, { method: 'DELETE' }),
+  getFollowers: () => request<unknown[]>('/community/followers'),
+  getFollowing: () => request<unknown[]>('/community/following'),
+  getFeed: () => request<unknown[]>('/community/feed'),
+  searchUsers: (q: string) =>
+    request<unknown[]>(`/community/users/search?q=${encodeURIComponent(q)}`),
+  getPublicProfile: (userId: string) => request(`/community/users/${userId}`),
+
+  // Challenges
+  createChallenge: (data: unknown) =>
+    request('/challenges', { method: 'POST', body: JSON.stringify(data) }),
+  getChallenges: (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return request<unknown[]>(`/challenges${qs}`);
+  },
+  getChallenge: (id: string) => request(`/challenges/${id}`),
+  cancelChallenge: (id: string) =>
+    request(`/challenges/${id}/cancel`, { method: 'PUT' }),
+  acceptChallenge: (id: string) =>
+    request(`/challenges/${id}/accept`, { method: 'PUT' }),
+  declineChallenge: (id: string) =>
+    request(`/challenges/${id}/decline`, { method: 'PUT' }),
+  submitChallenge: (id: string, data: { recording_id: string; score: number }) =>
+    request(`/challenges/${id}/submit`, { method: 'PUT', body: JSON.stringify(data) }),
+  generateWeeklyChallenge: () =>
+    request('/challenges/weekly/generate', { method: 'POST' }),
+
+  // Theme Gallery
+  getThemeGallery: (sort?: string) =>
+    request<unknown[]>(`/theme-gallery${sort ? `?sort=${sort}` : ''}`),
+  getTheme: (id: string) => request(`/theme-gallery/${id}`),
+  createTheme: (data: { name: string; description?: string; base_theme?: string; tokens: Record<string, string>; tags?: string[] }) =>
+    request('/theme-gallery', { method: 'POST', body: JSON.stringify(data) }),
+  updateTheme: (id: string, data: unknown) =>
+    request(`/theme-gallery/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteTheme: (id: string) =>
+    request(`/theme-gallery/${id}`, { method: 'DELETE' }),
+  toggleThemeFavorite: (id: string) =>
+    request(`/theme-gallery/${id}/favorite`, { method: 'POST' }),
+  downloadTheme: (id: string) =>
+    request(`/theme-gallery/${id}/download`, { method: 'POST' }),
+
+  // Community Excerpts
+  getCommunityExcerpts: () =>
+    request<unknown[]>('/community-excerpts'),
+  getExcerptCommunity: (excerptId: string) =>
+    request(`/community-excerpts/${excerptId}/community`),
+  rateExcerpt: (excerptId: string, difficulty_rating: number) =>
+    request(`/community-excerpts/${excerptId}/rate`, { method: 'POST', body: JSON.stringify({ difficulty_rating }) }),
+  addExcerptNote: (excerptId: string, note: string) =>
+    request(`/community-excerpts/${excerptId}/notes`, { method: 'POST', body: JSON.stringify({ note }) }),
+  deleteExcerptNote: (noteId: string) =>
+    request(`/community-excerpts/notes/${noteId}`, { method: 'DELETE' }),
+  upvoteExcerptNote: (noteId: string) =>
+    request(`/community-excerpts/notes/${noteId}/upvote`, { method: 'POST' }),
 };

@@ -10,7 +10,10 @@ import { PIECE_STATUS_CONFIG, SECTION_STATUS_CONFIG, PRIORITY_CONFIG } from '../
 import { api } from '../api/client';
 import type { Piece, Section, TechnicalDemand, TaxonomyCategory, PieceStatus, Priority, SectionStatus, UploadedFile } from '../core/types';
 import { LinkedFiles } from '../components/ui/LinkedFiles';
-import { Plus, Trash2, ArrowLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { ResourceFinderPanel } from '../components/resources/ResourceFinderPanel';
+import { RecordingsList } from '../components/recording/RecordingsList';
+import { GenerateExerciseModal } from '../components/composition/GenerateExerciseModal';
+import { Plus, Trash2, ArrowLeft, ChevronRight, Sparkles, Wand2 } from 'lucide-react';
 
 export function PieceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +31,9 @@ export function PieceDetailPage() {
   // Demand form
   const [showDemandForm, setShowDemandForm] = useState(false);
   const [demandForm, setDemandForm] = useState({ description: '', category_id: '', difficulty: '', bar_range: '', notes: '' });
+
+  // Generate exercise modal
+  const [generateForDemand, setGenerateForDemand] = useState<{ id: string; description: string } | null>(null);
 
   const load = useCallback(() => {
     if (!id) return;
@@ -67,6 +73,7 @@ export function PieceDetailPage() {
   };
 
   const deleteSection = async (sId: string) => {
+    if (!confirm('Delete this section?')) return;
     await api.deleteSection(piece.id, sId);
     load();
   };
@@ -83,6 +90,7 @@ export function PieceDetailPage() {
   };
 
   const deleteDemand = async (dId: string) => {
+    if (!confirm('Delete this demand?')) return;
     await api.deleteDemand(piece.id, dId);
     load();
   };
@@ -176,6 +184,9 @@ export function PieceDetailPage() {
                           </div>
                         )}
                       </div>
+                      {(!td.linked_exercises || td.linked_exercises.length === 0) && (
+                        <button onClick={() => setGenerateForDemand({ id: td.id, description: td.description })} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-accent-gold)]" title="Generate exercise"><Wand2 size={14} /></button>
+                      )}
                       <button onClick={() => deleteDemand(td.id)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-status-needs-work)]"><Trash2 size={14} /></button>
                     </div>
                   );
@@ -265,6 +276,20 @@ export function PieceDetailPage() {
               )}
             </CardContent>
           </Card>
+          {/* Recordings */}
+          <Card>
+            <CardHeader><h2 className="text-base font-semibold">Recordings</h2></CardHeader>
+            <CardContent>
+              <RecordingsList linkedType="piece" linkedId={piece.id} />
+            </CardContent>
+          </Card>
+          {/* Resources */}
+          <Card>
+            <CardHeader><h2 className="text-base font-semibold">Resources</h2></CardHeader>
+            <CardContent>
+              <ResourceFinderPanel linkedType="piece" linkedId={piece.id} title={piece.title} composer={piece.composer} />
+            </CardContent>
+          </Card>
           {/* Linked Files */}
           <Card>
             <CardHeader><h2 className="text-base font-semibold">Files</h2></CardHeader>
@@ -274,6 +299,17 @@ export function PieceDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Generate exercise modal */}
+      {generateForDemand && (
+        <GenerateExerciseModal
+          open={true}
+          onClose={() => setGenerateForDemand(null)}
+          demandId={generateForDemand.id}
+          demandDescription={generateForDemand.description}
+          onSaved={load}
+        />
+      )}
     </div>
   );
 }

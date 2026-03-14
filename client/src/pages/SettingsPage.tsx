@@ -2,29 +2,76 @@ import { useTheme } from '../themes/ThemeProvider';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input, Textarea } from '../components/ui/Input';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { api } from '../api/client';
-import type { ThemeName } from '../themes/tokens';
-import { Bug, Lightbulb, Send, CheckCircle } from 'lucide-react';
+import { themes, type ThemeName } from '../themes/tokens';
+import { Bug, Lightbulb, Send, CheckCircle, Palette, Download, Upload, Plus } from 'lucide-react';
+import { ThemeGallery } from '../components/community/ThemeGallery';
+import { ThemeCreator } from '../components/community/ThemeCreator';
 
 export function SettingsPage() {
-  const { theme, setTheme, highContrast, setHighContrast, colourVisionMode, setColourVisionMode, reducedMotion, setReducedMotion, fontSize, setFontSize } = useTheme();
+  const { theme, setTheme, highContrast, setHighContrast, colourVisionMode, setColourVisionMode, reducedMotion, setReducedMotion, fontSize, setFontSize, applyCustomTokens } = useTheme();
+  const [showGallery, setShowGallery] = useState(false);
+  const [showCreator, setShowCreator] = useState(false);
+  const importRef = useRef<HTMLInputElement>(null);
 
   const [sessionLength, setSessionLength] = useState(60);
   const [excerptCount, setExcerptCount] = useState(3);
   const [feedbackType, setFeedbackType] = useState<'bug' | 'feature' | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackSent, setFeedbackSent] = useState(false);
+  const [aiSpend, setAiSpend] = useState<number | null>(null);
+  const [timeAllocation, setTimeAllocation] = useState({
+    warmup: 15, fundamentals: 10, technique: 20, repertoire: 35, excerpts: 15, buffer: 5,
+  });
 
   useEffect(() => {
     api.getSettings().then((data: Record<string, unknown>) => {
       if (typeof data.defaultSessionLength === 'number') setSessionLength(data.defaultSessionLength);
       if (typeof data.excerptRotationCount === 'number') setExcerptCount(data.excerptRotationCount);
+      if (typeof data.ai_spend_total === 'string') setAiSpend(parseFloat(data.ai_spend_total));
+      else if (typeof data.ai_spend_total === 'number') setAiSpend(data.ai_spend_total);
+      if (data.timeAllocation && typeof data.timeAllocation === 'object') {
+        setTimeAllocation(prev => ({ ...prev, ...(data.timeAllocation as Record<string, number>) }));
+      }
     }).catch(() => {});
   }, []);
 
   const savePractice = (key: string, value: number) => {
     api.updateSetting(key, value).catch(() => {});
+  };
+
+  const handleExportTheme = () => {
+    const tokens = themes[theme];
+    const blob = new Blob([JSON.stringify(tokens, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `practice-forge-theme-${theme}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportTheme = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result as string);
+        const validTokens: Record<string, string> = {};
+        for (const [key, value] of Object.entries(parsed)) {
+          if (key.startsWith('--pf-') && typeof value === 'string') {
+            validTokens[key] = value;
+          }
+        }
+        if (Object.keys(validTokens).length > 0) {
+          applyCustomTokens(validTokens);
+        }
+      } catch {}
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   return (
@@ -103,6 +150,29 @@ export function SettingsPage() {
                 </select>
               </div>
             </div>
+
+            {/* Theme Gallery */}
+            <div className="space-y-3 pt-3 border-t border-[var(--pf-border-color)]">
+              <h3 className="text-sm font-semibold">Community Themes</h3>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="secondary" onClick={() => setShowGallery(!showGallery)}>
+                  <Palette size={14} /> {showGallery ? 'Hide Gallery' : 'Browse Themes'}
+                </Button>
+                <Button size="sm" variant="secondary" onClick={() => setShowCreator(true)}>
+                  <Plus size={14} /> Share Your Theme
+                </Button>
+                <Button size="sm" variant="secondary" onClick={handleExportTheme}>
+                  <Download size={14} /> Export Theme
+                </Button>
+                <label className="inline-flex">
+                  <Button size="sm" variant="secondary" onClick={() => importRef.current?.click()}>
+                    <Upload size={14} /> Import Theme
+                  </Button>
+                  <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImportTheme} />
+                </label>
+              </div>
+              {showGallery && <ThemeGallery />}
+            </div>
           </CardContent>
         </Card>
 
@@ -142,8 +212,46 @@ export function SettingsPage() {
 
             <div>
               <h3 className="text-sm font-medium text-[var(--pf-text-secondary)] mb-2">Time allocation (%)</h3>
-              <p className="text-xs text-[var(--pf-text-secondary)]">Coming in a future update — customise how practice time is split between categories.</p>
+              <div className="space-y-2">
+                {Object.entries(timeAllocation).map(([key, value]) => (
+                  <div key={key} className="flex items-center gap-3">
+                    <span className="text-xs w-24 text-[var(--pf-text-secondary)] capitalize">{key === 'warmup' ? 'Warm-up' : key}</span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={50}
+                      value={value}
+                      onChange={e => {
+                        const newAlloc = { ...timeAllocation, [key]: Number(e.target.value) };
+                        setTimeAllocation(newAlloc);
+                        api.updateSetting('timeAllocation', newAlloc).catch(() => {});
+                      }}
+                      className="flex-1 accent-[var(--pf-accent-gold)]"
+                      aria-label={`${key} allocation`}
+                    />
+                    <span className="text-xs w-8 text-right font-mono">{value}%</span>
+                  </div>
+                ))}
+                <p className="text-xs text-[var(--pf-text-secondary)]">
+                  Total: {Object.values(timeAllocation).reduce((a, b) => a + b, 0)}%
+                  {Object.values(timeAllocation).reduce((a, b) => a + b, 0) !== 100 && (
+                    <span className="text-[var(--pf-status-needs-work)]"> (should total 100%)</span>
+                  )}
+                </p>
+              </div>
             </div>
+
+            {/* AI Spend */}
+            {aiSpend !== null && (
+              <div className="pt-3 border-t border-[var(--pf-border-color)]">
+                <h3 className="text-sm font-medium text-[var(--pf-text-secondary)] mb-1">AI Usage</h3>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-bold">${aiSpend.toFixed(4)}</span>
+                  <span className="text-xs text-[var(--pf-text-secondary)]">total spent</span>
+                </div>
+                <p className="text-xs text-[var(--pf-text-secondary)] mt-1">Includes Claude API calls for score analysis and exercise generation.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
         {/* Feedback */}
@@ -212,7 +320,9 @@ export function SettingsPage() {
       </div>
 
       {/* Version */}
-      <p className="text-xs text-[var(--pf-text-secondary)] text-center mt-8">Practice Forge v0.7.0</p>
+      <p className="text-xs text-[var(--pf-text-secondary)] text-center mt-8">Practice Forge v0.18.Vivaldi</p>
+
+      <ThemeCreator open={showCreator} onClose={() => setShowCreator(false)} onCreated={() => { setShowCreator(false); }} />
     </div>
   );
 }

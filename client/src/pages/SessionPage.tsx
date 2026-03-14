@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { api } from '../api/client';
-import { Play, CheckCircle, SkipForward, Square, Clock, Sparkles, Music, BookOpen, ListMusic, Zap, Timer, ThumbsUp, Meh, ThumbsDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Play, CheckCircle, SkipForward, Square, Clock, Sparkles, Music, BookOpen, ListMusic, Zap, Timer, ThumbsUp, Meh, ThumbsDown, Mic } from 'lucide-react';
 
 interface Block {
   id: string;
@@ -53,6 +54,8 @@ export function SessionPage() {
   const [timerRunning, setTimerRunning] = useState(false);
   const [showComplete, setShowComplete] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const navigate = useNavigate();
 
   const loadCurrent = useCallback(() => {
     api.getCurrentSession().then(data => {
@@ -114,12 +117,17 @@ export function SessionPage() {
     }
   };
 
-  const finishSession = async (rating: string) => {
-    if (!session) return;
-    const data = await api.completeSession(session.id, { rating }) as Session;
+  const [selectedRating, setSelectedRating] = useState<string | null>(null);
+  const [sessionNotes, setSessionNotes] = useState('');
+
+  const finishSession = async () => {
+    if (!session || !selectedRating) return;
+    const data = await api.completeSession(session.id, { rating: selectedRating, notes: sessionNotes }) as Session;
     setSession(data);
     setShowComplete(false);
     setTimerRunning(false);
+    setSelectedRating(null);
+    setSessionNotes('');
   };
 
   // No session yet — generate one
@@ -170,6 +178,9 @@ export function SessionPage() {
               <div><span className="text-2xl font-bold">{skipped}</span><br /><span className="text-[var(--pf-text-secondary)]">skipped</span></div>
             </div>
             {session.rating && <Badge color="var(--pf-accent-gold)">{session.rating}</Badge>}
+            {session.notes && (
+              <p className="text-sm text-[var(--pf-text-secondary)] mt-3 max-w-md mx-auto italic">"{session.notes}"</p>
+            )}
             <div className="mt-6">
               <Button variant="secondary" onClick={() => setSession(null)}>Plan New Session</Button>
             </div>
@@ -187,7 +198,7 @@ export function SessionPage() {
         <Card>
           <CardContent className="text-center py-10">
             <h2 className="text-xl font-semibold mb-6">How did it go?</h2>
-            <div className="flex justify-center gap-6">
+            <div className="flex justify-center gap-6 mb-6">
               {[
                 { rating: 'good', icon: ThumbsUp, label: 'Good', color: 'var(--pf-status-ready)' },
                 { rating: 'okay', icon: Meh, label: 'Okay', color: 'var(--pf-accent-gold)' },
@@ -195,14 +206,30 @@ export function SessionPage() {
               ].map(({ rating, icon: Icon, label, color }) => (
                 <button
                   key={rating}
-                  onClick={() => finishSession(rating)}
-                  className="flex flex-col items-center gap-2 p-6 rounded-pf border-2 border-[var(--pf-border-color)] hover:border-[var(--pf-accent-gold)] transition-colors"
+                  onClick={() => setSelectedRating(rating)}
+                  className={`flex flex-col items-center gap-2 p-6 rounded-pf border-2 transition-colors ${
+                    selectedRating === rating
+                      ? 'border-[var(--pf-accent-gold)] bg-[var(--pf-bg-hover)]'
+                      : 'border-[var(--pf-border-color)] hover:border-[var(--pf-accent-gold)]'
+                  }`}
                 >
                   <Icon size={36} style={{ color }} />
                   <span className="text-sm font-medium">{label}</span>
                 </button>
               ))}
             </div>
+            <div className="max-w-md mx-auto mb-6">
+              <textarea
+                value={sessionNotes}
+                onChange={e => setSessionNotes(e.target.value)}
+                placeholder="Session notes — what went well, what needs work"
+                rows={3}
+                className="w-full px-3 py-2 rounded-pf border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm resize-none focus:outline-none focus:border-[var(--pf-accent-gold)]"
+              />
+            </div>
+            <Button size="lg" onClick={finishSession} disabled={!selectedRating}>
+              <CheckCircle size={18} /> Finish Session
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -300,6 +327,18 @@ export function SessionPage() {
                   {/* Actions */}
                   {isActive && (
                     <div className="flex gap-2 flex-shrink-0">
+                      <Button size="sm" variant="ghost" title="Record"
+                        onClick={() => {
+                          const params = new URLSearchParams();
+                          if (block.linked_type) params.set('linked_type', block.linked_type);
+                          if (block.linked_id) params.set('linked_id', block.linked_id);
+                          if (session) params.set('session_id', session.id);
+                          params.set('block_id', block.id);
+                          navigate(`/record?${params.toString()}`);
+                        }}
+                      >
+                        <Mic size={14} />
+                      </Button>
                       <Button size="sm" onClick={() => completeBlock(block.id)}>
                         <CheckCircle size={14} /> Done
                       </Button>

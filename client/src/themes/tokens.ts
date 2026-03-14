@@ -73,14 +73,14 @@ export const lightTheme: ThemeTokens = {
   '--pf-bg-input': '#ffffff',
 
   '--pf-text-primary': '#1a1a2e',
-  '--pf-text-secondary': '#8a8a9a',
+  '--pf-text-secondary': '#6b6b7b',
   '--pf-text-nav': '#a0a4b8',
   '--pf-text-nav-active': '#ffffff',
   '--pf-text-on-accent': '#ffffff',
 
-  '--pf-accent-gold': '#d4a843',
-  '--pf-accent-lavender': '#9b8ec4',
-  '--pf-accent-teal': '#3db8a2',
+  '--pf-accent-gold': '#b08c2e',
+  '--pf-accent-lavender': '#7b6ea8',
+  '--pf-accent-teal': '#2d9986',
   '--pf-accent-orange': '#c77a3c',
 
   '--pf-status-not-started': '#8a8a9a',

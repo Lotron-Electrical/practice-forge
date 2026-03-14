@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { queryAll, queryOne, execute } from '../db/helpers.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 import { v4 as uuid } from 'uuid';
 
 const router = Router();
 
 // GET all exercises with optional filters
-router.get('/', async (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
   const { category_id, source_type, difficulty_min, difficulty_max, key: keyFilter, search } = req.query;
   let sql = 'SELECT e.*, tc.name as category_name FROM exercises e LEFT JOIN taxonomy_categories tc ON e.category_id = tc.id WHERE 1=1';
   const params = [];
@@ -20,10 +21,10 @@ router.get('/', async (req, res) => {
 
   sql += ' ORDER BY e.updated_at DESC';
   res.json(await queryAll(sql, params));
-});
+}));
 
 // GET single exercise
-router.get('/:id', async (req, res) => {
+router.get('/:id', asyncHandler(async (req, res) => {
   const ex = await queryOne('SELECT e.*, tc.name as category_name FROM exercises e LEFT JOIN taxonomy_categories tc ON e.category_id = tc.id WHERE e.id = $1', [req.params.id]);
   if (!ex) return res.status(404).json({ error: 'Not found' });
   ex.linked_demands = await queryAll(
@@ -31,10 +32,10 @@ router.get('/:id', async (req, res) => {
     [ex.id]
   );
   res.json(ex);
-});
+}));
 
 // POST create exercise
-router.post('/', async (req, res) => {
+router.post('/', asyncHandler(async (req, res) => {
   const { title, source = '', source_type = 'manual', category_id, secondary_categories = [], key, difficulty, description = '', tags = [], notation_data, notation_format = 'none', generation_context } = req.body;
   if (!title) return res.status(400).json({ error: 'title is required' });
   const id = uuid();
@@ -43,10 +44,10 @@ router.post('/', async (req, res) => {
     [id, title, source, source_type, category_id || null, JSON.stringify(secondary_categories), key || null, difficulty || null, description, JSON.stringify(tags), notation_data || null, notation_format, generation_context ? JSON.stringify(generation_context) : null]
   );
   res.status(201).json(await queryOne('SELECT * FROM exercises WHERE id = $1', [id]));
-});
+}));
 
 // PUT update exercise
-router.put('/:id', async (req, res) => {
+router.put('/:id', asyncHandler(async (req, res) => {
   const existing = await queryOne('SELECT * FROM exercises WHERE id = $1', [req.params.id]);
   if (!existing) return res.status(404).json({ error: 'Not found' });
   const { title, source, source_type, category_id, secondary_categories, key, difficulty, description, tags, notation_data, notation_format } = req.body;
@@ -68,14 +69,15 @@ router.put('/:id', async (req, res) => {
     ]
   );
   res.json(await queryOne('SELECT * FROM exercises WHERE id = $1', [req.params.id]));
-});
+}));
 
 // DELETE exercise
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', asyncHandler(async (req, res) => {
   if (!(await queryOne('SELECT id FROM exercises WHERE id = $1', [req.params.id])))
     return res.status(404).json({ error: 'Not found' });
+  await execute("DELETE FROM session_blocks WHERE linked_type = 'exercise' AND linked_id = $1", [req.params.id]);
   await execute('DELETE FROM exercises WHERE id = $1', [req.params.id]);
   res.json({ deleted: true });
-});
+}));
 
 export default router;

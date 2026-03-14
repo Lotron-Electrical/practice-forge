@@ -99,7 +99,7 @@ router.post('/generate', async (req, res) => {
   // 2. Fundamentals
   if (minutes.fundamentals > 0) {
     const fundExercises = await queryAll(
-      "SELECT e.*, tc.name as category_name FROM exercises e LEFT JOIN taxonomy_categories tc ON e.category_id = tc.id WHERE e.category_id IN ('scales','scales-major','scales-minor-harmonic','scales-chromatic','tone','tone-long','tone-dynamics') ORDER BY e.last_used ASC NULLS FIRST, e.times_used ASC LIMIT 3"
+      "SELECT e.*, tc.name as category_name FROM exercises e LEFT JOIN taxonomy_categories tc ON e.category_id = tc.id WHERE tc.name ILIKE ANY(ARRAY['%scale%','%tone%','%long tone%','%fundamental%']) ORDER BY e.last_used ASC NULLS FIRST, e.times_used ASC LIMIT 3"
     );
     if (fundExercises.length > 0) {
       const perEx = Math.round(minutes.fundamentals / fundExercises.length);
@@ -261,11 +261,15 @@ router.get('/current', async (req, res) => {
   res.json(session);
 });
 
-// GET all sessions (history)
+// GET all sessions (history) — bulk fetch blocks (fixes N+1)
 router.get('/', async (req, res) => {
   const sessions = await queryAll('SELECT * FROM practice_sessions ORDER BY date DESC, created_at DESC LIMIT 50');
-  for (const s of sessions) {
-    s.blocks = await queryAll('SELECT * FROM session_blocks WHERE session_id = $1 ORDER BY sort_order', [s.id]);
+  if (sessions.length > 0) {
+    const sessionIds = sessions.map(s => s.id);
+    const allBlocks = await queryAll('SELECT * FROM session_blocks WHERE session_id = ANY($1) ORDER BY sort_order', [sessionIds]);
+    const blocksBySession = {};
+    for (const b of allBlocks) { (blocksBySession[b.session_id] ||= []).push(b); }
+    for (const s of sessions) { s.blocks = blocksBySession[s.id] || []; }
   }
   res.json(sessions);
 });
@@ -274,7 +278,7 @@ router.get('/', async (req, res) => {
 router.put('/:id/start', async (req, res) => {
   const session = await queryOne('SELECT * FROM practice_sessions WHERE id = $1', [req.params.id]);
   if (!session) return res.status(404).json({ error: 'Not found' });
-  await execute("UPDATE practice_sessions SET status = 'in_progress', updated_at = NOW() WHERE id = $1", [req.params.id]);
+  await execute("UPDATE practice_sessions SET status = 'in_progress', started_at = NOW(), updated_at = NOW() WHERE id = $1", [req.params.id]);
   const firstBlock = await queryOne("SELECT id FROM session_blocks WHERE session_id = $1 AND status = 'pending' ORDER BY sort_order LIMIT 1", [req.params.id]);
   if (firstBlock) {
     await execute("UPDATE session_blocks SET status = 'active' WHERE id = $1", [firstBlock.id]);
@@ -346,6 +350,176 @@ router.put('/:id/complete', async (req, res) => {
   res.json(updated);
 });
 
+// GET analytics: time by category
+router.get('/analytics/time-by-category', async (req, res) => {
+  const period = req.query.period || 'month';
+  const weeksBack = period === 'week' ? 4 : period === 'quarter' ? 13 : 8;
+  const startDate = new Date(Date.now() - weeksBack * 7 * 86400000).toISOString().slice(0, 10);
+
+  const rows = await queryAll(`
+    SELECT
+      DATE_TRUNC('week', ps.date::date)::date AS week,
+      sb.category,
+      COALESCE(SUM(sb.actual_duration_min), SUM(sb.planned_duration_min)) AS minutes
+    FROM practice_sessions ps
+    JOIN session_blocks sb ON sb.session_id = ps.id
+    WHERE ps.status = 'completed' AND ps.date >= $1 AND sb.status = 'completed'
+    GROUP BY week, sb.category
+    ORDER BY week
+  `, [startDate]);
+
+  const weekMap = {};
+  for (const r of rows) {
+    const w = r.week instanceof Date ? r.week.toISOString().slice(0, 10) : String(r.week).slice(0, 10);
+    if (!weekMap[w]) weekMap[w] = { week: w };
+    weekMap[w][r.category] = Number(r.minutes);
+  }
+
+  res.json({ weeks: Object.values(weekMap) });
+});
+
+// GET analytics: trends
+router.get('/analytics/trends', async (req, res) => {
+  const period = req.query.period || 'week';
+  const days = period === 'month' ? 30 : 7;
+  const now = new Date();
+  const currentStart = new Date(now - days * 86400000).toISOString().slice(0, 10);
+  const prevStart = new Date(now - days * 2 * 86400000).toISOString().slice(0, 10);
+  const today = now.toISOString().slice(0, 10);
+
+  const current = await queryAll(
+    "SELECT * FROM practice_sessions WHERE status = 'completed' AND date >= $1 AND date <= $2",
+    [currentStart, today]
+  );
+  const previous = await queryAll(
+    "SELECT * FROM practice_sessions WHERE status = 'completed' AND date >= $1 AND date < $2",
+    [prevStart, currentStart]
+  );
+
+  const allPeriod = await queryAll(
+    "SELECT * FROM practice_sessions WHERE date >= $1 AND date <= $2",
+    [currentStart, today]
+  );
+
+  const curMinutes = current.reduce((s, r) => s + (r.actual_duration_min || r.planned_duration_min || 0), 0);
+  const prevMinutes = previous.reduce((s, r) => s + (r.actual_duration_min || r.planned_duration_min || 0), 0);
+  const curCount = current.length;
+  const prevCount = previous.length;
+  const curAvg = curCount > 0 ? Math.round(curMinutes / curCount) : 0;
+  const prevAvg = prevCount > 0 ? Math.round(prevMinutes / prevCount) : 0;
+  const completionRate = allPeriod.length > 0 ? Math.round((current.length / allPeriod.length) * 100) : 0;
+
+  const ratings = { good: 0, okay: 0, bad: 0 };
+  for (const s of current) {
+    if (s.rating && ratings[s.rating] !== undefined) ratings[s.rating]++;
+  }
+
+  res.json({
+    current: { totalMinutes: curMinutes, totalHours: +(curMinutes / 60).toFixed(1), sessionCount: curCount, avgLength: curAvg, completionRate },
+    previous: { totalMinutes: prevMinutes, totalHours: +(prevMinutes / 60).toFixed(1), sessionCount: prevCount, avgLength: prevAvg },
+    ratings,
+  });
+});
+
+// GET analytics: stalled pieces
+router.get('/analytics/stalled-pieces', async (req, res) => {
+  const rows = await queryAll(`
+    SELECT p.id as piece_id, p.title, p.composer,
+      COALESCE(SUM(sb.actual_duration_min), 0) AS total_minutes,
+      MAX(s.updated_at) AS last_status_change
+    FROM pieces p
+    JOIN sections s ON s.piece_id = p.id
+    JOIN session_blocks sb ON sb.linked_type = 'section' AND sb.linked_id = s.id AND sb.status = 'completed'
+    WHERE p.status = 'in_progress'
+    GROUP BY p.id, p.title, p.composer
+    HAVING COALESCE(SUM(sb.actual_duration_min), 0) > 120
+      AND MAX(s.updated_at) < NOW() - INTERVAL '14 days'
+    ORDER BY total_minutes DESC
+  `);
+
+  res.json(rows.map(r => ({
+    piece_id: r.piece_id,
+    title: r.title,
+    composer: r.composer,
+    total_minutes: Number(r.total_minutes),
+    last_status_change: r.last_status_change,
+    days_since_change: Math.floor((Date.now() - new Date(r.last_status_change).getTime()) / 86400000),
+  })));
+});
+
+// GET analytics: drift
+router.get('/analytics/drift', async (req, res) => {
+  const allocRow = await queryOne("SELECT value FROM settings WHERE key = 'timeAllocation'");
+  const target = allocRow ? JSON.parse(allocRow.value) : { warmup: 10, fundamentals: 10, technique: 25, repertoire: 35, excerpts: 15, buffer: 5 };
+
+  const twoWeeksAgo = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+  const rows = await queryAll(`
+    SELECT sb.category, COALESCE(SUM(sb.actual_duration_min), SUM(sb.planned_duration_min)) AS minutes
+    FROM practice_sessions ps
+    JOIN session_blocks sb ON sb.session_id = ps.id
+    WHERE ps.status = 'completed' AND ps.date >= $1 AND sb.status = 'completed'
+    GROUP BY sb.category
+  `, [twoWeeksAgo]);
+
+  const totalActual = rows.reduce((s, r) => s + Number(r.minutes), 0);
+  const actual = {};
+  const drift = {};
+  const alerts = [];
+
+  for (const r of rows) {
+    actual[r.category] = totalActual > 0 ? Math.round((Number(r.minutes) / totalActual) * 100) : 0;
+  }
+
+  const categories = ['warmup', 'fundamentals', 'technique', 'repertoire', 'excerpts', 'buffer'];
+  for (const cat of categories) {
+    const t = target[cat] || 0;
+    const a = actual[cat] || 0;
+    drift[cat] = a - t;
+    if (Math.abs(a - t) > 10) {
+      const label = cat.charAt(0).toUpperCase() + cat.slice(1);
+      alerts.push(`${label} is ${Math.abs(a - t)}% ${a > t ? 'above' : 'below'} target`);
+    }
+  }
+
+  res.json({ target, actual, drift, alerts, hasData: totalActual > 0 });
+});
+
+// GET analytics: session history (paginated)
+router.get('/analytics/history', async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+  const offset = (page - 1) * limit;
+
+  let whereClause = "WHERE status = 'completed'";
+  const params = [];
+  let paramIdx = 1;
+
+  if (req.query.from) {
+    whereClause += ` AND date >= $${paramIdx++}`;
+    params.push(req.query.from);
+  }
+  if (req.query.to) {
+    whereClause += ` AND date <= $${paramIdx++}`;
+    params.push(req.query.to);
+  }
+
+  const countRow = await queryOne(`SELECT COUNT(*) as total FROM practice_sessions ${whereClause}`, params);
+  const total = parseInt(countRow.total);
+
+  const sessions = await queryAll(
+    `SELECT * FROM practice_sessions ${whereClause} ORDER BY date DESC, created_at DESC LIMIT $${paramIdx++} OFFSET $${paramIdx++}`,
+    [...params, limit, offset]
+  );
+
+  for (const s of sessions) {
+    const blocks = await queryAll('SELECT * FROM session_blocks WHERE session_id = $1 ORDER BY sort_order', [s.id]);
+    s.blocks_total = blocks.length;
+    s.blocks_completed = blocks.filter(b => b.status === 'completed').length;
+  }
+
+  res.json({ sessions, total, page, totalPages: Math.ceil(total / limit) });
+});
+
 // GET stats (for dashboard)
 router.get('/stats', async (req, res) => {
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
@@ -357,16 +531,31 @@ router.get('/stats', async (req, res) => {
   const totalMinutes = weekSessions.reduce((sum, s) => sum + (s.actual_duration_min || s.planned_duration_min || 0), 0);
   const sessionCount = weekSessions.length;
 
-  // Streak
+  // Streak — single query instead of per-day loop
   let streak = 0;
-  const today = new Date();
-  for (let i = 0; i < 365; i++) {
-    const d = new Date(today - i * 86400000).toISOString().slice(0, 10);
-    const has = await queryOne("SELECT id FROM practice_sessions WHERE date = $1 AND status = 'completed' LIMIT 1", [d]);
-    if (has) {
-      streak++;
-    } else if (i > 0) {
-      break;
+  const practiceDates = await queryAll(
+    "SELECT DISTINCT date FROM practice_sessions WHERE status = 'completed' ORDER BY date DESC"
+  );
+  if (practiceDates.length > 0) {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    // Start counting from today or yesterday
+    let checkDate = todayStr;
+    if (practiceDates[0].date !== todayStr) {
+      if (practiceDates[0].date === yesterdayStr) {
+        checkDate = yesterdayStr;
+      } else {
+        // Last practice was before yesterday — streak is 0
+        checkDate = null;
+      }
+    }
+    if (checkDate) {
+      const dateSet = new Set(practiceDates.map(d => d.date));
+      let d = new Date(checkDate);
+      while (dateSet.has(d.toISOString().slice(0, 10))) {
+        streak++;
+        d = new Date(d.getTime() - 86400000);
+      }
     }
   }
 

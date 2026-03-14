@@ -2,17 +2,15 @@ import { Router } from 'express';
 import { queryAll, queryOne, execute } from '../db/helpers.js';
 import { v4 as uuid } from 'uuid';
 import { upload, detectFileType, initialProcessingStatus, moveToTypeDir } from '../middleware/upload.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
+import { safePath, DATA_DIR } from '../utils/pathSafe.js';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.resolve(__dirname, '..', '..', '..', 'data');
 
 const router = Router();
 
 // POST — upload a file
-router.post('/', (req, res) => {
+router.post('/', (req, res, next) => {
   upload.single('file')(req, res, async (err) => {
     if (err) return res.status(400).json({ error: err.message });
     if (!req.file) return res.status(400).json({ error: 'No file provided' });
@@ -22,7 +20,6 @@ router.post('/', (req, res) => {
     const fileType = detectFileType(req.file.mimetype, ext);
     const status = initialProcessingStatus(fileType);
 
-    // Move file to type-appropriate directory
     let filePath;
     try {
       filePath = moveToTypeDir(req.file.path, fileType, req.file.filename);
@@ -30,7 +27,6 @@ router.post('/', (req, res) => {
       filePath = req.file.path;
     }
 
-    // Make path relative to data dir for storage
     const relPath = filePath.split(/[/\\]data[/\\]/)[1] || filePath;
 
     const linkedType = req.body.linked_type || null;
@@ -47,15 +43,14 @@ router.post('/', (req, res) => {
       const created = await queryOne('SELECT * FROM uploaded_files WHERE id = $1', [id]);
       res.status(201).json(created);
     } catch (dbErr) {
-      // Clean up orphan file if DB insert fails
       try { fs.unlinkSync(filePath); } catch {}
-      res.status(500).json({ error: 'Failed to save file metadata' });
+      next(dbErr);
     }
   });
 });
 
 // GET — list files with filters
-router.get('/', async (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
   const { file_type, linked_type, linked_id, search, processing_status } = req.query;
   let sql = 'SELECT * FROM uploaded_files WHERE 1=1';
   const params = [];
@@ -70,29 +65,27 @@ router.get('/', async (req, res) => {
   sql += ' ORDER BY uploaded_at DESC';
   const files = await queryAll(sql, params);
   res.json(files);
-});
+}));
 
 // GET — single file metadata
-router.get('/:id', async (req, res) => {
+router.get('/:id', asyncHandler(async (req, res) => {
   const file = await queryOne('SELECT * FROM uploaded_files WHERE id = $1', [req.params.id]);
   if (!file) return res.status(404).json({ error: 'Not found' });
   res.json(file);
-});
+}));
 
-// GET — download file
-router.get('/:id/download', async (req, res) => {
+// GET — download file (with path traversal protection)
+router.get('/:id/download', asyncHandler(async (req, res) => {
   const file = await queryOne('SELECT * FROM uploaded_files WHERE id = $1', [req.params.id]);
   if (!file) return res.status(404).json({ error: 'Not found' });
 
-  const dataDir = DATA_DIR;
-  const filePath = path.resolve(dataDir, file.file_path);
-
+  const filePath = safePath(file.file_path);
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found on disk' });
   res.download(filePath, file.original_filename);
-});
+}));
 
 // PUT — update file metadata
-router.put('/:id', async (req, res) => {
+router.put('/:id', asyncHandler(async (req, res) => {
   const existing = await queryOne('SELECT * FROM uploaded_files WHERE id = $1', [req.params.id]);
   if (!existing) return res.status(404).json({ error: 'Not found' });
 
@@ -109,61 +102,60 @@ router.put('/:id', async (req, res) => {
     ]
   );
   res.json(await queryOne('SELECT * FROM uploaded_files WHERE id = $1', [req.params.id]));
-});
+}));
 
 // DELETE — remove file and DB row
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', asyncHandler(async (req, res) => {
   const file = await queryOne('SELECT * FROM uploaded_files WHERE id = $1', [req.params.id]);
   if (!file) return res.status(404).json({ error: 'Not found' });
 
-  const dataDir = DATA_DIR;
-  const filePath = path.resolve(dataDir, file.file_path);
-  try { fs.unlinkSync(filePath); } catch {}
+  try {
+    const filePath = safePath(file.file_path);
+    fs.unlinkSync(filePath);
+  } catch {}
 
   await execute('DELETE FROM uploaded_files WHERE id = $1', [req.params.id]);
   res.json({ deleted: true });
-});
+}));
 
 // POST — link file to entity
-router.post('/:id/link', async (req, res) => {
+router.post('/:id/link', asyncHandler(async (req, res) => {
   const file = await queryOne('SELECT * FROM uploaded_files WHERE id = $1', [req.params.id]);
   if (!file) return res.status(404).json({ error: 'Not found' });
 
   const { linked_type, linked_id } = req.body;
   await execute('UPDATE uploaded_files SET linked_type=$1, linked_id=$2 WHERE id=$3', [linked_type, linked_id, req.params.id]);
   res.json(await queryOne('SELECT * FROM uploaded_files WHERE id = $1', [req.params.id]));
-});
+}));
 
 // DELETE — unlink file
-router.delete('/:id/link', async (req, res) => {
+router.delete('/:id/link', asyncHandler(async (req, res) => {
   const file = await queryOne('SELECT * FROM uploaded_files WHERE id = $1', [req.params.id]);
   if (!file) return res.status(404).json({ error: 'Not found' });
 
   await execute('UPDATE uploaded_files SET linked_type=NULL, linked_id=NULL WHERE id=$1', [req.params.id]);
   res.json(await queryOne('SELECT * FROM uploaded_files WHERE id = $1', [req.params.id]));
-});
+}));
 
 // GET — serve MusicXML content for OSMD rendering
-router.get('/:id/musicxml', async (req, res) => {
+router.get('/:id/musicxml', asyncHandler(async (req, res) => {
   const file = await queryOne('SELECT * FROM uploaded_files WHERE id = $1', [req.params.id]);
   if (!file) return res.status(404).json({ error: 'Not found' });
 
-  // For digital sheet music, serve the file directly
   if (file.file_type === 'sheet_music_digital') {
-    const filePath = path.resolve(DATA_DIR, file.file_path);
+    const filePath = safePath(file.file_path);
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found on disk' });
     res.setHeader('Content-Type', 'application/xml');
     return res.sendFile(filePath);
   }
 
-  // For scanned sheet music, check for OMR-produced MusicXML
   const omr = await queryOne('SELECT * FROM omr_results WHERE file_id = $1 ORDER BY created_at DESC LIMIT 1', [req.params.id]);
   if (!omr || !omr.musicxml_path) return res.status(404).json({ error: 'No MusicXML available. Run OMR first.' });
 
-  const xmlPath = path.resolve(DATA_DIR, omr.musicxml_path);
+  const xmlPath = safePath(omr.musicxml_path);
   if (!fs.existsSync(xmlPath)) return res.status(404).json({ error: 'MusicXML file not found on disk' });
   res.setHeader('Content-Type', 'application/xml');
   res.sendFile(xmlPath);
-});
+}));
 
 export default router;

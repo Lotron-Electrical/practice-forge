@@ -27,11 +27,15 @@ export function FileUploadZone({ onFilesSelected, accept, multiple = true, class
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label="Upload files — drop files here or press Enter to browse"
       onDragOver={e => { e.preventDefault(); setDragOver(true); }}
       onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}
       onClick={() => inputRef.current?.click()}
-      className={`flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-pf cursor-pointer transition-colors ${
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inputRef.current?.click(); } }}
+      className={`flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-pf cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--pf-accent-teal)] ${
         dragOver
           ? 'border-[var(--pf-accent-teal)] bg-[var(--pf-accent-teal)]/10'
           : 'border-[var(--pf-border-color)] hover:border-[var(--pf-text-secondary)]'

@@ -12,6 +12,7 @@ interface ThemeContextValue {
   setReducedMotion: (v: boolean) => void;
   fontSize: number;
   setFontSize: (v: number) => void;
+  applyCustomTokens: (tokens: Record<string, string>) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -71,9 +72,50 @@ export function ThemeProvider({ children }: Props) {
     document.documentElement.style.fontSize = `${fontSize}rem`;
   }, [fontSize]);
 
-  // CVD mode
+  // CVD mode — apply SVG filter for colour vision deficiency simulation
   useEffect(() => {
     document.documentElement.setAttribute('data-cvd', colourVisionMode);
+
+    // Remove existing CVD style if any
+    const existingStyle = document.getElementById('pf-cvd-style');
+    if (existingStyle) existingStyle.remove();
+
+    if (colourVisionMode === 'none') return;
+
+    // CSS filter using SVG color matrices for CVD simulation
+    const matrices: Record<string, string> = {
+      deuteranopia: '0.625 0.375 0 0 0  0.7 0.3 0 0 0  0 0.3 0.7 0 0  0 0 0 1 0',
+      protanopia: '0.567 0.433 0 0 0  0.558 0.442 0 0 0  0 0.242 0.758 0 0  0 0 0 1 0',
+      tritanopia: '0.95 0.05 0 0 0  0 0.433 0.567 0 0  0 0.475 0.525 0 0  0 0 0 1 0',
+    };
+
+    const matrix = matrices[colourVisionMode];
+    if (!matrix) return;
+
+    const style = document.createElement('style');
+    style.id = 'pf-cvd-style';
+    style.textContent = `
+      svg#pf-cvd-filter { position: absolute; width: 0; height: 0; }
+      [data-cvd="${colourVisionMode}"] body { filter: url(#pf-cvd-${colourVisionMode}); }
+    `;
+    document.head.appendChild(style);
+
+    // Add inline SVG filter if not present
+    if (!document.getElementById('pf-cvd-svg')) {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.id = 'pf-cvd-svg';
+      svg.setAttribute('style', 'position:absolute;width:0;height:0');
+      for (const [mode, m] of Object.entries(matrices)) {
+        const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+        filter.id = `pf-cvd-${mode}`;
+        const feMatrix = document.createElementNS('http://www.w3.org/2000/svg', 'feColorMatrix');
+        feMatrix.setAttribute('type', 'matrix');
+        feMatrix.setAttribute('values', m);
+        filter.appendChild(feMatrix);
+        svg.appendChild(filter);
+      }
+      document.body.appendChild(svg);
+    }
   }, [colourVisionMode]);
 
   // Detect OS preferences on mount
@@ -104,6 +146,15 @@ export function ThemeProvider({ children }: Props) {
   const setReducedMotion = (v: boolean) => { setReducedMotionState(v); persist('reducedMotion', v); };
   const setFontSize = (v: number) => { setFontSizeState(v); persist('fontSize', v); };
 
+  const applyCustomTokens = (tokens: Record<string, string>) => {
+    const root = document.documentElement;
+    for (const [key, value] of Object.entries(tokens)) {
+      if (key.startsWith('--pf-')) {
+        root.style.setProperty(key, value);
+      }
+    }
+  };
+
   // Load persisted settings on mount
   useEffect(() => {
     fetch('/api/settings')
@@ -119,7 +170,7 @@ export function ThemeProvider({ children }: Props) {
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, highContrast, setHighContrast, colourVisionMode, setColourVisionMode, reducedMotion, setReducedMotion, fontSize, setFontSize }}>
+    <ThemeContext.Provider value={{ theme, setTheme, highContrast, setHighContrast, colourVisionMode, setColourVisionMode, reducedMotion, setReducedMotion, fontSize, setFontSize, applyCustomTokens }}>
       {children}
     </ThemeContext.Provider>
   );

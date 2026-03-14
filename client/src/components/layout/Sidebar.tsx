@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Music, BookOpen, ListMusic, FolderOpen, Mic, BarChart3, Users, Settings, ChevronLeft, ChevronRight, Tags, Timer, X } from 'lucide-react';
+import { LayoutDashboard, Music, BookOpen, ListMusic, FolderOpen, Mic, BarChart3, Settings, ChevronLeft, ChevronRight, Tags, Timer, X, User, ClipboardCheck, Users } from 'lucide-react';
 import { useState } from 'react';
 
 const navItems = [
@@ -7,12 +7,14 @@ const navItems = [
   { to: '/pieces', icon: Music, label: 'Pieces' },
   { to: '/exercises', icon: BookOpen, label: 'Exercises' },
   { to: '/excerpts', icon: ListMusic, label: 'Excerpts' },
-  { to: '/taxonomy', icon: Tags, label: 'Taxonomy' },
   { to: '/session', icon: Timer, label: 'Session' },
-  { to: '/media', icon: FolderOpen, label: 'Media' },
   { to: '/record', icon: Mic, label: 'Record' },
-  { to: '/audits', icon: BarChart3, label: 'Audits' },
+  { to: '/media', icon: FolderOpen, label: 'Media' },
+  { to: '/assessments', icon: ClipboardCheck, label: 'Assessments' },
+  { to: '/analytics', icon: BarChart3, label: 'Analytics' },
   { to: '/community', icon: Users, label: 'Community' },
+  { to: '/taxonomy', icon: Tags, label: 'Skills' },
+  { to: '/profile', icon: User, label: 'Profile' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
