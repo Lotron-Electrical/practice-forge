@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -6,7 +7,10 @@ import { useAuth } from '../auth/AuthContext';
 import { LogIn, UserPlus } from 'lucide-react';
 
 export function LoginPage() {
-  const { login, register } = useAuth();
+  const { login, register, isAuthenticated } = useAuth();
+
+  // Redirect to dashboard once authenticated
+  if (isAuthenticated) return <Navigate to="/" replace />;
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

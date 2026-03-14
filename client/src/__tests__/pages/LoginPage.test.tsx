@@ -7,6 +7,9 @@ import { LoginPage } from '../../pages/LoginPage';
 describe('LoginPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // LoginPage redirects when authenticated — render as unauthenticated
+    mockAuthValue.isAuthenticated = false;
+    mockAuthValue.user = null;
   });
 
   it('renders without crashing', () => {
