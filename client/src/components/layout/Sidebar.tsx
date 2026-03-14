@@ -216,7 +216,7 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
             <div className="flex flex-col leading-tight">
               <span className="text-white font-heading font-bold text-lg tracking-tight">PRACTICE</span>
               <span className="font-heading font-bold text-lg tracking-tight" style={{ color: 'var(--pf-accent-gold)' }}>FORGE</span>
-              <span className="text-[10px] text-[var(--pf-text-nav)]/40 tracking-wide mt-0.5">v0.19.Ravel</span>
+              <span className="text-[10px] tracking-wide mt-0.5" style={{ color: 'var(--pf-text-nav)', opacity: 0.4 }}>v0.19.Ravel</span>
             </div>
             <button
               onClick={onClose}
@@ -248,7 +248,7 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
           <div className="flex flex-col leading-tight">
             <span className="text-white font-heading font-bold text-lg tracking-tight">PRACTICE</span>
             <span className="font-heading font-bold text-lg tracking-tight" style={{ color: 'var(--pf-accent-gold)' }}>FORGE</span>
-            <span className="text-[10px] text-[var(--pf-text-nav)]/40 tracking-wide mt-0.5">v0.19.Ravel</span>
+            <span className="text-[10px] tracking-wide mt-0.5" style={{ color: 'var(--pf-text-nav)', opacity: 0.4 }}>v0.19.Ravel</span>
           </div>
         )}
         {collapsed && (
