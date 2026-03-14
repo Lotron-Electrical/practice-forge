@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { Input, Textarea, Select } from '../ui/Input';
 import type { ResourceSearchResult, ResourceLinkedType, ResourceType, ResourceSource } from '../../core/types';
 import { X, Search, Wand2, ExternalLink, Plus, Loader2 } from 'lucide-react';
+import { useModalLock } from '../../hooks/useModalLock';
 
 interface ResourceSearchModalProps {
   linkedType: ResourceLinkedType;
@@ -16,6 +17,7 @@ interface ResourceSearchModalProps {
 type Tab = 'scores' | 'recordings' | 'context' | 'manual';
 
 export function ResourceSearchModal({ linkedType, linkedId, defaultQuery, onClose, onLinked }: ResourceSearchModalProps) {
+  useModalLock(true);
   const [tab, setTab] = useState<Tab>('scores');
   const [query, setQuery] = useState(defaultQuery);
   const [results, setResults] = useState<ResourceSearchResult[]>([]);

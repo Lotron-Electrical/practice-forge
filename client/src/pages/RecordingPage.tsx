@@ -137,7 +137,7 @@ export function RecordingPage() {
   return (
     <div>
       {sessionId && (
-        <div className="sticky top-0 z-10 -mx-4 px-4 py-2 mb-4 flex items-center gap-2 text-sm border-b border-[var(--pf-border-color)]" style={{ backgroundColor: 'var(--pf-bg-secondary)' }}>
+        <div className="sticky top-0 z-10 -mx-4 px-4 py-3 mb-4 flex items-center gap-2 text-sm border-b border-[var(--pf-border-color)] shadow-sm" style={{ backgroundColor: 'var(--pf-bg-secondary)' }}>
           <Music size={14} style={{ color: 'var(--pf-accent-gold)' }} />
           <span className="text-[var(--pf-text-secondary)]">Recording for session</span>
           <span className="mx-1 text-[var(--pf-text-secondary)]">&mdash;</span>
@@ -159,7 +159,7 @@ export function RecordingPage() {
       </div>
 
       {pageState === 'saved' && (
-        <div className="mb-4 p-3 rounded-pf text-sm text-center" style={{ backgroundColor: 'var(--pf-status-ready)', color: 'white' }}>
+        <div role="status" aria-live="polite" className="mb-4 p-3 rounded-pf text-sm text-center" style={{ backgroundColor: 'var(--pf-status-ready)', color: 'white' }}>
           Recording saved successfully
         </div>
       )}

@@ -8,11 +8,13 @@ import { Badge } from '../components/ui/Badge';
 import { PIECE_STATUS_CONFIG, PRIORITY_CONFIG } from '../core/constants';
 import { api } from '../api/client';
 import type { Piece, PieceStatus, Priority } from '../core/types';
-import { Plus, Music, Search } from 'lucide-react';
+import { Plus, Music, Search, SlidersHorizontal } from 'lucide-react';
 import { Input } from '../components/ui/Input';
+import { useExperienceLevel } from '../hooks/useExperienceLevel';
 
 export function PiecesPage() {
   const navigate = useNavigate();
+  const { level } = useExperienceLevel();
   const [pieces, setPieces] = useState<Piece[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ title: '', composer: '' });
@@ -22,6 +24,7 @@ export function PiecesPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('title');
+  const [showFilters, setShowFilters] = useState(level !== 'beginner');
 
   const load = () => api.getPieces().then(d => setPieces(d as Piece[])).catch(() => {});
   useEffect(() => { load(); }, []);
@@ -105,39 +108,52 @@ export function PiecesPage() {
             className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--pf-accent-primary)]"
           />
         </div>
-        <select
-          value={statusFilter}
-          onChange={e => setStatusFilter(e.target.value)}
-          className="px-3 py-2 rounded-lg border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm"
-        >
-          <option value="all">All statuses</option>
-          <option value="not_started">Not started</option>
-          <option value="in_progress">In progress</option>
-          <option value="performance_ready">Performance ready</option>
-          <option value="archived">Archived</option>
-        </select>
-        <select
-          value={priorityFilter}
-          onChange={e => setPriorityFilter(e.target.value)}
-          className="px-3 py-2 rounded-lg border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm"
-        >
-          <option value="all">All priorities</option>
-          <option value="high">High</option>
-          <option value="medium">Medium</option>
-          <option value="low">Low</option>
-        </select>
-        <select
-          value={sortBy}
-          onChange={e => setSortBy(e.target.value)}
-          className="px-3 py-2 rounded-lg border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm"
-        >
-          <option value="title">Sort: Title</option>
-          <option value="composer">Sort: Composer</option>
-          <option value="difficulty">Sort: Difficulty</option>
-          <option value="date_added">Sort: Date Added</option>
-          <option value="target_date">Sort: Target Date</option>
-          <option value="priority">Sort: Priority</option>
-        </select>
+        {level === 'beginner' && (
+          <button
+            onClick={() => setShowFilters(f => !f)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm transition-colors ${showFilters ? 'border-[var(--pf-accent-primary)] text-[var(--pf-accent-primary)] bg-[var(--pf-accent-primary)]/10' : 'border-[var(--pf-border-color)] text-[var(--pf-text-secondary)] bg-[var(--pf-bg-primary)] hover:text-[var(--pf-text-primary)]'}`}
+          >
+            <SlidersHorizontal size={14} />
+            Filters
+          </button>
+        )}
+        {showFilters && (
+          <>
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="px-3 py-2 rounded-lg border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm"
+            >
+              <option value="all">All statuses</option>
+              <option value="not_started">Not started</option>
+              <option value="in_progress">In progress</option>
+              <option value="performance_ready">Performance ready</option>
+              <option value="archived">Archived</option>
+            </select>
+            <select
+              value={priorityFilter}
+              onChange={e => setPriorityFilter(e.target.value)}
+              className="px-3 py-2 rounded-lg border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm"
+            >
+              <option value="all">All priorities</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+              className="px-3 py-2 rounded-lg border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm"
+            >
+              <option value="title">Sort: Title</option>
+              <option value="composer">Sort: Composer</option>
+              <option value="difficulty">Sort: Difficulty</option>
+              <option value="date_added">Sort: Date Added</option>
+              <option value="target_date">Sort: Target Date</option>
+              <option value="priority">Sort: Priority</option>
+            </select>
+          </>
+        )}
       </div>
 
       {/* Simplified create form — title + composer only */}
@@ -164,7 +180,7 @@ export function PiecesPage() {
             <Music size={48} className="mx-auto mb-4 text-[var(--pf-text-secondary)]" />
             <p className="text-[var(--pf-text-secondary)]">
               {pieces.length === 0
-                ? 'No pieces yet. Click "Add Piece" to get started.'
+                ? 'No pieces yet. Add your first piece to start tracking sections, tricky spots, and practice time.'
                 : 'No pieces match your filters.'}
             </p>
           </CardContent>

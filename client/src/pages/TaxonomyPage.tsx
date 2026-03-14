@@ -44,7 +44,7 @@ function CategoryNode({
         style={{ paddingLeft: `${depth * 20 + 8}px` }}
       >
         {hasChildren ? (
-          <button onClick={() => onToggle(node.id)} className="p-2 sm:p-0.5 text-[var(--pf-text-secondary)]">
+          <button onClick={() => onToggle(node.id)} className="p-2 sm:p-0.5 text-[var(--pf-text-secondary)]" aria-label={isExpanded ? 'Collapse' : 'Expand'}>
             {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
         ) : (
@@ -55,8 +55,8 @@ function CategoryNode({
           <Badge color="var(--pf-text-secondary)" className="mr-2">{node.children.length}</Badge>
         )}
         <div className="flex sm:hidden sm:group-hover:flex items-center gap-1">
-          <button onClick={() => onEdit(node)} className="p-2.5 sm:p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)]"><Pencil size={14} /></button>
-          <button onClick={() => onDelete(node.id)} className="p-2.5 sm:p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-status-needs-work)]"><Trash2 size={14} /></button>
+          <button onClick={() => onEdit(node)} className="p-2.5 sm:p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)]" aria-label="Edit category"><Pencil size={14} /></button>
+          <button onClick={() => onDelete(node.id)} className="p-2.5 sm:p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-status-needs-work)]" aria-label="Delete category"><Trash2 size={14} /></button>
         </div>
       </div>
       {isExpanded && node.children
@@ -158,7 +158,7 @@ export function TaxonomyPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-semibold">{editingId ? 'Edit Category' : 'New Category'}</h2>
-                <button onClick={() => setShowForm(false)} className="text-[var(--pf-text-secondary)]"><X size={18} /></button>
+                <button onClick={() => setShowForm(false)} className="text-[var(--pf-text-secondary)]" aria-label="Close form"><X size={18} /></button>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">

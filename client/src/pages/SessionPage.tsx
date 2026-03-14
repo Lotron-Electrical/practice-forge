@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { api } from '../api/client';
-import { Play, CheckCircle, SkipForward, Square, Clock, Sparkles, Music, BookOpen, ListMusic, Zap, Timer, ThumbsUp, Meh, ThumbsDown, Mic, ChevronDown, ChevronUp, Circle } from 'lucide-react';
+import { Play, CheckCircle, SkipForward, Square, Clock, Sparkles, Music, BookOpen, ListMusic, Zap, Timer, ThumbsUp, Meh, ThumbsDown, Mic, ChevronDown, ChevronUp, Circle, RotateCcw, Save, Trash2, FolderOpen } from 'lucide-react';
 import { MetronomeControls } from '../components/recording/MetronomeControls';
 import { useMetronome } from '../hooks/useMetronome';
 
@@ -33,6 +33,14 @@ interface Session {
   blocks: Block[];
 }
 
+interface SessionTemplate {
+  id: string;
+  name: string;
+  planned_duration_min: number;
+  blocks: { category: string; title: string; description?: string; planned_duration_min: number; sort_order: number; linked_type?: string; linked_id?: string; focus_points?: string }[];
+  created_at: string;
+}
+
 const CATEGORY_CONFIG: Record<string, { icon: typeof Play; color: string; label: string }> = {
   warmup: { icon: Sparkles, color: 'var(--pf-accent-gold)', label: 'Warm-up' },
   fundamentals: { icon: Zap, color: 'var(--pf-accent-teal)', label: 'Fundamentals' },
@@ -50,7 +58,14 @@ function formatTime(seconds: number) {
 
 export function SessionPage() {
   const [session, setSession] = useState<Session | null>(null);
+  const [lastSession, setLastSession] = useState<Session | null>(null);
+  const [repeating, setRepeating] = useState(false);
   const [duration, setDuration] = useState(60);
+  const [templates, setTemplates] = useState<SessionTemplate[]>([]);
+  const [templateLoading, setTemplateLoading] = useState<string | null>(null);
+  const [saveTemplateName, setSaveTemplateName] = useState('');
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [savingTemplate, setSavingTemplate] = useState(false);
   const [timer, setTimer] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
   const [showComplete, setShowComplete] = useState(false);
@@ -142,9 +157,78 @@ export function SessionPage() {
     api.getCurrentSession().then(data => {
       setSession(data as Session | null);
     }).catch(() => {});
+    api.getLatestCompleted().then(data => {
+      setLastSession(data as Session | null);
+    }).catch(() => {});
+    api.getSessionTemplates().then(data => {
+      setTemplates(data as SessionTemplate[]);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => { loadCurrent(); }, [loadCurrent]);
+
+  const repeatLastSession = async () => {
+    if (!lastSession) return;
+    setRepeating(true);
+    try {
+      const data = await api.duplicateSession(lastSession.id) as Session;
+      setSession(data);
+    } catch {
+      // ignore
+    } finally {
+      setRepeating(false);
+    }
+  };
+
+  const useTemplate = async (templateId: string) => {
+    setTemplateLoading(templateId);
+    try {
+      const data = await api.useSessionTemplate(templateId) as Session;
+      setSession(data);
+    } catch {
+      // ignore
+    } finally {
+      setTemplateLoading(null);
+    }
+  };
+
+  const deleteTemplate = async (templateId: string) => {
+    try {
+      await api.deleteSessionTemplate(templateId);
+      setTemplates(prev => prev.filter(t => t.id !== templateId));
+    } catch {
+      // ignore
+    }
+  };
+
+  const saveAsTemplate = async (sessionToSave: Session) => {
+    if (!saveTemplateName.trim()) return;
+    setSavingTemplate(true);
+    try {
+      const blocks = sessionToSave.blocks.map(b => ({
+        category: b.category,
+        title: b.title,
+        description: b.description,
+        planned_duration_min: b.planned_duration_min,
+        sort_order: b.sort_order,
+        linked_type: b.linked_type || undefined,
+        linked_id: b.linked_id || undefined,
+        focus_points: b.focus_points || undefined,
+      }));
+      const data = await api.saveSessionTemplate({
+        name: saveTemplateName.trim(),
+        planned_duration_min: sessionToSave.planned_duration_min,
+        blocks,
+      }) as SessionTemplate;
+      setTemplates(prev => [data, ...prev]);
+      setShowSaveTemplate(false);
+      setSaveTemplateName('');
+    } catch {
+      // ignore
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
 
   // Timer
   useEffect(() => {
@@ -236,6 +320,70 @@ export function SessionPage() {
             <Button size="lg" onClick={generate}>
               <Sparkles size={18} /> Generate Session
             </Button>
+
+            {lastSession && lastSession.blocks && lastSession.blocks.length > 0 && (
+              <>
+                <div className="flex items-center gap-3 mt-6 mb-4">
+                  <div className="flex-1 h-px bg-[var(--pf-border-color)]" />
+                  <span className="text-xs text-[var(--pf-text-secondary)] uppercase tracking-wider">or</span>
+                  <div className="flex-1 h-px bg-[var(--pf-border-color)]" />
+                </div>
+                <p className="text-sm text-[var(--pf-text-secondary)] mb-3">
+                  {lastSession.planned_duration_min} min — {lastSession.blocks.map(b => {
+                    const conf = CATEGORY_CONFIG[b.category];
+                    return conf ? conf.label : b.title;
+                  }).filter((v, i, a) => a.indexOf(v) === i).join(', ')}
+                </p>
+                <Button variant="secondary" onClick={repeatLastSession} disabled={repeating}>
+                  <RotateCcw size={16} /> {repeating ? 'Creating...' : 'Repeat Last Session'}
+                </Button>
+              </>
+            )}
+
+            {templates.length > 0 && (
+              <>
+                <div className="flex items-center gap-3 mt-6 mb-4">
+                  <div className="flex-1 h-px bg-[var(--pf-border-color)]" />
+                  <span className="text-xs text-[var(--pf-text-secondary)] uppercase tracking-wider flex items-center gap-1">
+                    <FolderOpen size={12} /> Saved Templates
+                  </span>
+                  <div className="flex-1 h-px bg-[var(--pf-border-color)]" />
+                </div>
+                <div className="space-y-2 max-w-md mx-auto text-left">
+                  {templates.map(t => {
+                    const categories = [...new Set(t.blocks.map(b => {
+                      const conf = CATEGORY_CONFIG[b.category];
+                      return conf ? conf.label : b.category;
+                    }))];
+                    return (
+                      <div
+                        key={t.id}
+                        className="flex items-center gap-3 p-3 rounded-pf border border-[var(--pf-border-color)] hover:border-[var(--pf-accent-gold)] transition-colors group"
+                      >
+                        <button
+                          className="flex-1 text-left min-w-0"
+                          onClick={() => useTemplate(t.id)}
+                          disabled={templateLoading === t.id}
+                        >
+                          <div className="font-medium text-sm truncate">{t.name}</div>
+                          <div className="text-xs text-[var(--pf-text-secondary)]">
+                            {t.planned_duration_min} min — {categories.join(', ')}
+                          </div>
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteTemplate(t.id); }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-[var(--pf-bg-hover)]"
+                          title="Delete template"
+                          aria-label="Delete template"
+                        >
+                          <Trash2 size={14} className="text-[var(--pf-text-secondary)]" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -250,7 +398,7 @@ export function SessionPage() {
       <div>
         <h1 className="text-2xl font-bold mb-6">Session Complete</h1>
         <Card>
-          <CardContent className="text-center py-10">
+          <CardContent className="text-center py-10" role="status" aria-live="polite">
             <CheckCircle size={56} className="mx-auto mb-4" style={{ color: 'var(--pf-status-ready)' }} />
             <h2 className="text-xl font-semibold mb-2">Well done!</h2>
             <div className="flex justify-center gap-4 sm:gap-8 mb-4 text-sm">
@@ -262,8 +410,35 @@ export function SessionPage() {
             {session.notes && (
               <p className="text-sm text-[var(--pf-text-secondary)] mt-3 max-w-md mx-auto italic">"{session.notes}"</p>
             )}
-            <div className="mt-6">
-              <Button variant="secondary" onClick={() => setSession(null)}>Plan New Session</Button>
+            <div className="mt-6 flex flex-col items-center gap-3">
+              {!showSaveTemplate ? (
+                <Button variant="secondary" onClick={() => setShowSaveTemplate(true)}>
+                  <Save size={16} /> Save as Template
+                </Button>
+              ) : (
+                <div className="w-full max-w-sm space-y-2">
+                  <input
+                    type="text"
+                    value={saveTemplateName}
+                    onChange={e => setSaveTemplateName(e.target.value)}
+                    placeholder="Template name, e.g. 'Audition Prep'"
+                    className="w-full px-3 py-2 rounded-pf border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm focus:outline-none focus:border-[var(--pf-accent-gold)]"
+                    autoFocus
+                    onKeyDown={e => { if (e.key === 'Enter') saveAsTemplate(session); }}
+                  />
+                  <div className="flex gap-2 justify-center">
+                    <Button size="sm" onClick={() => saveAsTemplate(session)} disabled={!saveTemplateName.trim() || savingTemplate}>
+                      <Save size={14} /> {savingTemplate ? 'Saving...' : 'Save'}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setShowSaveTemplate(false); setSaveTemplateName(''); }}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+              <Button variant="secondary" onClick={() => { setSession(null); setShowSaveTemplate(false); setSaveTemplateName(''); }}>
+                Plan New Session
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -279,7 +454,7 @@ export function SessionPage() {
         <Card>
           <CardContent className="text-center py-10">
             <h2 className="text-xl font-semibold mb-6">How did it go?</h2>
-            <div className="flex justify-center gap-6 mb-6">
+            <div className="flex justify-center gap-3 sm:gap-6 mb-6">
               {[
                 { rating: 'good', icon: ThumbsUp, label: 'Good', color: 'var(--pf-status-ready)' },
                 { rating: 'okay', icon: Meh, label: 'Okay', color: 'var(--pf-accent-gold)' },
@@ -288,13 +463,13 @@ export function SessionPage() {
                 <button
                   key={rating}
                   onClick={() => setSelectedRating(rating)}
-                  className={`flex flex-col items-center gap-2 p-6 rounded-pf border-2 transition-colors ${
+                  className={`flex flex-col items-center gap-1 sm:gap-2 px-4 py-4 sm:p-6 rounded-pf border-2 transition-colors ${
                     selectedRating === rating
                       ? 'border-[var(--pf-accent-gold)] bg-[var(--pf-bg-hover)]'
                       : 'border-[var(--pf-border-color)] hover:border-[var(--pf-accent-gold)]'
                   }`}
                 >
-                  <Icon size={36} style={{ color }} />
+                  <Icon size={28} className="sm:w-9 sm:h-9" style={{ color }} />
                   <span className="text-sm font-medium">{label}</span>
                 </button>
               ))}
@@ -336,13 +511,13 @@ export function SessionPage() {
           {isStarted && activeBlock && (
             <Card className="overflow-hidden">
               <div className="h-1" style={{ backgroundColor: 'var(--pf-accent-gold)', width: `${Math.min(100, (timer / activeBlockTarget) * 100)}%`, transition: 'width 1s linear' }} />
-              <CardContent className="flex items-center justify-between py-3">
-                <div className="flex items-center gap-3">
+              <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-3 gap-2 sm:gap-0">
+                <div className="flex items-center gap-3 flex-wrap">
                   <div className="text-3xl font-mono font-bold" style={{ color: timer > activeBlockTarget ? 'var(--pf-status-needs-work)' : 'var(--pf-text-primary)' }}>
                     {formatTime(timer)}
                   </div>
                   <span className="text-sm text-[var(--pf-text-secondary)]">/ {formatTime(activeBlockTarget)}</span>
-                  <span className="text-xs text-[var(--pf-text-secondary)] ml-2 border-l border-[var(--pf-border-color)] pl-3">
+                  <span className="text-xs text-[var(--pf-text-secondary)] sm:ml-2 sm:border-l sm:border-[var(--pf-border-color)] sm:pl-3">
                     Total: {completedMin + Math.round(timer / 60)} min
                   </span>
                 </div>
@@ -406,7 +581,7 @@ export function SessionPage() {
                 className={`transition-all ${isActive ? 'ring-2 ring-[var(--pf-accent-gold)]/30' : ''} ${isCompleted || isSkipped ? 'opacity-60' : ''}`}
               >
                 <CardContent className="py-3">
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-3 sm:gap-4">
                     {/* Status icon */}
                     <div
                       className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
@@ -417,7 +592,7 @@ export function SessionPage() {
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
+                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                         <span className="font-semibold text-sm">{block.title}</span>
                         <Badge color={conf.color}>{conf.label}</Badge>
                         <span className="text-xs text-[var(--pf-text-secondary)]">{block.planned_duration_min} min</span>
@@ -432,25 +607,25 @@ export function SessionPage() {
                         <span className="text-xs text-[var(--pf-text-secondary)]">Completed in {block.actual_duration_min} min</span>
                       )}
                     </div>
-
-                    {/* Actions */}
-                    {isActive && (
-                      <div className="flex gap-2 flex-shrink-0 flex-wrap">
-                        <Button size="sm" variant={recorderOpen ? 'secondary' : 'ghost'} title="Record"
-                          onClick={() => setRecorderOpen(!recorderOpen)}
-                          style={isRecording ? { color: 'var(--pf-status-needs-work)' } : undefined}
-                        >
-                          <Mic size={14} />
-                        </Button>
-                        <Button size="sm" onClick={() => completeBlock(block.id)}>
-                          <CheckCircle size={14} /> Done
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => skipBlock(block.id)}>
-                          <SkipForward size={14} /> Skip
-                        </Button>
-                      </div>
-                    )}
                   </div>
+
+                  {/* Actions — below content on mobile, avoids overlap */}
+                  {isActive && (
+                    <div className="flex gap-2 mt-2 ml-11 sm:ml-12">
+                      <Button size="sm" variant={recorderOpen ? 'secondary' : 'ghost'} title="Record"
+                        onClick={() => setRecorderOpen(!recorderOpen)}
+                        style={isRecording ? { color: 'var(--pf-status-needs-work)' } : undefined}
+                      >
+                        <Mic size={14} />
+                      </Button>
+                      <Button size="sm" onClick={() => completeBlock(block.id)}>
+                        <CheckCircle size={14} /> Done
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => skipBlock(block.id)}>
+                        <SkipForward size={14} /> Skip
+                      </Button>
+                    </div>
+                  )}
 
                   {/* Inline mini recorder */}
                   {isActive && recorderOpen && (
@@ -467,6 +642,7 @@ export function SessionPage() {
                               className="w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-105 flex-shrink-0"
                               style={{ backgroundColor: 'var(--pf-status-needs-work)' }}
                               title="Start recording"
+                              aria-label="Start recording"
                             >
                               <Circle size={16} className="text-white fill-white" />
                             </button>
@@ -476,6 +652,7 @@ export function SessionPage() {
                               className="w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-105 flex-shrink-0"
                               style={{ backgroundColor: 'var(--pf-text-secondary)' }}
                               title="Stop recording"
+                              aria-label="Stop recording"
                             >
                               <Square size={14} className="text-white fill-white" />
                             </button>

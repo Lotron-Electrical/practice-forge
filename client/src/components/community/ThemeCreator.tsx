@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { Input, Textarea } from '../ui/Input';
 import { api } from '../../api/client';
 import { X } from 'lucide-react';
+import { useModalLock } from '../../hooks/useModalLock';
 
 interface Props {
   open: boolean;
@@ -36,6 +37,8 @@ export function ThemeCreator({ open, onClose, onCreated }: Props) {
   const [baseTheme, setBaseTheme] = useState('light');
   const [colours, setColours] = useState<Record<string, string>>({ ...DEFAULT_COLOURS });
   const [publishing, setPublishing] = useState(false);
+
+  useModalLock(open);
 
   if (!open) return null;
 

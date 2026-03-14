@@ -1,6 +1,7 @@
 import { Button } from './Button';
 import { AlertTriangle } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useModalLock } from '../../hooks/useModalLock';
 
 interface AiCostConfirmProps {
   estimatedCost: string;
@@ -11,6 +12,7 @@ interface AiCostConfirmProps {
 
 export function AiCostConfirm({ estimatedCost, description, onConfirm, onCancel }: AiCostConfirmProps) {
   const focusTrapRef = useFocusTrap(true, onCancel);
+  useModalLock(true);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" role="dialog" aria-modal="true" aria-label="AI cost confirmation">

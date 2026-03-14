@@ -188,13 +188,13 @@ export function PieceDetailPage() {
             </CardHeader>
             <CardContent>
               {piece.technical_demands.length === 0 && !showDemandForm && (
-                <p className="text-sm text-[var(--pf-text-secondary)]">No tricky spots added yet.</p>
+                <p className="text-sm text-[var(--pf-text-secondary)]">No tricky spots yet. Mark the hard passages so you can track and target them in practice.</p>
               )}
               <div className="space-y-3">
                 {piece.technical_demands.map(td => {
                   const cat = categories.find(c => c.id === td.category_id);
                   return (
-                    <div key={td.id} className="flex items-start gap-3 py-2 border-b border-[var(--pf-border-color)] last:border-0">
+                    <div key={td.id} className="flex items-start gap-3 py-2 border-b border-[var(--pf-border-color)] last:border-0 flex-wrap sm:flex-nowrap">
                       <div className="w-1 h-full min-h-[40px] rounded-full" style={{ backgroundColor: 'var(--pf-accent-teal)' }} />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -212,9 +212,9 @@ export function PieceDetailPage() {
                         )}
                       </div>
                       {(!td.linked_exercises || td.linked_exercises.length === 0) && (
-                        <button onClick={() => setGenerateForDemand({ id: td.id, description: td.description })} className="p-2.5 sm:p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-accent-gold)]" title="Generate exercise"><Wand2 size={14} /></button>
+                        <button onClick={() => setGenerateForDemand({ id: td.id, description: td.description })} className="p-2.5 sm:p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-accent-gold)]" title="Generate exercise" aria-label="Generate exercise"><Wand2 size={14} /></button>
                       )}
-                      <button onClick={() => deleteDemand(td.id)} className="p-2.5 sm:p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-status-needs-work)]"><Trash2 size={14} /></button>
+                      <button onClick={() => deleteDemand(td.id)} className="p-2.5 sm:p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-status-needs-work)]" aria-label="Delete tricky spot"><Trash2 size={14} /></button>
                     </div>
                   );
                 })}
@@ -261,12 +261,12 @@ export function PieceDetailPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-semibold">Sections</h2>
-                <Button variant="ghost" size="sm" onClick={() => setShowSectionForm(true)}><Plus size={14} /></Button>
+                <Button variant="ghost" size="sm" onClick={() => setShowSectionForm(true)} aria-label="Add section"><Plus size={14} /></Button>
               </div>
             </CardHeader>
             <CardContent>
               {piece.sections.length === 0 && !showSectionForm && (
-                <p className="text-sm text-[var(--pf-text-secondary)]">No sections yet.</p>
+                <p className="text-sm text-[var(--pf-text-secondary)]">No sections yet. Break your piece into passages to track progress on each part.</p>
               )}
               <div className="space-y-2">
                 {piece.sections.map(s => {
@@ -286,7 +286,7 @@ export function PieceDetailPage() {
                         <option value="solid">Solid</option>
                         <option value="polished">Polished</option>
                       </select>
-                      <button onClick={() => deleteSection(s.id)} className="p-2 sm:p-0.5 text-[var(--pf-text-secondary)] sm:opacity-0 sm:group-hover:opacity-100 hover:text-[var(--pf-status-needs-work)]"><Trash2 size={12} /></button>
+                      <button onClick={() => deleteSection(s.id)} className="p-2 sm:p-0.5 text-[var(--pf-text-secondary)] sm:opacity-0 sm:group-hover:opacity-100 hover:text-[var(--pf-status-needs-work)]" aria-label="Delete section"><Trash2 size={12} /></button>
                     </div>
                   );
                 })}

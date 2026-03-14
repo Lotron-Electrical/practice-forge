@@ -8,6 +8,7 @@ import { api } from '../../api/client';
 import type { GeneratedExercise, TaxonomyCategory, GenerationType, RuleGenerationParams } from '../../core/types';
 import { MUSICAL_KEYS } from '../../core/constants';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useModalLock } from '../../hooks/useModalLock';
 import { Sparkles, Settings, X, Loader } from 'lucide-react';
 
 interface Props {
@@ -91,6 +92,7 @@ export function GenerateExerciseModal({ open, onClose, demandId, demandDescripti
   }, [demandDescription, initialKey]);
 
   const focusTrapRef = useFocusTrap(open, onClose);
+  useModalLock(open);
 
   if (!open) return null;
 

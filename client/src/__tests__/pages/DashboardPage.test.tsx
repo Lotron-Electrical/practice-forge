@@ -88,14 +88,14 @@ describe('DashboardPage', () => {
   it('shows empty state for pieces', async () => {
     render(<DashboardPage />);
     await waitFor(() => {
-      expect(screen.getByText(/No pieces yet/)).toBeInTheDocument();
+      expect(screen.getByText(/No active pieces/)).toBeInTheDocument();
     });
   });
 
   it('shows empty state for excerpts', async () => {
     render(<DashboardPage />);
     await waitFor(() => {
-      expect(screen.getByText('No excerpts yet.')).toBeInTheDocument();
+      expect(screen.getByText(/No excerpts yet/)).toBeInTheDocument();
     });
   });
 });

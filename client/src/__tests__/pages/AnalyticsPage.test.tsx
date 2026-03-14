@@ -34,15 +34,15 @@ describe('AnalyticsPage', () => {
     expect(screen.getAllByText('Time Distribution').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('shows Stalled Pieces section', () => {
+  it('shows Needs Attention section', () => {
     render(<AnalyticsPage />);
-    expect(screen.getByText('Stalled Pieces')).toBeInTheDocument();
+    expect(screen.getByText('Needs Attention')).toBeInTheDocument();
   });
 
   it('shows no stalled pieces message when empty', async () => {
     render(<AnalyticsPage />);
     await waitFor(() => {
-      expect(screen.getByText('No stalled pieces detected.')).toBeInTheDocument();
+      expect(screen.getByText('All pieces are progressing nicely.')).toBeInTheDocument();
     });
   });
 
@@ -59,7 +59,7 @@ describe('AnalyticsPage', () => {
     mockApi.getAnalyticsDrift.mockResolvedValue({ categories: [] });
     render(<AnalyticsPage />);
     await waitFor(() => {
-      expect(screen.getByText('Allocation Drift')).toBeInTheDocument();
+      expect(screen.getByText('Planned vs Actual')).toBeInTheDocument();
       expect(screen.getByTestId('drift-chart')).toBeInTheDocument();
     });
   });

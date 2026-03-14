@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { Input, Textarea } from '../ui/Input';
 import { api } from '../../api/client';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useModalLock } from '../../hooks/useModalLock';
 import type { ChallengeType, Excerpt } from '../../core/types';
 import { Swords, Zap, Eye, Timer, Target, Calendar, X, Search, Loader, Plus, Trash2 } from 'lucide-react';
 
@@ -34,6 +35,7 @@ interface Props {
 
 export function CreateChallengeModal({ open, onClose, onCreated }: Props) {
   const modalRef = useFocusTrap(open);
+  useModalLock(open);
   const [challengeType, setChallengeType] = useState<ChallengeType | null>(null);
   const [description, setDescription] = useState('');
   const [deadlineDays, setDeadlineDays] = useState(3);
