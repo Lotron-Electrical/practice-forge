@@ -41,7 +41,6 @@ export function AbcNotationViewer({ abc, className = '' }: Props) {
       if (ABCJS?.renderAbc) {
         ABCJS.renderAbc(containerRef.current, abc, {
           responsive: 'resize',
-          staffwidth: 600,
           paddingtop: 10,
           paddingbottom: 10,
         });

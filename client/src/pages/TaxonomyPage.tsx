@@ -54,7 +54,7 @@ function CategoryNode({
         {hasChildren && (
           <Badge color="var(--pf-text-secondary)" className="mr-2">{node.children.length}</Badge>
         )}
-        <div className="hidden group-hover:flex items-center gap-1">
+        <div className="flex sm:hidden sm:group-hover:flex items-center gap-1">
           <button onClick={() => onEdit(node)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)]"><Pencil size={14} /></button>
           <button onClick={() => onDelete(node.id)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-status-needs-work)]"><Trash2 size={14} /></button>
         </div>

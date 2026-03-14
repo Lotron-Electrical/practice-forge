@@ -326,7 +326,7 @@ export function SessionPage() {
 
                   {/* Actions */}
                   {isActive && (
-                    <div className="flex gap-2 flex-shrink-0">
+                    <div className="flex gap-2 flex-shrink-0 flex-wrap">
                       <Button size="sm" variant="ghost" title="Record"
                         onClick={() => {
                           const params = new URLSearchParams();

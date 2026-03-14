@@ -1,6 +1,6 @@
 import { forwardRef, type InputHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 
-const baseClasses = 'w-full px-3 py-2 rounded-pf-sm border border-[var(--pf-border-color)] bg-[var(--pf-bg-input)] text-[var(--pf-text-primary)] placeholder:text-[var(--pf-text-secondary)] focus-visible:ring-0 transition-colors';
+const baseClasses = 'w-full px-3 py-2 min-h-[44px] rounded-pf-sm border border-[var(--pf-border-color)] bg-[var(--pf-bg-input)] text-[var(--pf-text-primary)] placeholder:text-[var(--pf-text-secondary)] focus-visible:ring-0 transition-colors';
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & { label?: string }>(
   ({ label, className = '', id, ...props }, ref) => {

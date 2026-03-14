@@ -135,7 +135,7 @@ export function CreateChallengeModal({ open, onClose, onCreated }: Props) {
             {/* Challenge type selector */}
             <div>
               <label className="text-sm font-medium text-[var(--pf-text-secondary)] mb-2 block">Challenge Type</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {CHALLENGE_TYPES.map(({ type, icon: Icon, label }) => (
                   <button
                     key={type}

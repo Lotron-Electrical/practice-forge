@@ -49,8 +49,8 @@ export function SessionHistoryList({ data, onPageChange }: { data: HistoryData; 
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-pf-sm hover:bg-[var(--pf-bg-hover)] transition-colors text-left"
               >
                 {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                <span className="text-sm font-medium w-28">{dateStr}</span>
-                <span className="text-sm text-[var(--pf-text-secondary)] w-16">{duration}m</span>
+                <span className="text-sm font-medium w-20 sm:w-28 shrink-0">{dateStr}</span>
+                <span className="text-sm text-[var(--pf-text-secondary)] w-10 sm:w-16 shrink-0">{duration}m</span>
                 {s.rating && <Badge color={RATING_COLORS[s.rating]}>{s.rating}</Badge>}
                 <span className="text-xs text-[var(--pf-text-secondary)] ml-auto">
                   {s.blocks_completed}/{s.blocks_total} blocks

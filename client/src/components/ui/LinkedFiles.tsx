@@ -74,7 +74,7 @@ export function LinkedFiles({ linkedType, linkedId }: LinkedFilesProps) {
             </a>
             <span className="text-xs text-[var(--pf-text-secondary)] shrink-0">{formatSize(f.file_size_bytes)}</span>
             <a href={api.getFileDownloadUrl(f.id)} className="p-0.5 text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)]"><Download size={12} /></a>
-            <button onClick={() => handleUnlink(f.id)} className="p-0.5 text-[var(--pf-text-secondary)] opacity-0 group-hover:opacity-100 hover:text-[var(--pf-status-needs-work)]"><X size={12} /></button>
+            <button onClick={() => handleUnlink(f.id)} className="p-2 sm:p-0.5 text-[var(--pf-text-secondary)] sm:opacity-0 sm:group-hover:opacity-100 hover:text-[var(--pf-status-needs-work)]"><X size={12} /></button>
           </div>
         ))}
       </div>

@@ -115,7 +115,7 @@ export function ResourceSearchModal({ linkedType, linkedId, defaultQuery, onClos
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" role="dialog" aria-modal="true" aria-label="Find Resources" onClick={onClose}>
       <div
-        className="bg-[var(--pf-bg-primary)] border border-[var(--pf-border-color)] rounded-pf w-full max-w-xl max-h-[80vh] flex flex-col shadow-lg"
+        className="bg-[var(--pf-bg-primary)] border border-[var(--pf-border-color)] rounded-pf w-full max-w-xl max-h-[80vh] flex flex-col shadow-lg m-4"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}

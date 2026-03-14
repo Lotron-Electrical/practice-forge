@@ -125,7 +125,7 @@ export function PieceDetailPage() {
           {editing && (
             <Card>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input label="Title" value={form.title || ''} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
                   <Input label="Composer" value={form.composer || ''} onChange={e => setForm(f => ({ ...f, composer: e.target.value }))} />
                   <Input label="Difficulty" type="number" min="1" max="10" value={form.difficulty ?? ''} onChange={e => setForm(f => ({ ...f, difficulty: e.target.value ? Number(e.target.value) : null }))} />
@@ -185,9 +185,9 @@ export function PieceDetailPage() {
                         )}
                       </div>
                       {(!td.linked_exercises || td.linked_exercises.length === 0) && (
-                        <button onClick={() => setGenerateForDemand({ id: td.id, description: td.description })} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-accent-gold)]" title="Generate exercise"><Wand2 size={14} /></button>
+                        <button onClick={() => setGenerateForDemand({ id: td.id, description: td.description })} className="p-2.5 sm:p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-accent-gold)]" title="Generate exercise"><Wand2 size={14} /></button>
                       )}
-                      <button onClick={() => deleteDemand(td.id)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-status-needs-work)]"><Trash2 size={14} /></button>
+                      <button onClick={() => deleteDemand(td.id)} className="p-2.5 sm:p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-status-needs-work)]"><Trash2 size={14} /></button>
                     </div>
                   );
                 })}
@@ -195,7 +195,7 @@ export function PieceDetailPage() {
               {showDemandForm && (
                 <div className="mt-4 p-4 border border-[var(--pf-border-color)] rounded-pf space-y-3">
                   <Input label="Description" value={demandForm.description} onChange={e => setDemandForm(f => ({ ...f, description: e.target.value }))} placeholder="e.g. Scale in thirds — G major" />
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <Select label="Category" value={demandForm.category_id} onChange={e => setDemandForm(f => ({ ...f, category_id: e.target.value }))}>
                       <option value="">Select...</option>
                       {categories.map(c => <option key={c.id} value={c.id}>{c.parent_id ? '  ' : ''}{c.name}</option>)}
@@ -252,14 +252,14 @@ export function PieceDetailPage() {
                       <select
                         value={s.status}
                         onChange={e => updateSectionStatus(s.id, e.target.value as SectionStatus)}
-                        className="text-xs bg-transparent border-none text-[var(--pf-text-secondary)] cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="text-xs bg-transparent border-none text-[var(--pf-text-secondary)] cursor-pointer sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                       >
                         <option value="not_started">Not started</option>
                         <option value="working_on">Working on</option>
                         <option value="solid">Solid</option>
                         <option value="polished">Polished</option>
                       </select>
-                      <button onClick={() => deleteSection(s.id)} className="p-0.5 text-[var(--pf-text-secondary)] opacity-0 group-hover:opacity-100 hover:text-[var(--pf-status-needs-work)]"><Trash2 size={12} /></button>
+                      <button onClick={() => deleteSection(s.id)} className="p-2 sm:p-0.5 text-[var(--pf-text-secondary)] sm:opacity-0 sm:group-hover:opacity-100 hover:text-[var(--pf-status-needs-work)]"><Trash2 size={12} /></button>
                     </div>
                   );
                 })}

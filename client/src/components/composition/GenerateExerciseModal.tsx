@@ -211,7 +211,7 @@ export function GenerateExerciseModal({ open, onClose, demandId, demandDescripti
             {/* Rule-based form */}
             {tab === 'rule' && (
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Select label="Exercise type" value={ruleType} onChange={e => setRuleType(e.target.value as GenerationType)}>
                     <option value="scale">Scale</option>
                     <option value="arpeggio">Arpeggio</option>
@@ -224,7 +224,7 @@ export function GenerateExerciseModal({ open, onClose, demandId, demandDescripti
                 </div>
 
                 {ruleType === 'scale' && (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Select label="Scale type" value={ruleScaleType} onChange={e => setRuleScaleType(e.target.value)}>
                       {SCALE_TYPES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                     </Select>
@@ -253,7 +253,7 @@ export function GenerateExerciseModal({ open, onClose, demandId, demandDescripti
                   </Select>
                 )}
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Input label="Octaves" type="number" min={1} max={3} value={ruleOctaves} onChange={e => setRuleOctaves(parseInt(e.target.value) || 2)} />
                   <Input label="Tempo (BPM)" type="number" min={30} max={200} value={ruleTempo} onChange={e => setRuleTempo(parseInt(e.target.value) || 80)} />
                 </div>
