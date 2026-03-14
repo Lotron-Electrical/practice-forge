@@ -160,12 +160,12 @@ export function ExcerptsPage() {
                     <DifficultyDots value={ex.difficulty} />
                     <StatusIndicator {...sConf} size="sm" />
                     <div className="flex sm:hidden sm:group-hover:flex gap-1">
-                      <button onClick={() => handleGeneratePrep(ex.id)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-accent-gold)]" title="Generate prep routine" disabled={prepLoading && prepExcerptId === ex.id}>
+                      <button onClick={() => handleGeneratePrep(ex.id)} className="p-2.5 sm:p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-accent-gold)]" title="Generate prep routine" disabled={prepLoading && prepExcerptId === ex.id}>
                         {prepLoading && prepExcerptId === ex.id ? <Loader size={14} className="animate-spin" /> : <Wand2 size={14} />}
                       </button>
-                      <button onClick={() => setExpandedResourceId(expandedResourceId === ex.id ? null : ex.id)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-accent-teal)]" title="Resources"><BookOpen size={14} /></button>
-                      <button onClick={() => openEdit(ex)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)]"><Pencil size={14} /></button>
-                      <button onClick={() => handleDelete(ex.id)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-status-needs-work)]"><Trash2 size={14} /></button>
+                      <button onClick={() => setExpandedResourceId(expandedResourceId === ex.id ? null : ex.id)} className="p-2.5 sm:p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-accent-teal)]" title="Resources"><BookOpen size={14} /></button>
+                      <button onClick={() => openEdit(ex)} className="p-2.5 sm:p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)]"><Pencil size={14} /></button>
+                      <button onClick={() => handleDelete(ex.id)} className="p-2.5 sm:p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-status-needs-work)]"><Trash2 size={14} /></button>
                     </div>
                   </div>
                 </CardContent>
@@ -186,8 +186,8 @@ export function ExcerptsPage() {
       )}
       {/* Generated prep result */}
       {prepResult && prepExcerptId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
-          <div className="w-full max-w-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto" onClick={() => { setPrepResult(null); setPrepExcerptId(null); }}>
+          <div className="w-full max-w-2xl" onClick={e => e.stopPropagation()}>
             <Card>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">

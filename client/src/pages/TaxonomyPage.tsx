@@ -40,11 +40,11 @@ function CategoryNode({
   return (
     <div>
       <div
-        className="flex items-center gap-2 py-1.5 px-2 hover:bg-[var(--pf-bg-hover)] rounded-pf-sm group"
+        className="flex items-center gap-2 py-2.5 sm:py-1.5 px-2 hover:bg-[var(--pf-bg-hover)] rounded-pf-sm group"
         style={{ paddingLeft: `${depth * 20 + 8}px` }}
       >
         {hasChildren ? (
-          <button onClick={() => onToggle(node.id)} className="p-0.5 text-[var(--pf-text-secondary)]">
+          <button onClick={() => onToggle(node.id)} className="p-2 sm:p-0.5 text-[var(--pf-text-secondary)]">
             {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
         ) : (
@@ -55,8 +55,8 @@ function CategoryNode({
           <Badge color="var(--pf-text-secondary)" className="mr-2">{node.children.length}</Badge>
         )}
         <div className="flex sm:hidden sm:group-hover:flex items-center gap-1">
-          <button onClick={() => onEdit(node)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)]"><Pencil size={14} /></button>
-          <button onClick={() => onDelete(node.id)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-status-needs-work)]"><Trash2 size={14} /></button>
+          <button onClick={() => onEdit(node)} className="p-2.5 sm:p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)]"><Pencil size={14} /></button>
+          <button onClick={() => onDelete(node.id)} className="p-2.5 sm:p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-status-needs-work)]"><Trash2 size={14} /></button>
         </div>
       </div>
       {isExpanded && node.children
@@ -131,9 +131,9 @@ export function TaxonomyPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h1 className="text-2xl font-bold">Skill Taxonomy</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button variant="ghost" size="sm" onClick={expandAll}>Expand all</Button>
           <Button variant="ghost" size="sm" onClick={collapseAll}>Collapse all</Button>
           <Button size="sm" onClick={() => openAdd()}>
@@ -168,7 +168,7 @@ export function TaxonomyPage() {
                 <select
                   value={formParent}
                   onChange={e => setFormParent(e.target.value)}
-                  className="w-full px-3 py-2 rounded-pf-sm border border-[var(--pf-border-color)] bg-[var(--pf-bg-input)] text-[var(--pf-text-primary)]"
+                  className="w-full px-3 py-2 min-h-[44px] rounded-pf-sm border border-[var(--pf-border-color)] bg-[var(--pf-bg-input)] text-[var(--pf-text-primary)]"
                 >
                   <option value="">None (top-level)</option>
                   {topLevel.map(c => (

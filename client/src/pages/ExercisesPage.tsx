@@ -172,8 +172,8 @@ export function ExercisesPage() {
                       {ex.source && <p className="text-xs text-[var(--pf-text-secondary)]">{ex.source}</p>}
                     </div>
                     <div className="flex sm:hidden sm:group-hover:flex gap-1">
-                      <button onClick={() => openEdit(ex)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)]"><Pencil size={14} /></button>
-                      <button onClick={() => handleDelete(ex.id)} className="p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-status-needs-work)]"><Trash2 size={14} /></button>
+                      <button onClick={() => openEdit(ex)} className="p-2.5 sm:p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)]"><Pencil size={14} /></button>
+                      <button onClick={() => handleDelete(ex.id)} className="p-2.5 sm:p-1 text-[var(--pf-text-secondary)] hover:text-[var(--pf-status-needs-work)]"><Trash2 size={14} /></button>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap mb-2">
