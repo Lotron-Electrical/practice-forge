@@ -75,7 +75,7 @@ export function AnalyticsPage() {
           {/* Allocation Drift */}
           {drift && (
             <Card>
-              <CardHeader><h2 className="text-base font-semibold">Allocation Drift</h2></CardHeader>
+              <CardHeader><h2 className="text-base font-semibold">Planned vs Actual</h2></CardHeader>
               <CardContent>
                 <DriftChart data={drift} />
               </CardContent>
@@ -84,10 +84,10 @@ export function AnalyticsPage() {
 
           {/* Stalled Pieces */}
           <Card>
-            <CardHeader><h2 className="text-base font-semibold">Stalled Pieces</h2></CardHeader>
+            <CardHeader><h2 className="text-base font-semibold">Needs Attention</h2></CardHeader>
             <CardContent>
               {stalled.length === 0 ? (
-                <p className="text-sm text-[var(--pf-text-secondary)] text-center py-6">No stalled pieces detected.</p>
+                <p className="text-sm text-[var(--pf-text-secondary)] text-center py-6">All pieces are progressing nicely.</p>
               ) : (
                 <div className="space-y-3">
                   {stalled.map((s: any) => (

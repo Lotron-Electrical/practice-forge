@@ -18,6 +18,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { AssessmentsPage } from './pages/AssessmentsPage';
 import { CommunityPage } from './pages/CommunityPage';
 import { Loader } from 'lucide-react';
+import { useExperienceLevel, isPathAllowed } from './hooks/useExperienceLevel';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -38,6 +39,13 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function RequireLevel({ path, children }: { path: string; children: React.ReactNode }) {
+  const { level, isLoading } = useExperienceLevel();
+  if (isLoading) return null;
+  if (!isPathAllowed(path, level)) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -46,17 +54,17 @@ function AppRoutes() {
         <Route index element={<DashboardPage />} />
         <Route path="pieces" element={<PiecesPage />} />
         <Route path="pieces/:id" element={<PieceDetailPage />} />
-        <Route path="exercises" element={<ExercisesPage />} />
-        <Route path="excerpts" element={<ExcerptsPage />} />
-        <Route path="taxonomy" element={<TaxonomyPage />} />
+        <Route path="exercises" element={<RequireLevel path="/exercises"><ExercisesPage /></RequireLevel>} />
+        <Route path="excerpts" element={<RequireLevel path="/excerpts"><ExcerptsPage /></RequireLevel>} />
+        <Route path="taxonomy" element={<RequireLevel path="/taxonomy"><TaxonomyPage /></RequireLevel>} />
         <Route path="session" element={<SessionPage />} />
-        <Route path="media" element={<MediaLibraryPage />} />
-        <Route path="scores/:fileId" element={<ScoreAnalysisPage />} />
+        <Route path="media" element={<RequireLevel path="/media"><MediaLibraryPage /></RequireLevel>} />
+        <Route path="scores/:fileId" element={<RequireLevel path="/scores"><ScoreAnalysisPage /></RequireLevel>} />
         <Route path="record" element={<RecordingPage />} />
-        <Route path="assessments" element={<AssessmentsPage />} />
-        <Route path="community" element={<CommunityPage />} />
-        <Route path="analytics" element={<AnalyticsPage />} />
-        <Route path="profile" element={<ProfilePage />} />
+        <Route path="assessments" element={<RequireLevel path="/assessments"><AssessmentsPage /></RequireLevel>} />
+        <Route path="community" element={<RequireLevel path="/community"><CommunityPage /></RequireLevel>} />
+        <Route path="analytics" element={<RequireLevel path="/analytics"><AnalyticsPage /></RequireLevel>} />
+        <Route path="profile" element={<RequireLevel path="/profile"><ProfilePage /></RequireLevel>} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Routes>

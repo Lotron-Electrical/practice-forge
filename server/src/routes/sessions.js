@@ -520,6 +520,32 @@ router.get('/analytics/history', async (req, res) => {
   res.json({ sessions, total, page, totalPages: Math.ceil(total / limit) });
 });
 
+// POST quick-log — manually log practice without using session planner
+router.post('/quick-log', async (req, res) => {
+  const { notes, duration_min, date, rating } = req.body;
+  if (!notes || !duration_min) {
+    return res.status(400).json({ error: 'notes and duration_min are required' });
+  }
+
+  const sessionId = uuid();
+  const logDate = date || new Date().toISOString().slice(0, 10);
+
+  await execute(
+    "INSERT INTO practice_sessions (id, date, planned_duration_min, actual_duration_min, status, rating, updated_at) VALUES ($1, $2, $3, $4, 'completed', $5, NOW())",
+    [sessionId, logDate, duration_min, duration_min, rating || null]
+  );
+
+  const blockId = uuid();
+  await execute(
+    "INSERT INTO session_blocks (id, session_id, category, title, description, planned_duration_min, actual_duration_min, sort_order, status, notes) VALUES ($1, $2, 'buffer', 'Quick Log', $3, $4, $5, 0, 'completed', $6)",
+    [blockId, sessionId, notes, duration_min, duration_min, notes]
+  );
+
+  const session = await queryOne('SELECT * FROM practice_sessions WHERE id = $1', [sessionId]);
+  session.blocks = await queryAll('SELECT * FROM session_blocks WHERE session_id = $1 ORDER BY sort_order', [sessionId]);
+  res.status(201).json(session);
+});
+
 // GET stats (for dashboard)
 router.get('/stats', async (req, res) => {
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);

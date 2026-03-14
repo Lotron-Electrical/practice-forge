@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { StatusIndicator } from '../components/ui/StatusIndicator';
@@ -7,12 +7,19 @@ import { Input, Textarea, Select } from '../components/ui/Input';
 import { EXCERPT_STATUS_CONFIG } from '../core/constants';
 import { api } from '../api/client';
 import type { Excerpt, ExcerptStatus } from '../core/types';
-import { Plus, ListMusic, Trash2, Pencil, X, BookOpen, Wand2, Loader } from 'lucide-react';
+import { Plus, ListMusic, Trash2, Pencil, X, BookOpen, Wand2, Loader, Search } from 'lucide-react';
 import { ResourceFinderPanel } from '../components/resources/ResourceFinderPanel';
 import { ExcerptCommunityPanel } from '../components/community/ExcerptCommunityPanel';
 import { AiCostConfirm } from '../components/ui/AiCostConfirm';
 import { GeneratedExerciseCard } from '../components/composition/GeneratedExerciseCard';
 import type { GeneratedExercise, TaxonomyCategory } from '../core/types';
+
+const STATUS_ORDER: Record<ExcerptStatus, number> = {
+  needs_work: 0,
+  acceptable: 1,
+  solid: 2,
+  audition_ready: 3,
+};
 
 export function ExcerptsPage() {
   const [excerpts, setExcerpts] = useState<Excerpt[]>([]);
@@ -31,9 +38,50 @@ export function ExcerptsPage() {
     historical_context: '', performance_notes: '',
   });
 
+  // Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('recent');
+
   const load = () => api.getExcerpts().then(d => setExcerpts(d as Excerpt[])).catch(() => {});
   useEffect(() => { load(); }, []);
   useEffect(() => { api.getTaxonomy().then(d => setCategories(d as TaxonomyCategory[])).catch(() => {}); }, []);
+
+  const filteredExcerpts = useMemo(() => {
+    let result = [...excerpts];
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(ex =>
+        ex.title.toLowerCase().includes(q) || ex.composer.toLowerCase().includes(q)
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      result = result.filter(ex => ex.status === statusFilter);
+    }
+
+    // Sort
+    if (sortBy === 'title') {
+      result.sort((a, b) => a.title.localeCompare(b.title));
+    } else if (sortBy === 'difficulty') {
+      result.sort((a, b) => (b.difficulty ?? 0) - (a.difficulty ?? 0));
+    } else if (sortBy === 'status') {
+      result.sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
+    } else if (sortBy === 'last_practiced') {
+      result.sort((a, b) => {
+        if (!a.last_practiced && !b.last_practiced) return 0;
+        if (!a.last_practiced) return 1;
+        if (!b.last_practiced) return -1;
+        return new Date(b.last_practiced).getTime() - new Date(a.last_practiced).getTime();
+      });
+    }
+    // 'recent' keeps the default server order (most recently added first)
+
+    return result;
+  }, [excerpts, searchQuery, statusFilter, sortBy]);
 
   const handleGeneratePrep = async (excerptId: string) => {
     setPrepExcerptId(excerptId);
@@ -102,6 +150,42 @@ export function ExcerptsPage() {
         <Button size="sm" onClick={openCreate}><Plus size={16} /> Add Excerpt</Button>
       </div>
 
+      {/* Search and filters */}
+      <div className="flex flex-wrap gap-3 mb-4">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--pf-text-secondary)]" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search excerpts..."
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--pf-accent-primary)]"
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+          className="px-3 py-2 rounded-lg border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm"
+        >
+          <option value="all">All statuses</option>
+          <option value="needs_work">Needs work</option>
+          <option value="acceptable">Acceptable</option>
+          <option value="solid">Solid</option>
+          <option value="audition_ready">Audition ready</option>
+        </select>
+        <select
+          value={sortBy}
+          onChange={e => setSortBy(e.target.value)}
+          className="px-3 py-2 rounded-lg border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm"
+        >
+          <option value="recent">Sort: Recently Added</option>
+          <option value="title">Sort: Title</option>
+          <option value="difficulty">Sort: Difficulty</option>
+          <option value="status">Sort: Status</option>
+          <option value="last_practiced">Sort: Last Practiced</option>
+        </select>
+      </div>
+
       {showForm && (
         <Card className="mb-6">
           <CardContent className="space-y-4">
@@ -132,16 +216,20 @@ export function ExcerptsPage() {
         </Card>
       )}
 
-      {excerpts.length === 0 && !showForm ? (
+      {filteredExcerpts.length === 0 && !showForm ? (
         <Card>
           <CardContent className="text-center py-12">
             <ListMusic size={48} className="mx-auto mb-4 text-[var(--pf-text-secondary)]" />
-            <p className="text-[var(--pf-text-secondary)]">No excerpts yet. Add your first orchestral excerpt.</p>
+            <p className="text-[var(--pf-text-secondary)]">
+              {excerpts.length === 0
+                ? 'No excerpts yet. Add your first orchestral excerpt.'
+                : 'No excerpts match your filters.'}
+            </p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-3">
-          {excerpts.map(ex => {
+          {filteredExcerpts.map(ex => {
             const sConf = EXCERPT_STATUS_CONFIG[ex.status];
             return (
               <Card key={ex.id} borderColor={`var(${sConf.colorVar})`} className="group">

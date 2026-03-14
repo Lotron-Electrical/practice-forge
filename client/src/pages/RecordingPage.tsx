@@ -11,7 +11,8 @@ import { useAudioEngine, type RecordingResult } from '../hooks/useAudioEngine';
 import { useMetronome } from '../hooks/useMetronome';
 import { useScoreFollower } from '../hooks/useScoreFollower';
 import { api } from '../api/client';
-import { Mic, Music } from 'lucide-react';
+import { Mic, Music, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 type PageState = 'idle' | 'recording' | 'review' | 'saved';
 
@@ -135,6 +136,16 @@ export function RecordingPage() {
 
   return (
     <div>
+      {sessionId && (
+        <div className="sticky top-0 z-10 -mx-4 px-4 py-2 mb-4 flex items-center gap-2 text-sm border-b border-[var(--pf-border-color)]" style={{ backgroundColor: 'var(--pf-bg-secondary)' }}>
+          <Music size={14} style={{ color: 'var(--pf-accent-gold)' }} />
+          <span className="text-[var(--pf-text-secondary)]">Recording for session</span>
+          <span className="mx-1 text-[var(--pf-text-secondary)]">&mdash;</span>
+          <Link to="/session" className="flex items-center gap-1 font-medium hover:underline" style={{ color: 'var(--pf-accent-gold)' }}>
+            <ArrowLeft size={14} /> Back to Session
+          </Link>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Mic size={24} style={{ color: 'var(--pf-accent-gold)' }} />

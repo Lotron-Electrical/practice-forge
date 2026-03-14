@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button';
 import { PIECE_STATUS_CONFIG, PRIORITY_CONFIG, EXCERPT_STATUS_CONFIG } from '../core/constants';
 import { api } from '../api/client';
 import type { Piece, Excerpt } from '../core/types';
-import { Play, Clock, Flame, Target, AlertTriangle, CheckCircle, BarChart3, Music, BookOpen, Mic } from 'lucide-react';
+import { Play, Clock, Flame, Target, AlertTriangle, CheckCircle, BarChart3, Music, BookOpen, Mic, PenLine, ChevronDown, ChevronUp, ThumbsUp, Meh, ThumbsDown } from 'lucide-react';
 
 interface Stats {
   weekHours: number;
@@ -32,6 +32,12 @@ export function DashboardPage() {
   const [excerpts, setExcerpts] = useState<Excerpt[]>([]);
   const [driftAlerts, setDriftAlerts] = useState<string[]>([]);
   const [timeAlloc, setTimeAlloc] = useState({ warmup: 15, fundamentals: 10, technique: 20, repertoire: 35, excerpts: 15, buffer: 5 });
+  const [quickLogOpen, setQuickLogOpen] = useState(false);
+  const [qlNotes, setQlNotes] = useState('');
+  const [qlDuration, setQlDuration] = useState(30);
+  const [qlRating, setQlRating] = useState<string | null>(null);
+  const [qlSubmitting, setQlSubmitting] = useState(false);
+  const [qlSuccess, setQlSuccess] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -175,7 +181,108 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      {/* Middle row: Active Pieces + Excerpt Readiness */}
+      {/* Quick Log */}
+      <div className="mb-6">
+        {!quickLogOpen ? (
+          <button
+            onClick={() => setQuickLogOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-pf border border-[var(--pf-border-color)] text-sm font-medium text-[var(--pf-text-primary)] hover:border-[var(--pf-accent-gold)] transition-colors"
+          >
+            <PenLine size={16} style={{ color: 'var(--pf-accent-gold)' }} /> Log Practice
+          </button>
+        ) : (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-semibold">Quick Log</h2>
+                  <p className="text-xs text-[var(--pf-text-secondary)] mt-0.5">Log what you practised</p>
+                </div>
+                <button onClick={() => { setQuickLogOpen(false); setQlSuccess(false); }} className="text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)]">
+                  <ChevronUp size={18} />
+                </button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {qlSuccess ? (
+                <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--pf-status-ready)' }}>
+                  <CheckCircle size={16} /> Practice logged successfully
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <textarea
+                    value={qlNotes}
+                    onChange={e => setQlNotes(e.target.value)}
+                    placeholder="What did you practise? e.g. Scales 20 min, Mozart concerto 40 min"
+                    rows={3}
+                    className="w-full px-3 py-2 rounded-pf border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm resize-none focus:outline-none focus:border-[var(--pf-accent-gold)]"
+                  />
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-[var(--pf-text-secondary)]">Duration</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={qlDuration}
+                        onChange={e => setQlDuration(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-20 px-2 py-1.5 rounded-pf border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm focus:outline-none focus:border-[var(--pf-accent-gold)]"
+                      />
+                      <span className="text-sm text-[var(--pf-text-secondary)]">min</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {[
+                        { rating: 'good', icon: ThumbsUp, label: 'Good', color: 'var(--pf-status-ready)' },
+                        { rating: 'okay', icon: Meh, label: 'Okay', color: 'var(--pf-accent-gold)' },
+                        { rating: 'bad', icon: ThumbsDown, label: 'Tough', color: 'var(--pf-status-needs-work)' },
+                      ].map(({ rating, icon: Icon, label, color }) => (
+                        <button
+                          key={rating}
+                          onClick={() => setQlRating(qlRating === rating ? null : rating)}
+                          className="flex items-center gap-1 px-2 py-1.5 rounded-pf text-xs font-medium transition-colors border"
+                          style={{
+                            borderColor: qlRating === rating ? color : 'var(--pf-border-color)',
+                            backgroundColor: qlRating === rating ? `color-mix(in srgb, ${color} 12%, transparent)` : 'transparent',
+                            color: qlRating === rating ? color : 'var(--pf-text-secondary)',
+                          }}
+                        >
+                          <Icon size={14} /> {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="secondary" size="sm" onClick={() => { setQuickLogOpen(false); setQlSuccess(false); }}>
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={qlSubmitting || !qlNotes.trim()}
+                      onClick={async () => {
+                        setQlSubmitting(true);
+                        try {
+                          await api.quickLog({ notes: qlNotes.trim(), duration_min: qlDuration, rating: qlRating || undefined });
+                          setQlNotes('');
+                          setQlDuration(30);
+                          setQlRating(null);
+                          setQlSuccess(true);
+                          setTimeout(() => { setQlSuccess(false); setQuickLogOpen(false); }, 2000);
+                          // Refresh stats
+                          api.getSessionStats().then(d => setStats(d as Stats)).catch(() => {});
+                        } catch { /* ignore */ }
+                        setQlSubmitting(false);
+                      }}
+                    >
+                      <CheckCircle size={14} /> {qlSubmitting ? 'Logging...' : 'Log Practice'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Middle row: Active Pieces + Excerpt progress */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         <div className="lg:col-span-2">
           <Card>
@@ -225,11 +332,11 @@ export function DashboardPage() {
           </Card>
         </div>
 
-        {/* Excerpt Readiness */}
+        {/* Excerpt progress */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold">Excerpt Readiness</h2>
+              <h2 className="text-base font-semibold">Excerpt progress</h2>
               <Link to="/excerpts" className="text-xs" style={{ color: 'var(--pf-accent-gold)' }}>View all</Link>
             </div>
           </CardHeader>
@@ -260,7 +367,7 @@ export function DashboardPage() {
                 {/* Today's rotation */}
                 {rotation.length > 0 && (
                   <div className="mt-4 pt-3 border-t border-[var(--pf-border-color)]">
-                    <h3 className="text-xs font-semibold text-[var(--pf-text-secondary)] mb-2">TODAY'S ROTATION</h3>
+                    <h3 className="text-xs font-semibold text-[var(--pf-text-secondary)] mb-2">TODAY'S EXCERPTS</h3>
                     {rotation.map(r => {
                       const sConf = EXCERPT_STATUS_CONFIG[r.status as keyof typeof EXCERPT_STATUS_CONFIG] || EXCERPT_STATUS_CONFIG.needs_work;
                       return (

@@ -8,9 +8,11 @@ import { themes, type ThemeName } from '../themes/tokens';
 import { Bug, Lightbulb, Send, CheckCircle, Palette, Download, Upload, Plus } from 'lucide-react';
 import { ThemeGallery } from '../components/community/ThemeGallery';
 import { ThemeCreator } from '../components/community/ThemeCreator';
+import { useExperienceLevel, type ExperienceLevel } from '../hooks/useExperienceLevel';
 
 export function SettingsPage() {
   const { theme, setTheme, highContrast, setHighContrast, colourVisionMode, setColourVisionMode, reducedMotion, setReducedMotion, fontSize, setFontSize, applyCustomTokens } = useTheme();
+  const { level: experienceLevel, updateLevel: setExperienceLevel } = useExperienceLevel();
   const [showGallery, setShowGallery] = useState(false);
   const [showCreator, setShowCreator] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
@@ -79,6 +81,36 @@ export function SettingsPage() {
       <h1 className="text-2xl font-bold mb-6">Settings</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Experience Level */}
+        <Card className="lg:col-span-2">
+          <CardHeader><h2 className="text-lg font-semibold">Experience Level</h2></CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {([
+                { value: 'beginner' as ExperienceLevel, title: 'Getting Started', desc: "I'm new to structured practice. Show me the essentials." },
+                { value: 'intermediate' as ExperienceLevel, title: 'Intermediate', desc: 'I practice regularly and want more tools.' },
+                { value: 'advanced' as ExperienceLevel, title: 'Advanced', desc: 'Show me everything. I want full control.' },
+              ]).map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setExperienceLevel(opt.value)}
+                  className={`flex flex-col items-start gap-1 p-4 rounded-pf border-2 transition-colors text-left ${
+                    experienceLevel === opt.value
+                      ? 'border-[var(--pf-accent-gold)] bg-[var(--pf-accent-gold)]/5'
+                      : 'border-[var(--pf-border-color)] hover:border-[var(--pf-accent-gold)]/50'
+                  }`}
+                >
+                  <span className="font-medium text-sm">{opt.title}</span>
+                  <span className="text-xs text-[var(--pf-text-secondary)]">{opt.desc}</span>
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-[var(--pf-text-secondary)] mt-3">
+              Controls which features appear in the sidebar. You can change this any time.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Appearance */}
         <Card>
           <CardHeader><h2 className="text-lg font-semibold">Appearance</h2></CardHeader>

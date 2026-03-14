@@ -135,6 +135,8 @@ export const api = {
     request(`/sessions/${sessionId}/blocks/${blockId}/skip`, { method: 'PUT' }),
   completeSession: (id: string, data?: { rating?: string; notes?: string }) =>
     request(`/sessions/${id}/complete`, { method: 'PUT', body: JSON.stringify(data || {}) }),
+  quickLog: (data: { notes: string; duration_min: number; date?: string; rating?: string }) =>
+    request('/sessions/quick-log', { method: 'POST', body: JSON.stringify(data) }),
   getTodayRotation: () => request<unknown[]>('/sessions/rotation/today'),
   markRotationPracticed: (rotationId: string) =>
     request(`/sessions/rotation/${rotationId}/practiced`, { method: 'POST' }),

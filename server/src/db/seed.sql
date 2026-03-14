@@ -104,6 +104,40 @@ INSERT INTO taxonomy_categories (id, name, parent_id, sort_order, description) V
   ('ens-conducting', 'Following a Conductor', 'ensemble', 3, 'Responding to conducting')
 ON CONFLICT (id) DO NOTHING;
 
+-- Pre-populated exercise library (foundational flute exercises)
+INSERT INTO exercises (id, title, source, source_type, category_id, key, difficulty, description, tags) VALUES
+  ('ex-long-tones', 'Long Tones', '', 'manual', 'tone-long', NULL, 2,
+   'Sustained whole notes across all registers. Start pp, crescendo to ff, diminuendo back to pp. Focus on centred tone, steady air stream, and even dynamics throughout.', '["warmup","tone","fundamentals"]'),
+  ('ex-tg-no1', 'Taffanel & Gaubert No. 1', 'Taffanel & Gaubert: 17 Grands Exercices Journaliers', 'book', 'scales-chromatic', NULL, 5,
+   'Chromatic scale patterns in all keys. Essential daily exercise for finger evenness and facility. Start slowly with metronome and gradually increase tempo.', '["chromatic","finger-technique","daily"]'),
+  ('ex-tg-no4', 'Taffanel & Gaubert No. 4', 'Taffanel & Gaubert: 17 Grands Exercices Journaliers', 'book', 'scales-thirds', NULL, 6,
+   'Scales in intervals of thirds. Develops finger independence and interval accuracy. Practice in all major and minor keys.', '["intervals","scales","daily"]'),
+  ('ex-moyse-sonorite', 'Moyse De La Sonorite', 'Marcel Moyse: De La Sonorite', 'book', 'tone', NULL, 4,
+   'Comprehensive tone development exercises. Focus on producing a beautiful, resonant sound across all registers with smooth register transitions.', '["tone","sonorite","fundamentals"]'),
+  ('ex-major-scales', 'Major Scales (All Keys, 2 Octaves)', '', 'manual', 'scales-major', 'All keys', 3,
+   'All 12 major scales played over 2 octaves. Practice with varied articulations (all slurred, all tongued, 2 slurred 2 tongued). Use full range of dynamics.', '["scales","fundamentals","daily"]'),
+  ('ex-minor-scales-harmonic', 'Minor Scales — Harmonic (All Keys)', '', 'manual', 'scales-minor-harmonic', 'All keys', 4,
+   'All harmonic minor scales over 2 octaves. Pay attention to the augmented second interval between the 6th and 7th degrees.', '["scales","minor","fundamentals"]'),
+  ('ex-minor-scales-melodic', 'Minor Scales — Melodic (All Keys)', '', 'manual', 'scales-minor-melodic', 'All keys', 4,
+   'All melodic minor scales over 2 octaves. Raised 6th and 7th ascending, natural form descending. Essential for orchestral playing.', '["scales","minor","fundamentals"]'),
+  ('ex-chromatic-scale', 'Chromatic Scale (Full Range)', '', 'manual', 'scales-chromatic', NULL, 3,
+   'Chromatic scale from low C/B to top of range. Practice with even fingers, consistent tone, and various articulation patterns.', '["chromatic","range","fundamentals"]'),
+  ('ex-major-arpeggios', 'Major Arpeggios (All Keys)', '', 'manual', 'arp-major', 'All keys', 4,
+   'Major arpeggios in all 12 keys over 2 octaves. Focus on clean interval connections, especially across register breaks.', '["arpeggios","fundamentals"]'),
+  ('ex-minor-arpeggios', 'Minor Arpeggios (All Keys)', '', 'manual', 'arp-minor', 'All keys', 4,
+   'Minor arpeggios in all 12 keys over 2 octaves. Practice both natural minor and harmonic minor arpeggio forms.', '["arpeggios","minor","fundamentals"]'),
+  ('ex-dom7-arpeggios', 'Dominant 7th Arpeggios (All Keys)', '', 'manual', 'arp-dom7', 'All keys', 5,
+   'Dominant 7th arpeggios in all keys. Critical for orchestral repertoire. Focus on intonation of the minor 7th interval.', '["arpeggios","seventh","fundamentals"]'),
+  ('ex-articulation-patterns', 'Articulation Patterns (Single/Double/Triple Tongue)', '', 'manual', 'articulation', NULL, 5,
+   'Systematic articulation study: single tonguing (tu), double tonguing (tu-ku), and triple tonguing (tu-tu-ku / tu-ku-tu). Practice on repeated notes, scales, and arpeggios.', '["articulation","tonguing","technique"]'),
+  ('ex-vibrato', 'Vibrato Exercises', '', 'manual', 'vibrato', NULL, 4,
+   'Controlled vibrato practice. Start with measured oscillations (quarter note, eighth note, triplet, sixteenth) then transition to free vibrato. Vary speed and width.', '["vibrato","expression","tone"]'),
+  ('ex-breathing', 'Breathing Exercises', '', 'manual', 'breathing', NULL, 2,
+   'Breath control fundamentals: timed inhale/exhale ratios, breath attacks, sustained air support exercises. Practice away from the flute first, then apply.', '["breathing","warmup","fundamentals"]'),
+  ('ex-lip-flexibility', 'Lip Flexibility / Harmonics', '', 'manual', 'tone-harmonics', NULL, 6,
+   'Harmonic series exercises: finger low C/C#/D and overblow through the harmonic series. Develops embouchure flexibility, pitch control, and upper register ease.', '["harmonics","embouchure","flexibility"]')
+ON CONFLICT (id) DO NOTHING;
+
 -- Default settings
 INSERT INTO settings (key, value) VALUES
   ('theme', '"light"'),

@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { api } from '../api/client';
-import { useNavigate } from 'react-router-dom';
-import { Play, CheckCircle, SkipForward, Square, Clock, Sparkles, Music, BookOpen, ListMusic, Zap, Timer, ThumbsUp, Meh, ThumbsDown, Mic } from 'lucide-react';
+import { Play, CheckCircle, SkipForward, Square, Clock, Sparkles, Music, BookOpen, ListMusic, Zap, Timer, ThumbsUp, Meh, ThumbsDown, Mic, ChevronDown, ChevronUp, Circle } from 'lucide-react';
+import { MetronomeControls } from '../components/recording/MetronomeControls';
+import { useMetronome } from '../hooks/useMetronome';
 
 interface Block {
   id: string;
@@ -38,7 +39,7 @@ const CATEGORY_CONFIG: Record<string, { icon: typeof Play; color: string; label:
   technique: { icon: BookOpen, color: 'var(--pf-accent-teal)', label: 'Technique' },
   repertoire: { icon: Music, color: 'var(--pf-status-in-progress)', label: 'Repertoire' },
   excerpts: { icon: ListMusic, color: 'var(--pf-accent-lavender)', label: 'Excerpts' },
-  buffer: { icon: Timer, color: 'var(--pf-text-secondary)', label: 'Buffer' },
+  buffer: { icon: Timer, color: 'var(--pf-text-secondary)', label: 'Flexible time' },
 };
 
 function formatTime(seconds: number) {
@@ -55,7 +56,87 @@ export function SessionPage() {
   const [showComplete, setShowComplete] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const navigate = useNavigate();
+  // Metronome panel
+  const [metronomeOpen, setMetronomeOpen] = useState(false);
+  const metronome = useMetronome();
+
+  // Mini recorder
+  const [recorderOpen, setRecorderOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recDuration, setRecDuration] = useState(0);
+  const [recSaved, setRecSaved] = useState(false);
+  const [recError, setRecError] = useState<string | null>(null);
+  const recMediaRef = useRef<MediaRecorder | null>(null);
+  const recChunksRef = useRef<Blob[]>([]);
+  const recStreamRef = useRef<MediaStream | null>(null);
+  const recTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recStartRef = useRef(0);
+
+  const startInlineRecording = useCallback(async () => {
+    setRecError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recStreamRef.current = stream;
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus' : 'audio/webm';
+      const recorder = new MediaRecorder(stream, { mimeType });
+      recChunksRef.current = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) recChunksRef.current.push(e.data); };
+      recorder.start(100);
+      recMediaRef.current = recorder;
+      recStartRef.current = performance.now();
+      setRecDuration(0);
+      setIsRecording(true);
+      recTimerRef.current = setInterval(() => {
+        setRecDuration(Math.floor((performance.now() - recStartRef.current) / 1000));
+      }, 200);
+    } catch (err) {
+      setRecError(err instanceof Error ? err.message : 'Microphone access denied');
+    }
+  }, []);
+
+  const stopInlineRecording = useCallback(async (block: Block, sessionObj: Session) => {
+    if (!recMediaRef.current) return;
+    const recorder = recMediaRef.current;
+    if (recTimerRef.current) { clearInterval(recTimerRef.current); recTimerRef.current = null; }
+
+    return new Promise<void>((resolve) => {
+      recorder.onstop = async () => {
+        const blob = new Blob(recChunksRef.current, { type: recorder.mimeType });
+        const finalDuration = (performance.now() - recStartRef.current) / 1000;
+        setIsRecording(false);
+        if (recStreamRef.current) { recStreamRef.current.getTracks().forEach(t => t.stop()); recStreamRef.current = null; }
+
+        try {
+          const metadata: Record<string, string> = {
+            filename: `recording-${Date.now()}.webm`,
+            title: `${block.title} - ${new Date().toLocaleTimeString()}`,
+            duration_seconds: String(Math.round(finalDuration)),
+          };
+          if (block.linked_type) metadata.linked_type = block.linked_type;
+          if (block.linked_id) metadata.linked_id = block.linked_id;
+          metadata.session_id = sessionObj.id;
+          metadata.block_id = block.id;
+
+          await api.createRecording(blob, metadata);
+          setRecSaved(true);
+          setTimeout(() => { setRecSaved(false); setRecorderOpen(false); }, 1500);
+        } catch {
+          setRecError('Failed to save recording');
+        }
+        resolve();
+      };
+      recorder.stop();
+    });
+  }, []);
+
+  // Cleanup recorder on unmount
+  useEffect(() => {
+    return () => {
+      if (recTimerRef.current) clearInterval(recTimerRef.current);
+      if (recStreamRef.current) recStreamRef.current.getTracks().forEach(t => t.stop());
+    };
+  }, []);
 
   const loadCurrent = useCallback(() => {
     api.getCurrentSession().then(data => {
@@ -261,6 +342,9 @@ export function SessionPage() {
                     {formatTime(timer)}
                   </div>
                   <span className="text-sm text-[var(--pf-text-secondary)]">/ {formatTime(activeBlockTarget)}</span>
+                  <span className="text-xs text-[var(--pf-text-secondary)] ml-2 border-l border-[var(--pf-border-color)] pl-3">
+                    Total: {completedMin + Math.round(timer / 60)} min
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   <Button size="sm" variant="ghost" onClick={() => setTimerRunning(!timerRunning)}>
@@ -269,6 +353,30 @@ export function SessionPage() {
                   </Button>
                 </div>
               </CardContent>
+            </Card>
+          )}
+
+          {/* Collapsible metronome panel */}
+          {isStarted && activeBlock && (
+            <Card>
+              <button
+                onClick={() => setMetronomeOpen(!metronomeOpen)}
+                className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-[var(--pf-text-primary)] hover:bg-[var(--pf-bg-hover)] transition-colors rounded-pf"
+              >
+                <span className="flex items-center gap-2">
+                  <Timer size={14} style={{ color: 'var(--pf-accent-gold)' }} />
+                  Metronome
+                  {metronome.isPlaying && (
+                    <span className="text-xs text-[var(--pf-text-secondary)]">{metronome.bpm} BPM</span>
+                  )}
+                </span>
+                {metronomeOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+              {metronomeOpen && (
+                <CardContent className="pt-0 pb-3">
+                  <MetronomeControls {...metronome} />
+                </CardContent>
+              )}
             </Card>
           )}
 
@@ -297,54 +405,100 @@ export function SessionPage() {
                 borderColor={isActive ? conf.color : undefined}
                 className={`transition-all ${isActive ? 'ring-2 ring-[var(--pf-accent-gold)]/30' : ''} ${isCompleted || isSkipped ? 'opacity-60' : ''}`}
               >
-                <CardContent className="flex items-start gap-4 py-3">
-                  {/* Status icon */}
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-                    style={{ backgroundColor: isCompleted ? 'var(--pf-status-ready)' : isSkipped ? 'var(--pf-text-secondary)' : `${conf.color}20`, color: isCompleted ? 'white' : isSkipped ? 'white' : conf.color }}
-                  >
-                    {isCompleted ? <CheckCircle size={16} /> : isSkipped ? <SkipForward size={16} /> : <Icon size={16} />}
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="font-semibold text-sm">{block.title}</span>
-                      <Badge color={conf.color}>{conf.label}</Badge>
-                      <span className="text-xs text-[var(--pf-text-secondary)]">{block.planned_duration_min} min</span>
+                <CardContent className="py-3">
+                  <div className="flex items-start gap-4">
+                    {/* Status icon */}
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                      style={{ backgroundColor: isCompleted ? 'var(--pf-status-ready)' : isSkipped ? 'var(--pf-text-secondary)' : `${conf.color}20`, color: isCompleted ? 'white' : isSkipped ? 'white' : conf.color }}
+                    >
+                      {isCompleted ? <CheckCircle size={16} /> : isSkipped ? <SkipForward size={16} /> : <Icon size={16} />}
                     </div>
-                    {block.description && (
-                      <p className="text-xs text-[var(--pf-text-secondary)]">{block.description}</p>
-                    )}
-                    {block.focus_points && (
-                      <p className="text-xs mt-1" style={{ color: conf.color }}>Focus: {block.focus_points}</p>
-                    )}
-                    {isCompleted && block.actual_duration_min && (
-                      <span className="text-xs text-[var(--pf-text-secondary)]">Completed in {block.actual_duration_min} min</span>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="font-semibold text-sm">{block.title}</span>
+                        <Badge color={conf.color}>{conf.label}</Badge>
+                        <span className="text-xs text-[var(--pf-text-secondary)]">{block.planned_duration_min} min</span>
+                      </div>
+                      {block.description && (
+                        <p className="text-xs text-[var(--pf-text-secondary)]">{block.description}</p>
+                      )}
+                      {block.focus_points && (
+                        <p className="text-xs mt-1" style={{ color: conf.color }}>Focus: {block.focus_points}</p>
+                      )}
+                      {isCompleted && block.actual_duration_min && (
+                        <span className="text-xs text-[var(--pf-text-secondary)]">Completed in {block.actual_duration_min} min</span>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    {isActive && (
+                      <div className="flex gap-2 flex-shrink-0 flex-wrap">
+                        <Button size="sm" variant={recorderOpen ? 'secondary' : 'ghost'} title="Record"
+                          onClick={() => setRecorderOpen(!recorderOpen)}
+                          style={isRecording ? { color: 'var(--pf-status-needs-work)' } : undefined}
+                        >
+                          <Mic size={14} />
+                        </Button>
+                        <Button size="sm" onClick={() => completeBlock(block.id)}>
+                          <CheckCircle size={14} /> Done
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => skipBlock(block.id)}>
+                          <SkipForward size={14} /> Skip
+                        </Button>
+                      </div>
                     )}
                   </div>
 
-                  {/* Actions */}
-                  {isActive && (
-                    <div className="flex gap-2 flex-shrink-0 flex-wrap">
-                      <Button size="sm" variant="ghost" title="Record"
-                        onClick={() => {
-                          const params = new URLSearchParams();
-                          if (block.linked_type) params.set('linked_type', block.linked_type);
-                          if (block.linked_id) params.set('linked_id', block.linked_id);
-                          if (session) params.set('session_id', session.id);
-                          params.set('block_id', block.id);
-                          navigate(`/record?${params.toString()}`);
-                        }}
-                      >
-                        <Mic size={14} />
-                      </Button>
-                      <Button size="sm" onClick={() => completeBlock(block.id)}>
-                        <CheckCircle size={14} /> Done
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => skipBlock(block.id)}>
-                        <SkipForward size={14} /> Skip
-                      </Button>
+                  {/* Inline mini recorder */}
+                  {isActive && recorderOpen && (
+                    <div className="mt-3 p-3 rounded-pf border border-[var(--pf-border-color)] bg-[var(--pf-bg-hover)]">
+                      {recSaved ? (
+                        <div className="flex items-center justify-center gap-2 text-sm" style={{ color: 'var(--pf-status-ready)' }}>
+                          <CheckCircle size={16} /> Saved
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          {!isRecording ? (
+                            <button
+                              onClick={startInlineRecording}
+                              className="w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-105 flex-shrink-0"
+                              style={{ backgroundColor: 'var(--pf-status-needs-work)' }}
+                              title="Start recording"
+                            >
+                              <Circle size={16} className="text-white fill-white" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => stopInlineRecording(block, session)}
+                              className="w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-105 flex-shrink-0"
+                              style={{ backgroundColor: 'var(--pf-text-secondary)' }}
+                              title="Stop recording"
+                            >
+                              <Square size={14} className="text-white fill-white" />
+                            </button>
+                          )}
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            {isRecording && (
+                              <span className="w-2 h-2 rounded-full animate-pulse flex-shrink-0" style={{ backgroundColor: 'var(--pf-status-needs-work)' }} />
+                            )}
+                            <span className="text-sm font-mono font-medium">
+                              {formatTime(recDuration)}
+                            </span>
+                            {isRecording && (
+                              <span className="text-xs text-[var(--pf-text-secondary)]">Recording...</span>
+                            )}
+                            {!isRecording && (
+                              <span className="text-xs text-[var(--pf-text-secondary)]">Tap to record</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {recError && (
+                        <p className="text-xs mt-2" style={{ color: 'var(--pf-status-needs-work)' }}>{recError}</p>
+                      )}
                     </div>
                   )}
                 </CardContent>

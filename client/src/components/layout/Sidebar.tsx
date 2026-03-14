@@ -1,22 +1,62 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Music, BookOpen, ListMusic, FolderOpen, Mic, BarChart3, Settings, ChevronLeft, ChevronRight, Tags, Timer, X, User, ClipboardCheck, Users } from 'lucide-react';
-import { useState } from 'react';
+import { LayoutDashboard, Music, BookOpen, ListMusic, FolderOpen, Mic, BarChart3, Settings, ChevronLeft, ChevronRight, Timer, X, User, ClipboardCheck, Users, ChevronDown } from 'lucide-react';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
+import { useExperienceLevel, isNavItemAllowed } from '../../hooks/useExperienceLevel';
 
-const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/pieces', icon: Music, label: 'Pieces' },
-  { to: '/exercises', icon: BookOpen, label: 'Exercises' },
-  { to: '/excerpts', icon: ListMusic, label: 'Excerpts' },
-  { to: '/session', icon: Timer, label: 'Session' },
-  { to: '/record', icon: Mic, label: 'Record' },
-  { to: '/media', icon: FolderOpen, label: 'Media' },
-  { to: '/assessments', icon: ClipboardCheck, label: 'Assessments' },
-  { to: '/analytics', icon: BarChart3, label: 'Analytics' },
-  { to: '/community', icon: Users, label: 'Community' },
-  { to: '/taxonomy', icon: Tags, label: 'Skills' },
-  { to: '/profile', icon: User, label: 'Profile' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+// Grouped navigation structure
+type NavItem = { to: string; icon: typeof LayoutDashboard; label: string };
+type NavGroup = { header: string | null; items: NavItem[]; collapsible?: boolean };
+
+const navGroups: NavGroup[] = [
+  {
+    header: null,
+    items: [
+      { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    ],
+  },
+  {
+    header: 'Practice',
+    items: [
+      { to: '/session', icon: Timer, label: 'Session' },
+      { to: '/record', icon: Mic, label: 'Record' },
+    ],
+  },
+  {
+    header: 'Library',
+    items: [
+      { to: '/pieces', icon: Music, label: 'Pieces' },
+      { to: '/exercises', icon: BookOpen, label: 'Exercises' },
+      { to: '/excerpts', icon: ListMusic, label: 'Excerpts' },
+    ],
+  },
+  {
+    header: 'Progress',
+    items: [
+      { to: '/analytics', icon: BarChart3, label: 'Analytics' },
+      { to: '/assessments', icon: ClipboardCheck, label: 'Assessments' },
+    ],
+  },
+  {
+    header: 'More',
+    collapsible: true,
+    items: [
+      { to: '/community', icon: Users, label: 'Community' },
+      { to: '/media', icon: FolderOpen, label: 'Media' },
+      { to: '/profile', icon: User, label: 'Profile' },
+      { to: '/settings', icon: Settings, label: 'Settings' },
+    ],
+  },
 ];
+
+const MORE_EXPANDED_KEY = 'pf-sidebar-more-expanded';
+
+function getStoredMoreExpanded(): boolean {
+  try {
+    return localStorage.getItem(MORE_EXPANDED_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
 
 interface SidebarProps {
   isMobile: boolean;
@@ -24,8 +64,129 @@ interface SidebarProps {
   onClose: () => void;
 }
 
+function SectionHeader({ label, collapsed }: { label: string; collapsed: boolean }) {
+  if (collapsed) {
+    return <div className="mx-auto my-2 w-6 border-t border-white/20" />;
+  }
+  return (
+    <div className="text-xs uppercase tracking-wider text-[var(--pf-text-nav)]/50 px-4 pt-4 pb-1 select-none">
+      {label}
+    </div>
+  );
+}
+
+function NavItemLink({
+  item,
+  sidebarCollapsed,
+  onClick,
+  mobile,
+}: {
+  item: NavItem;
+  sidebarCollapsed: boolean;
+  onClick?: () => void;
+  mobile?: boolean;
+}) {
+  const { to, icon: Icon, label } = item;
+  const py = mobile ? 'py-3.5' : 'py-2.5';
+  const px = mobile ? 'px-4' : 'px-3';
+  return (
+    <NavLink
+      key={to}
+      to={to}
+      end={to === '/'}
+      onClick={onClick}
+      className={({ isActive }) =>
+        `flex items-center gap-3 ${px} ${py} rounded-pf-sm text-sm font-medium transition-colors ${
+          isActive
+            ? 'bg-white/10 text-[var(--pf-text-nav-active)]'
+            : 'hover:bg-white/5 text-[var(--pf-text-nav)]'
+        }`
+      }
+      title={label}
+    >
+      <Icon size={20} />
+      {!sidebarCollapsed && <span>{label}</span>}
+    </NavLink>
+  );
+}
+
 export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [moreExpanded, setMoreExpanded] = useState(getStoredMoreExpanded);
+  const { level } = useExperienceLevel();
+
+  // Filter nav groups based on experience level
+  const filteredNavGroups = useMemo(() => {
+    return navGroups
+      .map(group => ({
+        ...group,
+        items: group.items.filter(item => isNavItemAllowed(item.label, level)),
+      }))
+      .filter(group => group.items.length > 0);
+  }, [level]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(MORE_EXPANDED_KEY, String(moreExpanded));
+    } catch {
+      // ignore
+    }
+  }, [moreExpanded]);
+
+  function renderGroups({
+    sidebarCollapsed,
+    onClick,
+    mobile,
+    forceMoreOpen,
+  }: {
+    sidebarCollapsed: boolean;
+    onClick?: () => void;
+    mobile?: boolean;
+    forceMoreOpen?: boolean;
+  }): ReactNode {
+    return filteredNavGroups.map((group, gi) => {
+      const isMore = group.collapsible;
+      const showItems = !isMore || forceMoreOpen || moreExpanded;
+
+      return (
+        <div key={gi}>
+          {group.header && !isMore && (
+            <SectionHeader label={group.header} collapsed={sidebarCollapsed} />
+          )}
+
+          {isMore && group.header && (
+            sidebarCollapsed ? (
+              <div className="mx-auto my-2 w-6 border-t border-white/20" />
+            ) : forceMoreOpen ? (
+              <SectionHeader label={group.header} collapsed={false} />
+            ) : (
+              <button
+                onClick={() => setMoreExpanded((v) => !v)}
+                className="flex items-center justify-between w-full text-xs uppercase tracking-wider text-[var(--pf-text-nav)]/50 px-4 pt-4 pb-1 hover:text-[var(--pf-text-nav)]/80 transition-colors select-none"
+              >
+                <span>{group.header}</span>
+                <ChevronDown
+                  size={14}
+                  className={`transition-transform ${moreExpanded ? 'rotate-180' : ''}`}
+                />
+              </button>
+            )
+          )}
+
+          {showItems &&
+            group.items.map((item) => (
+              <NavItemLink
+                key={item.to}
+                item={item}
+                sidebarCollapsed={sidebarCollapsed}
+                onClick={onClick}
+                mobile={mobile}
+              />
+            ))}
+        </div>
+      );
+    });
+  }
 
   // Mobile: off-canvas drawer
   if (isMobile) {
@@ -60,27 +221,9 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
             </button>
           </div>
 
-          {/* Navigation — larger touch targets */}
+          {/* Navigation — larger touch targets, More always expanded */}
           <nav className="flex-1 flex flex-col gap-1 px-2 mt-2 overflow-y-auto">
-            {navItems.map(({ to, icon: Icon, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === '/'}
-                onClick={onClose}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3.5 rounded-pf-sm text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-white/10 text-[var(--pf-text-nav-active)]'
-                      : 'hover:bg-white/5 text-[var(--pf-text-nav)]'
-                  }`
-                }
-                title={label}
-              >
-                <Icon size={20} />
-                <span>{label}</span>
-              </NavLink>
-            ))}
+            {renderGroups({ sidebarCollapsed: false, onClick: onClose, mobile: true, forceMoreOpen: true })}
           </nav>
         </aside>
       </>
@@ -107,25 +250,8 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 flex flex-col gap-1 px-2 mt-2">
-        {navItems.map(({ to, icon: Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === '/'}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-pf-sm text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-white/10 text-[var(--pf-text-nav-active)]'
-                  : 'hover:bg-white/5 text-[var(--pf-text-nav)]'
-              }`
-            }
-            title={label}
-          >
-            <Icon size={20} />
-            {!collapsed && <span>{label}</span>}
-          </NavLink>
-        ))}
+      <nav className="flex-1 flex flex-col gap-1 px-2 mt-2 overflow-y-auto">
+        {renderGroups({ sidebarCollapsed: collapsed })}
       </nav>
 
       {/* Collapse toggle */}

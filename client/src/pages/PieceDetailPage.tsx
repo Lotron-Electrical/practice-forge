@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -13,7 +13,7 @@ import { LinkedFiles } from '../components/ui/LinkedFiles';
 import { ResourceFinderPanel } from '../components/resources/ResourceFinderPanel';
 import { RecordingsList } from '../components/recording/RecordingsList';
 import { GenerateExerciseModal } from '../components/composition/GenerateExerciseModal';
-import { Plus, Trash2, ArrowLeft, ChevronRight, Sparkles, Wand2 } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, ChevronRight, ChevronDown, Sparkles, Wand2 } from 'lucide-react';
 
 export function PieceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +35,15 @@ export function PieceDetailPage() {
   // Generate exercise modal
   const [generateForDemand, setGenerateForDemand] = useState<{ id: string; description: string } | null>(null);
 
+  // Sidebar collapsible sections — counts fetched to determine initial state
+  const [recordingCount, setRecordingCount] = useState<number | null>(null);
+  const [resourceCount, setResourceCount] = useState<number | null>(null);
+  const [fileCount, setFileCount] = useState<number | null>(null);
+  const [recordingsOpen, setRecordingsOpen] = useState(false);
+  const [resourcesOpen, setResourcesOpen] = useState(false);
+  const [filesOpen, setFilesOpen] = useState(false);
+  const countsLoadedRef = useRef(false);
+
   const load = useCallback(() => {
     if (!id) return;
     api.getPiece(id).then(d => {
@@ -43,7 +52,25 @@ export function PieceDetailPage() {
       setForm(p);
     }).catch(() => {});
     api.getTaxonomy().then(d => setCategories(d as TaxonomyCategory[])).catch(() => {});
-    if (id) api.getFiles({ linked_type: 'piece', linked_id: id }).then(d => setLinkedFiles(d as UploadedFile[])).catch(() => {});
+    if (id) {
+      api.getFiles({ linked_type: 'piece', linked_id: id }).then(d => {
+        const files = d as UploadedFile[];
+        setLinkedFiles(files);
+        setFileCount(files.length);
+        if (!countsLoadedRef.current && files.length > 0) setFilesOpen(true);
+      }).catch(() => {});
+      api.getRecordings({ linked_type: 'piece', linked_id: id }).then(d => {
+        const recs = d as unknown[];
+        setRecordingCount(recs.length);
+        if (!countsLoadedRef.current && recs.length > 0) setRecordingsOpen(true);
+      }).catch(() => {});
+      api.getResources({ linked_type: 'piece', linked_id: id }).then(d => {
+        const res = d as unknown[];
+        setResourceCount(res.length);
+        if (!countsLoadedRef.current && res.length > 0) setResourcesOpen(true);
+      }).catch(() => {});
+      countsLoadedRef.current = true;
+    }
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
@@ -147,7 +174,7 @@ export function PieceDetailPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Technical Demands</h2>
+                <h2 className="text-lg font-semibold">Tricky Spots</h2>
                 <div className="flex gap-2">
                   <Button variant="ghost" size="sm" onClick={() => {
                     const sheetMusic = linkedFiles.find(f => f.file_type === 'sheet_music_digital' || f.file_type === 'sheet_music_scanned');
@@ -161,7 +188,7 @@ export function PieceDetailPage() {
             </CardHeader>
             <CardContent>
               {piece.technical_demands.length === 0 && !showDemandForm && (
-                <p className="text-sm text-[var(--pf-text-secondary)]">No technical demands yet.</p>
+                <p className="text-sm text-[var(--pf-text-secondary)]">No tricky spots added yet.</p>
               )}
               <div className="space-y-3">
                 {piece.technical_demands.map(td => {
@@ -205,7 +232,7 @@ export function PieceDetailPage() {
                   </div>
                   <div className="flex gap-2 justify-end">
                     <Button variant="secondary" size="sm" onClick={() => setShowDemandForm(false)}>Cancel</Button>
-                    <Button size="sm" onClick={addDemand} disabled={!demandForm.description.trim()}>Add Demand</Button>
+                    <Button size="sm" onClick={addDemand} disabled={!demandForm.description.trim()}>Add</Button>
                   </div>
                 </div>
               )}
@@ -276,26 +303,62 @@ export function PieceDetailPage() {
               )}
             </CardContent>
           </Card>
-          {/* Recordings */}
+          {/* Recordings — collapsible */}
           <Card>
-            <CardHeader><h2 className="text-base font-semibold">Recordings</h2></CardHeader>
-            <CardContent>
-              <RecordingsList linkedType="piece" linkedId={piece.id} />
-            </CardContent>
+            <CardHeader>
+              <button onClick={() => setRecordingsOpen(!recordingsOpen)} className="w-full flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-semibold">Recordings</h2>
+                  {!recordingsOpen && recordingCount != null && recordingCount > 0 && (
+                    <Badge color="var(--pf-accent-gold)">{recordingCount}</Badge>
+                  )}
+                </div>
+                <ChevronDown size={16} className={`text-[var(--pf-text-secondary)] transition-transform ${recordingsOpen ? 'rotate-180' : ''}`} />
+              </button>
+            </CardHeader>
+            {recordingsOpen && (
+              <CardContent>
+                <RecordingsList linkedType="piece" linkedId={piece.id} />
+              </CardContent>
+            )}
           </Card>
-          {/* Resources */}
+          {/* Resources — collapsible */}
           <Card>
-            <CardHeader><h2 className="text-base font-semibold">Resources</h2></CardHeader>
-            <CardContent>
-              <ResourceFinderPanel linkedType="piece" linkedId={piece.id} title={piece.title} composer={piece.composer} />
-            </CardContent>
+            <CardHeader>
+              <button onClick={() => setResourcesOpen(!resourcesOpen)} className="w-full flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-semibold">Resources</h2>
+                  {!resourcesOpen && resourceCount != null && resourceCount > 0 && (
+                    <Badge color="var(--pf-accent-teal)">{resourceCount}</Badge>
+                  )}
+                </div>
+                <ChevronDown size={16} className={`text-[var(--pf-text-secondary)] transition-transform ${resourcesOpen ? 'rotate-180' : ''}`} />
+              </button>
+            </CardHeader>
+            {resourcesOpen && (
+              <CardContent>
+                <ResourceFinderPanel linkedType="piece" linkedId={piece.id} title={piece.title} composer={piece.composer} />
+              </CardContent>
+            )}
           </Card>
-          {/* Linked Files */}
+          {/* Linked Files — collapsible */}
           <Card>
-            <CardHeader><h2 className="text-base font-semibold">Files</h2></CardHeader>
-            <CardContent>
-              <LinkedFiles linkedType="piece" linkedId={piece.id} />
-            </CardContent>
+            <CardHeader>
+              <button onClick={() => setFilesOpen(!filesOpen)} className="w-full flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-semibold">Files</h2>
+                  {!filesOpen && fileCount != null && fileCount > 0 && (
+                    <Badge color="var(--pf-accent-teal)">{fileCount}</Badge>
+                  )}
+                </div>
+                <ChevronDown size={16} className={`text-[var(--pf-text-secondary)] transition-transform ${filesOpen ? 'rotate-180' : ''}`} />
+              </button>
+            </CardHeader>
+            {filesOpen && (
+              <CardContent>
+                <LinkedFiles linkedType="piece" linkedId={piece.id} />
+              </CardContent>
+            )}
           </Card>
         </div>
       </div>

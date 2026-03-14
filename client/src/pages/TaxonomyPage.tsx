@@ -132,7 +132,7 @@ export function TaxonomyPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h1 className="text-2xl font-bold">Skill Taxonomy</h1>
+        <h1 className="text-2xl font-bold">Categories</h1>
         <div className="flex gap-2 flex-wrap">
           <Button variant="ghost" size="sm" onClick={expandAll}>Expand all</Button>
           <Button variant="ghost" size="sm" onClick={collapseAll}>Collapse all</Button>
