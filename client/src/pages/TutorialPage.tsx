@@ -13,11 +13,228 @@ import {
   FileMusic,
   Users,
   CalendarDays,
-  ClipboardCheck,
-  Target,
   Sparkles,
   ChevronRight,
+  Target,
+  Flame,
+  Clock,
+  TrendingUp,
+  Play,
+  Pause,
+  SkipForward,
+  CheckCircle2,
+  Circle,
+  GraduationCap,
 } from 'lucide-react';
+
+/* ------------------------------------------------------------------ */
+/*  Mini-mockup components — stylised previews of real app screens     */
+/* ------------------------------------------------------------------ */
+
+function MockDashboard() {
+  return (
+    <div className="mt-4 rounded-[var(--pf-radius-md)] border border-[var(--pf-border-color)] bg-[var(--pf-bg-secondary)] p-3 text-xs overflow-hidden">
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        {[
+          { label: 'This week', value: '4h 20m', icon: <Clock size={12} /> },
+          { label: 'Streak', value: '12 days', icon: <Flame size={12} /> },
+          { label: 'Sessions', value: '6', icon: <TrendingUp size={12} /> },
+        ].map(s => (
+          <div key={s.label} className="bg-[var(--pf-bg-card)] rounded-[var(--pf-radius-sm)] p-2 text-center border border-[var(--pf-border-color)]">
+            <div className="flex items-center justify-center gap-1 text-[var(--pf-text-secondary)] mb-1">{s.icon} {s.label}</div>
+            <div className="font-bold text-[var(--pf-text-primary)]">{s.value}</div>
+          </div>
+        ))}
+      </div>
+      {/* Active pieces preview */}
+      <div className="space-y-1.5">
+        <div className="text-[10px] font-medium text-[var(--pf-text-secondary)] uppercase tracking-wide">Active pieces</div>
+        {[
+          { name: 'Mozart Concerto No. 1', status: 'Working On', color: 'var(--pf-status-in-progress)' },
+          { name: 'Autumn Leaves (arr.)', status: 'Solid', color: 'var(--pf-accent-gold)' },
+        ].map(p => (
+          <div key={p.name} className="flex items-center justify-between bg-[var(--pf-bg-card)] rounded-[var(--pf-radius-sm)] px-2 py-1.5 border border-[var(--pf-border-color)]">
+            <span className="text-[var(--pf-text-primary)] truncate">{p.name}</span>
+            <span className="px-1.5 py-0.5 rounded-[var(--pf-radius-sm)] text-[10px] text-white flex-shrink-0" style={{ backgroundColor: p.color }}>{p.status}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MockSessionTimer() {
+  const [running, setRunning] = useState(false);
+
+  return (
+    <div className="mt-4 rounded-[var(--pf-radius-md)] border border-[var(--pf-border-color)] bg-[var(--pf-bg-secondary)] p-3 text-xs overflow-hidden">
+      {/* Current block */}
+      <div className="text-center mb-3">
+        <div className="text-[10px] font-medium text-[var(--pf-text-secondary)] uppercase tracking-wide mb-1">Current block</div>
+        <div className="text-sm font-bold text-[var(--pf-text-primary)]">Warmup</div>
+        <div className="font-mono text-2xl font-bold mt-1" style={{ color: 'var(--pf-accent-gold)' }}>
+          {running ? '09:47' : '10:00'}
+        </div>
+      </div>
+      {/* Controls */}
+      <div className="flex items-center justify-center gap-3 mb-3">
+        <button
+          onClick={() => setRunning(r => !r)}
+          className="w-8 h-8 rounded-full flex items-center justify-center text-white transition-transform hover:scale-110"
+          style={{ backgroundColor: running ? 'var(--pf-status-needs-work)' : 'var(--pf-status-ready)' }}
+        >
+          {running ? <Pause size={14} /> : <Play size={14} />}
+        </button>
+        <button className="w-8 h-8 rounded-full flex items-center justify-center bg-[var(--pf-bg-hover)] text-[var(--pf-text-secondary)]">
+          <SkipForward size={14} />
+        </button>
+      </div>
+      {/* Block list */}
+      <div className="space-y-1">
+        {[
+          { name: 'Warmup', time: '10 min', active: true },
+          { name: 'Technique', time: '15 min', active: false },
+          { name: 'Repertoire', time: '20 min', active: false },
+        ].map(b => (
+          <div key={b.name} className={`flex items-center justify-between px-2 py-1 rounded-[var(--pf-radius-sm)] ${b.active ? 'bg-[var(--pf-bg-active)] border border-[var(--pf-border-color)]' : ''}`}>
+            <span className={b.active ? 'text-[var(--pf-text-primary)] font-medium' : 'text-[var(--pf-text-secondary)]'}>{b.name}</span>
+            <span className="text-[var(--pf-text-secondary)]">{b.time}</span>
+          </div>
+        ))}
+      </div>
+      <p className="text-center text-[10px] text-[var(--pf-text-secondary)] mt-2 italic">Try it — tap play</p>
+    </div>
+  );
+}
+
+function MockPieceCard() {
+  return (
+    <div className="mt-4 rounded-[var(--pf-radius-md)] border border-[var(--pf-border-color)] bg-[var(--pf-bg-secondary)] p-3 text-xs overflow-hidden">
+      {/* Piece header */}
+      <div className="flex items-start justify-between mb-2">
+        <div>
+          <div className="text-sm font-bold text-[var(--pf-text-primary)]">Brahms Symphony No. 4</div>
+          <div className="text-[var(--pf-text-secondary)]">Exposition — bars 1-58</div>
+        </div>
+        <span className="px-1.5 py-0.5 rounded-[var(--pf-radius-sm)] text-[10px] text-white flex-shrink-0" style={{ backgroundColor: 'var(--pf-status-in-progress)' }}>Working On</span>
+      </div>
+      {/* Section progress */}
+      <div className="space-y-1.5 mb-2">
+        {[
+          { name: 'Opening theme', pct: 80, color: 'var(--pf-accent-gold)' },
+          { name: 'Transition', pct: 40, color: 'var(--pf-status-in-progress)' },
+          { name: 'Second theme', pct: 15, color: 'var(--pf-status-needs-work)' },
+        ].map(s => (
+          <div key={s.name}>
+            <div className="flex justify-between text-[10px] mb-0.5">
+              <span className="text-[var(--pf-text-primary)]">{s.name}</span>
+              <span className="text-[var(--pf-text-secondary)]">{s.pct}%</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-[var(--pf-bg-hover)]">
+              <div className="h-full rounded-full transition-all" style={{ width: `${s.pct}%`, backgroundColor: s.color }} />
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* Audition countdown */}
+      <div className="flex items-center gap-1.5 text-[10px] pt-1.5 border-t border-[var(--pf-border-color)]">
+        <Target size={10} style={{ color: 'var(--pf-accent-teal)' }} />
+        <span className="text-[var(--pf-text-secondary)]">Audition in <strong className="text-[var(--pf-text-primary)]">23 days</strong></span>
+      </div>
+    </div>
+  );
+}
+
+function MockAnalysis() {
+  return (
+    <div className="mt-4 rounded-[var(--pf-radius-md)] border border-[var(--pf-border-color)] bg-[var(--pf-bg-secondary)] p-3 text-xs overflow-hidden">
+      {/* Score info */}
+      <div className="flex items-center gap-2 mb-2">
+        <FileMusic size={14} style={{ color: 'var(--pf-accent-orange)' }} />
+        <span className="font-bold text-[var(--pf-text-primary)]">Debussy — Syrinx</span>
+      </div>
+      <div className="grid grid-cols-2 gap-1.5 mb-3">
+        {[
+          { label: 'Key', value: 'Bb minor' },
+          { label: 'Tempo', value: 'Tres modere' },
+          { label: 'Difficulty', value: 'Advanced' },
+          { label: 'Patterns', value: '14 found' },
+        ].map(d => (
+          <div key={d.label} className="bg-[var(--pf-bg-card)] rounded-[var(--pf-radius-sm)] px-2 py-1 border border-[var(--pf-border-color)]">
+            <div className="text-[10px] text-[var(--pf-text-secondary)]">{d.label}</div>
+            <div className="text-[var(--pf-text-primary)] font-medium">{d.value}</div>
+          </div>
+        ))}
+      </div>
+      {/* Recording bars */}
+      <div className="text-[10px] font-medium text-[var(--pf-text-secondary)] uppercase tracking-wide mb-1.5">Recording — bar accuracy</div>
+      <div className="flex gap-0.5 items-end h-8">
+        {[85, 92, 78, 95, 60, 88, 91, 70, 83, 96, 55, 90, 87, 93, 72, 89].map((v, i) => (
+          <div
+            key={i}
+            className="flex-1 rounded-t-sm transition-all"
+            style={{
+              height: `${v}%`,
+              backgroundColor: v >= 85 ? 'var(--pf-status-ready)' : v >= 70 ? 'var(--pf-accent-gold)' : 'var(--pf-status-needs-work)',
+              opacity: 0.8,
+            }}
+          />
+        ))}
+      </div>
+      <div className="flex justify-between text-[10px] text-[var(--pf-text-secondary)] mt-0.5">
+        <span>Bar 1</span>
+        <span>Bar 16</span>
+      </div>
+    </div>
+  );
+}
+
+function MockAnalytics() {
+  return (
+    <div className="mt-4 rounded-[var(--pf-radius-md)] border border-[var(--pf-border-color)] bg-[var(--pf-bg-secondary)] p-3 text-xs overflow-hidden">
+      {/* Weekly chart */}
+      <div className="text-[10px] font-medium text-[var(--pf-text-secondary)] uppercase tracking-wide mb-2">This week</div>
+      <div className="flex items-end gap-1 h-12 mb-1">
+        {[
+          { day: 'M', mins: 45 },
+          { day: 'T', mins: 60 },
+          { day: 'W', mins: 30 },
+          { day: 'T', mins: 75 },
+          { day: 'F', mins: 50 },
+          { day: 'S', mins: 0 },
+          { day: 'S', mins: 20 },
+        ].map((d, i) => (
+          <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
+            <div
+              className="w-full rounded-t-sm"
+              style={{
+                height: `${(d.mins / 75) * 100}%`,
+                minHeight: d.mins > 0 ? '4px' : '1px',
+                backgroundColor: d.mins > 0 ? 'var(--pf-accent-gold)' : 'var(--pf-bg-hover)',
+                opacity: 0.85,
+              }}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-1 mb-3">
+        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+          <div key={i} className="flex-1 text-center text-[10px] text-[var(--pf-text-secondary)]">{d}</div>
+        ))}
+      </div>
+      {/* Assessment summary */}
+      <div className="flex items-center gap-2 pt-2 border-t border-[var(--pf-border-color)]">
+        <CheckCircle2 size={12} style={{ color: 'var(--pf-status-ready)' }} />
+        <span className="text-[var(--pf-text-primary)]">Piece audit: <strong>Solid</strong> — 3 sections improved this week</span>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Tutorial steps                                                     */
+/* ------------------------------------------------------------------ */
 
 interface TutorialStep {
   title: string;
@@ -28,6 +245,7 @@ interface TutorialStep {
 }
 
 const steps: TutorialStep[] = [
+  // Step 1 — Welcome
   {
     title: 'Welcome to Practice Forge',
     subtitle: 'Your AI-powered practice companion',
@@ -35,14 +253,21 @@ const steps: TutorialStep[] = [
     color: 'var(--pf-accent-gold)',
     content: (
       <div className="space-y-4">
-        <p>Practice Forge helps musicians structure their practice, track progress, and prepare for auditions with intelligent tools built for serious players.</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+        <p>Practice Forge helps musicians structure their practice, track progress, and prepare for performances — whether you play classical, jazz, or anything in between.</p>
+        <div className="rounded-[var(--pf-radius-md)] border border-[var(--pf-border-color)] bg-[var(--pf-bg-secondary)] px-3 py-2.5 text-sm">
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles size={14} style={{ color: 'var(--pf-accent-gold)' }} />
+            <span className="font-medium text-[var(--pf-text-primary)]">Adapts to you</span>
+          </div>
+          <p className="text-[var(--pf-text-secondary)] text-xs">Tell us your instrument, genre, and level. Practice Forge tailors sessions, analysis, and exercises to how you play.</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
             'AI-built practice sessions',
-            'Repertoire & excerpt tracking',
+            'Repertoire & progress tracking',
             'Sheet music analysis',
             'Audio recording & feedback',
-            'Progress analytics',
+            'Progress analytics & goals',
             'Community challenges',
           ].map(feature => (
             <div key={feature} className="flex items-center gap-2 text-sm text-[var(--pf-text-secondary)]">
@@ -54,6 +279,7 @@ const steps: TutorialStep[] = [
       </div>
     ),
   },
+  // Step 2 — Dashboard
   {
     title: 'Dashboard',
     subtitle: 'Your daily practice hub',
@@ -61,156 +287,107 @@ const steps: TutorialStep[] = [
     color: 'var(--pf-accent-gold)',
     content: (
       <div className="space-y-3">
-        <p>The dashboard gives you an at-a-glance view of your practice life:</p>
-        <ul className="space-y-2 text-sm text-[var(--pf-text-secondary)]">
-          <li><strong className="text-[var(--pf-text-primary)]">Weekly stats</strong> -- hours practiced, sessions completed, current streak</li>
-          <li><strong className="text-[var(--pf-text-primary)]">Active pieces</strong> -- see your repertoire with priority badges and target dates</li>
-          <li><strong className="text-[var(--pf-text-primary)]">Excerpt rotation</strong> -- daily excerpts auto-selected for consistent review</li>
-          <li><strong className="text-[var(--pf-text-primary)]">Audition countdown</strong> -- days remaining until upcoming auditions</li>
-          <li><strong className="text-[var(--pf-text-primary)]">Quick log</strong> -- record practice time without a full session</li>
-        </ul>
+        <p>Everything you need at a glance — weekly stats, active pieces, practice streaks, and upcoming deadlines.</p>
+        <MockDashboard />
       </div>
     ),
   },
+  // Step 3 — Practice Sessions
   {
     title: 'Practice Sessions',
-    subtitle: 'Structured, timed, and intelligent',
+    subtitle: 'Structured, timed, and flexible',
     icon: <Timer size={32} />,
     color: 'var(--pf-status-in-progress)',
     content: (
       <div className="space-y-3">
-        <p>Build structured sessions from 30 to 120 minutes. The AI allocates time across six categories:</p>
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          {['Warmup', 'Fundamentals', 'Technique', 'Repertoire', 'Excerpts', 'Buffer'].map(cat => (
-            <div key={cat} className="px-3 py-2 rounded-pf-sm bg-[var(--pf-bg-hover)] text-[var(--pf-text-secondary)]">{cat}</div>
+        <p>Set a duration and the AI suggests a plan — or build your own from scratch. Adjust any block, skip what you do not need, add what you do.</p>
+        <div className="grid grid-cols-3 gap-1.5 text-xs">
+          {['Warmup', 'Fundamentals', 'Technique', 'Repertoire', 'Excerpts', 'Sight-reading'].map(cat => (
+            <div key={cat} className="px-2 py-1.5 rounded-[var(--pf-radius-sm)] bg-[var(--pf-bg-hover)] text-[var(--pf-text-secondary)] text-center">{cat}</div>
           ))}
         </div>
-        <p className="text-sm text-[var(--pf-text-secondary)]">Each block has a countdown timer. Mark blocks done, skip, or restart. You can also record audio and use the built-in metronome without leaving the session.</p>
+        <p className="text-sm text-[var(--pf-text-secondary)]">Built-in metronome and recording — no need to leave the session.</p>
+        <MockSessionTimer />
       </div>
     ),
   },
+  // Step 4 — Your Music (merged Repertoire + Excerpts & Auditions)
   {
-    title: 'Repertoire',
-    subtitle: 'Track every piece in detail',
+    title: 'Your Music',
+    subtitle: 'Repertoire, excerpts, and audition prep',
     icon: <Music size={32} />,
     color: 'var(--pf-accent-lavender)',
     content: (
       <div className="space-y-3">
-        <p>Add pieces with composer, difficulty, priority, and target dates. Break each piece into sections and track their status:</p>
-        <div className="flex flex-wrap gap-2 text-xs">
+        <p>Add pieces with composer, difficulty, and target dates. Break each into sections and track their status from first read-through to performance-ready.</p>
+        <div className="flex flex-wrap gap-1.5 text-xs">
           {[
             { label: 'Not Started', color: 'var(--pf-text-secondary)' },
             { label: 'Working On', color: 'var(--pf-status-in-progress)' },
             { label: 'Solid', color: 'var(--pf-accent-gold)' },
             { label: 'Polished', color: 'var(--pf-status-ready)' },
           ].map(s => (
-            <span key={s.label} className="px-2 py-1 rounded-pf-sm" style={{ backgroundColor: s.color, color: 'white', opacity: 0.9 }}>{s.label}</span>
+            <span key={s.label} className="px-2 py-1 rounded-[var(--pf-radius-sm)]" style={{ backgroundColor: s.color, color: 'white', opacity: 0.9 }}>{s.label}</span>
           ))}
         </div>
-        <p className="text-sm text-[var(--pf-text-secondary)]">Technical demands (scales, arpeggios, articulations) can be auto-detected from score analysis or added manually, then linked to targeted exercises.</p>
+        <p className="text-sm text-[var(--pf-text-secondary)]">Preparing for an audition or recital? Link your required pieces and excerpts, set the date, and the app auto-selects daily rotation so nothing goes stale.</p>
+        <MockPieceCard />
       </div>
     ),
   },
+  // Step 5 — Score & Audio Intelligence (merged Score Analysis + Recording)
   {
-    title: 'Excerpts & Auditions',
-    subtitle: 'Audition prep, organised',
-    icon: <Target size={32} />,
-    color: 'var(--pf-accent-teal)',
-    content: (
-      <div className="space-y-3">
-        <p>Track orchestral excerpts with status levels from <em>needs work</em> through to <em>audition ready</em>. The rotation system auto-selects excerpts each day so nothing goes stale.</p>
-        <p className="text-sm text-[var(--pf-text-secondary)]">Create auditions with dates and link your required pieces and excerpts. The dashboard countdown keeps you focused as the date approaches.</p>
-      </div>
-    ),
-  },
-  {
-    title: 'Score Analysis',
-    subtitle: 'AI-powered sheet music insights',
+    title: 'Score & Audio Intelligence',
+    subtitle: 'See the music, hear yourself clearly',
     icon: <FileMusic size={32} />,
     color: 'var(--pf-accent-orange)',
     content: (
       <div className="space-y-3">
-        <p>Upload a PDF score and let the AI analyse it. You get:</p>
-        <ul className="space-y-1 text-sm text-[var(--pf-text-secondary)]">
-          <li>Key, time signature, tempo, and difficulty estimate</li>
-          <li>Pattern detection -- scales, arpeggios, intervals, articulations</li>
-          <li>Instrument-specific insights (breathing points, alternate fingerings)</li>
-          <li>Auto-extracted technical demands you can link to exercises</li>
-        </ul>
-        <p className="text-sm text-[var(--pf-text-secondary)]">View the score with highlighted patterns and difficulty regions.</p>
+        <p>Upload a PDF score and the AI analyses it — key, tempo, difficulty, and detected patterns like scales, arpeggios, and articulations. Get instrument-specific insights (breathing points, alternate fingerings, bowing suggestions).</p>
+        <p className="text-sm text-[var(--pf-text-secondary)]">Record yourself during practice and get bar-level feedback on pitch accuracy, rhythm, and dynamics. Pinpoint exactly which bars need work.</p>
+        <MockAnalysis />
       </div>
     ),
   },
+  // Step 6 — Track Your Progress (merged Analytics + Assessments)
   {
-    title: 'Recording & Analysis',
-    subtitle: 'Listen back, improve faster',
-    icon: <Mic size={32} />,
-    color: 'var(--pf-status-needs-work)',
-    content: (
-      <div className="space-y-3">
-        <p>Record audio during practice sessions or standalone. The app analyses your recordings for:</p>
-        <ul className="space-y-1 text-sm text-[var(--pf-text-secondary)]">
-          <li>Pitch accuracy with intonation trace</li>
-          <li>Rhythm accuracy</li>
-          <li>Dynamics and spectral analysis</li>
-          <li>Bar-level scoring to pinpoint problem spots</li>
-        </ul>
-      </div>
-    ),
-  },
-  {
-    title: 'Analytics & Progress',
-    subtitle: 'See how far you have come',
+    title: 'Track Your Progress',
+    subtitle: 'Stats, assessments, and honest feedback',
     icon: <BarChart3 size={32} />,
     color: 'var(--pf-status-ready)',
     content: (
       <div className="space-y-3">
-        <p>Track your practice habits over time with charts and stats:</p>
-        <ul className="space-y-1 text-sm text-[var(--pf-text-secondary)]">
-          <li>Daily/weekly time distribution</li>
-          <li>Session history with ratings</li>
-          <li>Practice streaks and milestones</li>
-          <li>Drift alerts when your actual practice diverges from planned allocation</li>
-        </ul>
-        <p className="text-sm text-[var(--pf-text-secondary)]">The calendar view shows your practice at a glance across weeks and months.</p>
+        <p>See how your practice time breaks down across days and categories. Spot trends, maintain streaks, and get alerts when your actual practice drifts from your plan.</p>
+        <p className="text-sm text-[var(--pf-text-secondary)]">Run piece audits and spot-checks to evaluate readiness before a performance. Weekly reviews summarise what improved and what still needs attention.</p>
+        <MockAnalytics />
       </div>
     ),
   },
-  {
-    title: 'Assessments',
-    subtitle: 'Evaluate your readiness',
-    icon: <ClipboardCheck size={32} />,
-    color: 'var(--pf-accent-lavender)',
-    content: (
-      <div className="space-y-3">
-        <p>Run structured evaluations on your repertoire:</p>
-        <ul className="space-y-1 text-sm text-[var(--pf-text-secondary)]">
-          <li><strong className="text-[var(--pf-text-primary)]">Piece audits</strong> -- comprehensive readiness evaluation</li>
-          <li><strong className="text-[var(--pf-text-primary)]">Spot checks</strong> -- quick excerpt assessments</li>
-          <li><strong className="text-[var(--pf-text-primary)]">Weekly reviews</strong> -- aggregate stats and progress summary</li>
-        </ul>
-        <p className="text-sm text-[var(--pf-text-secondary)]">Each assessment rates sections from needs work to excellent, with bar-level detail from recording analysis.</p>
-      </div>
-    ),
-  },
+  // Step 7 — Community
   {
     title: 'Community',
-    subtitle: 'Practice together',
+    subtitle: 'Practice together, grow together',
     icon: <Users size={32} />,
     color: 'var(--pf-accent-teal)',
     content: (
       <div className="space-y-3">
-        <p>Join challenges, follow other musicians, and earn achievements:</p>
-        <ul className="space-y-1 text-sm text-[var(--pf-text-secondary)]">
-          <li>Excerpt duels, scale sprints, practice marathons</li>
-          <li>Leaderboards and challenge results</li>
-          <li>Shared excerpt library with community notes and difficulty ratings</li>
-          <li>Custom UI themes you can create and share</li>
-          <li>Achievement badges for milestones</li>
+        <p>Join challenges, follow other musicians, and earn achievement badges:</p>
+        <ul className="space-y-1.5 text-sm text-[var(--pf-text-secondary)]">
+          <li className="flex items-start gap-2"><ChevronRight size={14} className="mt-0.5 flex-shrink-0" style={{ color: 'var(--pf-accent-teal)' }} />Scale sprints, excerpt duels, practice marathons</li>
+          <li className="flex items-start gap-2"><ChevronRight size={14} className="mt-0.5 flex-shrink-0" style={{ color: 'var(--pf-accent-teal)' }} />Leaderboards and shared excerpt library with community notes</li>
+          <li className="flex items-start gap-2"><ChevronRight size={14} className="mt-0.5 flex-shrink-0" style={{ color: 'var(--pf-accent-teal)' }} />Custom UI themes you can create and share</li>
         </ul>
+        <div className="rounded-[var(--pf-radius-md)] border border-[var(--pf-border-color)] bg-[var(--pf-bg-secondary)] px-3 py-2.5 text-sm">
+          <div className="flex items-center gap-2 mb-1">
+            <GraduationCap size={14} style={{ color: 'var(--pf-accent-teal)' }} />
+            <span className="font-medium text-[var(--pf-text-primary)]">For teachers</span>
+          </div>
+          <p className="text-[var(--pf-text-secondary)] text-xs">A studio dashboard is on the way — track student progress, assign repertoire, and set challenges for your class. Coming soon.</p>
+        </div>
       </div>
     ),
   },
+  // Step 8 — Ready to start?
   {
     title: 'Ready to start?',
     subtitle: 'Create an account and shape your sound',
@@ -218,18 +395,30 @@ const steps: TutorialStep[] = [
     color: 'var(--pf-accent-gold)',
     content: (
       <div className="space-y-4">
-        <p>That is everything you need to know to get started. Here is a suggested first session:</p>
-        <ol className="space-y-2 text-sm text-[var(--pf-text-secondary)] list-decimal list-inside">
-          <li>Create your account and set your instrument and level</li>
-          <li>Add a piece you are currently working on</li>
-          <li>Break it into sections and set a target date</li>
-          <li>Start a practice session -- the AI will build a plan for you</li>
-          <li>After practicing, check your dashboard for stats and streaks</li>
+        <p>Here is a suggested first session — it takes about five minutes to set up:</p>
+        <ol className="space-y-2.5 text-sm text-[var(--pf-text-secondary)]">
+          {[
+            'Create your account and set your instrument, genre, and level',
+            'Add a piece you are currently working on',
+            'Break it into sections and set a target date',
+            'Start a practice session — the AI builds a plan you can adjust',
+            'After practising, check your dashboard for stats and streaks',
+          ].map((item, i) => (
+            <li key={i} className="flex items-start gap-2.5">
+              <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: 'var(--pf-accent-gold)' }}>{i + 1}</span>
+              <span>{item}</span>
+            </li>
+          ))}
         </ol>
+        <p className="text-sm text-[var(--pf-text-secondary)]">Free to use. No credit card required.</p>
       </div>
     ),
   },
 ];
+
+/* ------------------------------------------------------------------ */
+/*  Page component                                                     */
+/* ------------------------------------------------------------------ */
 
 export function TutorialPage() {
   const navigate = useNavigate();
@@ -271,7 +460,7 @@ export function TutorialPage() {
             {/* Step header */}
             <div className="flex items-center gap-3 mb-4">
               <div
-                className="w-12 h-12 rounded-pf flex items-center justify-center flex-shrink-0"
+                className="w-12 h-12 rounded-[var(--pf-radius-md)] flex items-center justify-center flex-shrink-0"
                 style={{ backgroundColor: step.color, color: 'white', opacity: 0.9 }}
               >
                 {step.icon}
