@@ -2,8 +2,12 @@ import { Router } from 'express';
 import { queryAll, queryOne, execute } from '../db/helpers.js';
 import { v4 as uuid } from 'uuid';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { requireTier } from '../middleware/tierLimits.js';
 
 const router = Router();
+
+// Community features require Pro tier or higher
+router.use(requireTier('pro', 'teacher'));
 
 // POST — follow a user
 router.post('/follow/:userId', asyncHandler(async (req, res) => {

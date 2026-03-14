@@ -2,6 +2,9 @@ import { Router } from 'express';
 import { queryAll, queryOne, execute } from '../db/helpers.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { v4 as uuid } from 'uuid';
+import { enforceCountLimit } from '../middleware/tierLimits.js';
+
+const excerptLimiter = enforceCountLimit('excerpts', 'SELECT COUNT(*) as count FROM excerpts');
 
 const router = Router();
 
@@ -15,7 +18,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
   res.json(ex);
 }));
 
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', excerptLimiter, asyncHandler(async (req, res) => {
   const { title, composer = '', full_work_title = '', location_in_score = '', recording_reference, historical_context = '', performance_notes = '', difficulty, status = 'needs_work', tags = [] } = req.body;
   if (!title) return res.status(400).json({ error: 'title is required' });
   const id = uuid();

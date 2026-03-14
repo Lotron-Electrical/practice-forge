@@ -122,10 +122,13 @@ export const api = {
     request(`/excerpts/${id}`, { method: 'DELETE' }),
 
   // Sessions
-  generateSession: (duration_min: number) =>
-    request('/sessions/generate', { method: 'POST', body: JSON.stringify({ duration_min }) }),
+  generateSession: (duration_min: number, audition_mode?: boolean) =>
+    request('/sessions/generate', { method: 'POST', body: JSON.stringify({ duration_min, audition_mode }) }),
   getCurrentSession: () => request('/sessions/current'),
   getSessions: () => request<unknown[]>('/sessions'),
+  getLatestCompleted: () => request('/sessions/latest-completed'),
+  duplicateSession: (id: string) =>
+    request(`/sessions/${id}/duplicate`, { method: 'POST' }),
   getSessionStats: () => request('/sessions/stats'),
   startSession: (id: string) =>
     request(`/sessions/${id}/start`, { method: 'PUT' }),
@@ -137,6 +140,14 @@ export const api = {
     request(`/sessions/${id}/complete`, { method: 'PUT', body: JSON.stringify(data || {}) }),
   quickLog: (data: { notes: string; duration_min: number; date?: string; rating?: string }) =>
     request('/sessions/quick-log', { method: 'POST', body: JSON.stringify(data) }),
+  // Session Templates
+  getSessionTemplates: () => request<unknown[]>('/sessions/templates'),
+  saveSessionTemplate: (data: { name: string; planned_duration_min: number; blocks: unknown[] }) =>
+    request('/sessions/templates', { method: 'POST', body: JSON.stringify(data) }),
+  deleteSessionTemplate: (id: string) =>
+    request(`/sessions/templates/${id}`, { method: 'DELETE' }),
+  useSessionTemplate: (id: string) =>
+    request(`/sessions/templates/${id}/use`, { method: 'POST' }),
   getTodayRotation: () => request<unknown[]>('/sessions/rotation/today'),
   markRotationPracticed: (rotationId: string) =>
     request(`/sessions/rotation/${rotationId}/practiced`, { method: 'POST' }),
@@ -150,6 +161,14 @@ export const api = {
     request<unknown[]>('/sessions/analytics/stalled-pieces'),
   getAnalyticsDrift: () =>
     request('/sessions/analytics/drift'),
+  getAnalyticsCalendar: (months?: number) =>
+    request<Array<{ date: string; sessions: number; minutes: number; rating: string | null }>>(
+      `/sessions/analytics/calendar${months ? `?months=${months}` : ''}`
+    ),
+  getAnalyticsStreaks: () =>
+    request<{ current_streak: number; longest_streak: number; total_practice_days: number; total_hours: number }>(
+      '/sessions/analytics/streaks'
+    ),
   getSessionHistory: (params?: { page?: number; limit?: number; from?: string; to?: string }) => {
     const qs = params ? '?' + new URLSearchParams(
       Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])
@@ -333,4 +352,23 @@ export const api = {
     request(`/community-excerpts/notes/${noteId}`, { method: 'DELETE' }),
   upvoteExcerptNote: (noteId: string) =>
     request(`/community-excerpts/notes/${noteId}/upvote`, { method: 'POST' }),
+
+  // Auditions
+  getAuditions: () => request<import('../core/types').Audition[]>('/auditions'),
+  getUpcomingAuditions: () => request<import('../core/types').UpcomingAuditions>('/auditions/upcoming'),
+  createAudition: (data: { title: string; audition_date: string; notes?: string; repertoire?: unknown[] }) =>
+    request<import('../core/types').Audition>('/auditions', { method: 'POST', body: JSON.stringify(data) }),
+  updateAudition: (id: string, data: unknown) =>
+    request<import('../core/types').Audition>(`/auditions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteAudition: (id: string) =>
+    request(`/auditions/${id}`, { method: 'DELETE' }),
+
+  // Billing
+  getSubscription: () => request<import('../core/types').SubscriptionInfo>('/billing/subscription'),
+  getUsage: () => request('/billing/usage'),
+  getTiers: () => request<{ tiers: import('../core/types').TierDefinition[] }>('/billing/tiers'),
+  createCheckout: (tier: string, interval: 'monthly' | 'annual' = 'monthly') =>
+    request<{ url: string }>('/billing/create-checkout-session', { method: 'POST', body: JSON.stringify({ tier, interval }) }),
+  createPortal: () =>
+    request<{ url: string }>('/billing/create-portal-session', { method: 'POST' }),
 };

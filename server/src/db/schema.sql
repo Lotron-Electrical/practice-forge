@@ -435,6 +435,83 @@ CREATE TABLE IF NOT EXISTS excerpt_community_notes (
 );
 CREATE INDEX IF NOT EXISTS idx_excerpt_notes_excerpt ON excerpt_community_notes(excerpt_id);
 
+-- Session Templates
+CREATE TABLE IF NOT EXISTS session_templates (
+  id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  planned_duration_min INTEGER NOT NULL,
+  blocks JSONB NOT NULL DEFAULT '[]',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_session_templates_user ON session_templates(user_id);
+
+-- Phase 19: Subscriptions & Billing
+
+CREATE TABLE IF NOT EXISTS subscriptions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  stripe_customer_id TEXT,
+  stripe_subscription_id TEXT,
+  tier TEXT NOT NULL DEFAULT 'free' CHECK(tier IN ('free','solo','pro','teacher')),
+  status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','past_due','cancelled','trialing')),
+  current_period_start TIMESTAMPTZ,
+  current_period_end TIMESTAMPTZ,
+  cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_customer ON subscriptions(stripe_customer_id);
+
+CREATE TABLE IF NOT EXISTS ai_usage (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  generation_type TEXT NOT NULL,
+  model TEXT NOT NULL DEFAULT 'claude-sonnet-4-20250514',
+  input_tokens INTEGER NOT NULL DEFAULT 0,
+  output_tokens INTEGER NOT NULL DEFAULT 0,
+  cost_usd REAL NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_ai_usage_user ON ai_usage(user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_usage_created ON ai_usage(created_at);
+
+-- Phase 20: Audition dates + history
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'pieces' AND column_name = 'audition_date'
+  ) THEN
+    ALTER TABLE pieces ADD COLUMN audition_date TEXT;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'excerpts' AND column_name = 'audition_date'
+  ) THEN
+    ALTER TABLE excerpts ADD COLUMN audition_date TEXT;
+  END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS auditions (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  audition_date TEXT NOT NULL,
+  result TEXT CHECK(result IN ('won','callback','unsuccessful','pending','cancelled') OR result IS NULL),
+  notes TEXT DEFAULT '',
+  repertoire JSONB NOT NULL DEFAULT '[]',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_auditions_date ON auditions(audition_date);
+
 -- Phase 14: Analytics — add started_at to practice_sessions
 DO $$
 BEGIN

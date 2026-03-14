@@ -7,7 +7,9 @@ import { Button } from '../components/ui/Button';
 import { PIECE_STATUS_CONFIG, PRIORITY_CONFIG, EXCERPT_STATUS_CONFIG } from '../core/constants';
 import { api } from '../api/client';
 import type { Piece, Excerpt } from '../core/types';
-import { Play, Clock, Flame, Target, AlertTriangle, CheckCircle, BarChart3, Music, BookOpen, Mic, PenLine, ChevronDown, ChevronUp, ThumbsUp, Meh, ThumbsDown } from 'lucide-react';
+import { Play, Clock, Flame, Target, AlertTriangle, CheckCircle, BarChart3, Music, BookOpen, Mic, PenLine, ChevronDown, ChevronUp, ThumbsUp, Meh, ThumbsDown, Info, X, Trophy, CalendarDays } from 'lucide-react';
+import { AuditionCountdown } from '../components/auditions/AuditionCountdown';
+import { useExperienceLevel } from '../hooks/useExperienceLevel';
 
 interface Stats {
   weekHours: number;
@@ -31,6 +33,8 @@ export function DashboardPage() {
   const [rotation, setRotation] = useState<RotationEntry[]>([]);
   const [excerpts, setExcerpts] = useState<Excerpt[]>([]);
   const [driftAlerts, setDriftAlerts] = useState<string[]>([]);
+  const [longestStreak, setLongestStreak] = useState(0);
+  const [totalHours, setTotalHours] = useState(0);
   const [timeAlloc, setTimeAlloc] = useState({ warmup: 15, fundamentals: 10, technique: 20, repertoire: 35, excerpts: 15, buffer: 5 });
   const [quickLogOpen, setQuickLogOpen] = useState(false);
   const [qlNotes, setQlNotes] = useState('');
@@ -39,12 +43,19 @@ export function DashboardPage() {
   const [qlSubmitting, setQlSubmitting] = useState(false);
   const [qlSuccess, setQlSuccess] = useState(false);
   const navigate = useNavigate();
+  const { level: experienceLevel } = useExperienceLevel();
+  const showExcerptHelp = experienceLevel === 'beginner' || experienceLevel === 'intermediate';
+  const [sessionExplainerDismissed, setSessionExplainerDismissed] = useState(() => localStorage.getItem('pf-dismissed-session-explainer') === 'true');
 
   useEffect(() => {
     api.getPieces().then(d => setPieces(d as Piece[])).catch(() => {});
     api.getSessionStats().then(d => setStats(d as Stats)).catch(() => {});
     api.getTodayRotation().then(d => setRotation(d as RotationEntry[])).catch(() => {});
     api.getExcerpts().then(d => setExcerpts(d as Excerpt[])).catch(() => {});
+    api.getAnalyticsStreaks().then((d) => {
+      setLongestStreak(d.longest_streak);
+      setTotalHours(d.total_hours);
+    }).catch(() => {});
     api.getAnalyticsDrift().then((d: any) => {
       if (d?.alerts) setDriftAlerts(d.alerts);
     }).catch(() => {});
@@ -123,6 +134,40 @@ export function DashboardPage() {
         </Card>
       )}
 
+      {/* How Sessions Work — beginner explainer */}
+      {experienceLevel === 'beginner' && !sessionExplainerDismissed && (
+        <Card className="mb-6" style={{ borderColor: 'var(--pf-accent-teal)', borderWidth: '1px', borderStyle: 'solid', backgroundColor: 'color-mix(in srgb, var(--pf-accent-teal) 5%, var(--pf-bg-primary))' }}>
+          <CardContent>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <Info size={18} className="mt-0.5 flex-shrink-0" style={{ color: 'var(--pf-accent-teal)' }} />
+                <div>
+                  <h2 className="text-sm font-semibold mb-2">How Practice Sessions Work</h2>
+                  <ol className="text-xs text-[var(--pf-text-secondary)] space-y-1 list-decimal list-inside">
+                    <li>Choose how long you have (30-120 min)</li>
+                    <li>The app builds a structured plan with warm-up, technique, and repertoire</li>
+                    <li>Follow the timer through each block</li>
+                    <li>Mark each block "Done" as you finish</li>
+                    <li>Rate your session at the end</li>
+                  </ol>
+                  <p className="text-xs text-[var(--pf-text-secondary)] mt-2">Time allocation is based on your pieces and settings. You can customise it in Settings.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  localStorage.setItem('pf-dismissed-session-explainer', 'true');
+                  setSessionExplainerDismissed(true);
+                }}
+                className="text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)] flex-shrink-0"
+                title="Dismiss"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Top row: Session + Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <Card>
@@ -151,7 +196,7 @@ export function DashboardPage() {
 
         <Card>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-4 text-center">
               <div>
                 <div className="text-2xl font-bold">{stats.weekHours}<span className="text-sm font-normal text-[var(--pf-text-secondary)]">h</span></div>
                 <div className="text-xs text-[var(--pf-text-secondary)]">This week</div>
@@ -168,17 +213,36 @@ export function DashboardPage() {
                 <div className="text-xs text-[var(--pf-text-secondary)]">Day streak</div>
               </div>
               <div>
+                <div className="text-2xl font-bold flex items-center justify-center gap-1">
+                  {longestStreak}
+                  {longestStreak > 0 && <Trophy size={16} style={{ color: 'var(--pf-accent-blue, #3b82f6)' }} />}
+                </div>
+                <div className="text-xs text-[var(--pf-text-secondary)]">Best streak</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{totalHours}<span className="text-sm font-normal text-[var(--pf-text-secondary)]">h</span></div>
+                <div className="text-xs text-[var(--pf-text-secondary)]">All time</div>
+              </div>
+              <div>
                 <div className="text-2xl font-bold">{activePieces.length}</div>
                 <div className="text-xs text-[var(--pf-text-secondary)]">Pieces</div>
               </div>
             </div>
-            <div className="text-center mt-3 pt-3 border-t border-[var(--pf-border-color)]">
+            <div className="flex items-center justify-center gap-4 mt-3 pt-3 border-t border-[var(--pf-border-color)]">
               <Link to="/analytics" className="text-xs font-medium inline-flex items-center gap-1" style={{ color: 'var(--pf-accent-gold)' }}>
-                <BarChart3 size={12} /> View Analytics
+                <BarChart3 size={12} /> Analytics
+              </Link>
+              <Link to="/calendar" className="text-xs font-medium inline-flex items-center gap-1" style={{ color: 'var(--pf-accent-gold)' }}>
+                <CalendarDays size={12} /> Calendar
               </Link>
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Audition Countdown */}
+      <div className="mb-6">
+        <AuditionCountdown />
       </div>
 
       {/* Quick Log */}
@@ -294,7 +358,7 @@ export function DashboardPage() {
             </CardHeader>
             <CardContent>
               {activePieces.length === 0 ? (
-                <p className="text-sm text-[var(--pf-text-secondary)]">No pieces yet. <Link to="/pieces" className="underline">Add your first piece</Link>.</p>
+                <p className="text-sm text-[var(--pf-text-secondary)]">No active pieces. <Link to="/pieces" className="underline">Add a piece</Link> to see your repertoire and progress here.</p>
               ) : (
                 <div className="space-y-3">
                   {activePieces.slice(0, 5).map(piece => {
@@ -336,13 +400,23 @@ export function DashboardPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold">Excerpt progress</h2>
+              <div className="flex items-center gap-1.5">
+                <h2 className="text-base font-semibold">Excerpt progress</h2>
+                {showExcerptHelp && (
+                  <div className="relative group">
+                    <Info size={14} className="text-[var(--pf-text-secondary)] cursor-help" />
+                    <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-10 w-[250px] px-3 py-2 rounded-pf bg-[var(--pf-bg-secondary)] border border-[var(--pf-border-color)] shadow-lg text-xs text-[var(--pf-text-secondary)] leading-relaxed">
+                      Excerpts are short orchestral passages practiced regularly for auditions and orchestra preparation.
+                    </div>
+                  </div>
+                )}
+              </div>
               <Link to="/excerpts" className="text-xs" style={{ color: 'var(--pf-accent-gold)' }}>View all</Link>
             </div>
           </CardHeader>
           <CardContent>
             {excerpts.length === 0 ? (
-              <p className="text-sm text-[var(--pf-text-secondary)]">No excerpts yet.</p>
+              <p className="text-sm text-[var(--pf-text-secondary)]">No excerpts yet. Add orchestral excerpts to track your audition prep and keep them in rotation.</p>
             ) : (
               <>
                 {/* Simple status breakdown */}
@@ -367,7 +441,17 @@ export function DashboardPage() {
                 {/* Today's rotation */}
                 {rotation.length > 0 && (
                   <div className="mt-4 pt-3 border-t border-[var(--pf-border-color)]">
-                    <h3 className="text-xs font-semibold text-[var(--pf-text-secondary)] mb-2">TODAY'S EXCERPTS</h3>
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <h3 className="text-xs font-semibold text-[var(--pf-text-secondary)]">TODAY'S EXCERPTS</h3>
+                      {showExcerptHelp && (
+                        <div className="relative group">
+                          <Info size={12} className="text-[var(--pf-text-secondary)] cursor-help" />
+                          <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-10 w-[250px] px-3 py-2 rounded-pf bg-[var(--pf-bg-secondary)] border border-[var(--pf-border-color)] shadow-lg text-xs text-[var(--pf-text-secondary)] leading-relaxed">
+                            These are the excerpts selected for today's rotation. Practise each one to keep your audition repertoire fresh.
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     {rotation.map(r => {
                       const sConf = EXCERPT_STATUS_CONFIG[r.status as keyof typeof EXCERPT_STATUS_CONFIG] || EXCERPT_STATUS_CONFIG.needs_work;
                       return (

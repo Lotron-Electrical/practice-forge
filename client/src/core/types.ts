@@ -598,6 +598,81 @@ export interface CommunityNote {
   created_at: string;
 }
 
+// Phase 19: Subscriptions & Billing
+
+export type SubscriptionTier = 'free' | 'solo' | 'pro' | 'teacher';
+export type SubscriptionStatus = 'active' | 'past_due' | 'cancelled' | 'trialing';
+
+export interface TierLimits {
+  pieces: number;
+  excerpts: number;
+  sessions_per_week: number;
+  ai_generations_per_month: number;
+  community: boolean;
+  audio_analysis: boolean;
+  score_following: boolean;
+}
+
+export interface AiUsageInfo {
+  used: number;
+  limit: number;
+  remaining: number;
+}
+
+export interface SubscriptionInfo {
+  tier: SubscriptionTier;
+  status: SubscriptionStatus;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  stripe_customer_id: string | null;
+  ai_usage: AiUsageInfo;
+  limits: TierLimits;
+}
+
+export interface TierDefinition {
+  id: SubscriptionTier;
+  name: string;
+  price_monthly: number;
+  price_annual: number;
+  per_student_monthly?: number;
+  per_student_annual?: number;
+  features: string[];
+  limits: TierLimits;
+}
+
+export interface UpgradeRequiredError {
+  error: 'upgrade_required' | 'limit_reached';
+  message: string;
+  current_tier: SubscriptionTier;
+  required_tiers?: SubscriptionTier[];
+  used?: number;
+  limit?: number;
+  upgrade_tier?: SubscriptionTier | null;
+}
+
+// Phase 20: Auditions
+
+export type AuditionResult = 'won' | 'callback' | 'unsuccessful' | 'pending' | 'cancelled';
+
+export interface Audition {
+  id: string;
+  title: string;
+  audition_date: string;
+  result: AuditionResult | null;
+  notes: string;
+  repertoire: Array<{ type: 'piece' | 'excerpt'; id: string; title: string }>;
+  days_until?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpcomingAuditions {
+  auditions: Audition[];
+  pieces_with_dates: Array<{ id: string; title: string; composer: string; audition_date: string; days_until: number }>;
+  excerpts_with_dates: Array<{ id: string; title: string; composer: string; audition_date: string; status: string; days_until: number }>;
+}
+
 export const ACHIEVEMENT_DEFS: Record<string, { label: string; description: string; icon: string }> = {
   first_steps: { label: 'First Steps', description: 'Complete your first practice session', icon: 'music' },
   streak_7: { label: 'Week Warrior', description: '7-day practice streak', icon: 'flame' },

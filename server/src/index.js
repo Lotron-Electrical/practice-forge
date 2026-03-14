@@ -28,6 +28,8 @@ import communityRouter from './routes/community.js';
 import challengesRouter from './routes/challenges.js';
 import themeGalleryRouter from './routes/themeGallery.js';
 import communityExcerptsRouter from './routes/communityExcerpts.js';
+import billingRouter from './routes/billing.js';
+import auditionsRouter from './routes/auditions.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -40,6 +42,9 @@ app.use(cors({
     cb(null, false);
   },
 }));
+
+// Stripe webhook needs raw body — must be before express.json()
+app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
@@ -56,6 +61,9 @@ app.use('/api/analysis/trigger-claude', aiLimiter);
 
 // Auth routes (public — no requireAuth)
 app.use('/api/auth', authRouter);
+
+// Billing routes — webhook is public (Stripe signature verification), rest requires auth
+app.use('/api/billing', billingRouter);
 
 // Protected API Routes — requireAuth skips in dev mode unless AUTH_REQUIRED=true
 app.use('/api', requireAuth);
@@ -75,6 +83,7 @@ app.use('/api/community', communityRouter);
 app.use('/api/challenges', challengesRouter);
 app.use('/api/theme-gallery', themeGalleryRouter);
 app.use('/api/community-excerpts', communityExcerptsRouter);
+app.use('/api/auditions', auditionsRouter);
 
 // Serve uploaded data files with security headers
 const dataDir = path.resolve(__dirname, '..', '..', 'data');

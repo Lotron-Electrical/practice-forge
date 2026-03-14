@@ -17,6 +17,9 @@ import { LoginPage } from './pages/LoginPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AssessmentsPage } from './pages/AssessmentsPage';
 import { CommunityPage } from './pages/CommunityPage';
+import { PricingPage } from './pages/PricingPage';
+import { CalendarPage } from './pages/CalendarPage';
+import { AuditionsPage } from './pages/AuditionsPage';
 import { Loader } from 'lucide-react';
 import { useExperienceLevel, isPathAllowed } from './hooks/useExperienceLevel';
 
@@ -64,7 +67,10 @@ function AppRoutes() {
         <Route path="assessments" element={<RequireLevel path="/assessments"><AssessmentsPage /></RequireLevel>} />
         <Route path="community" element={<RequireLevel path="/community"><CommunityPage /></RequireLevel>} />
         <Route path="analytics" element={<RequireLevel path="/analytics"><AnalyticsPage /></RequireLevel>} />
+        <Route path="calendar" element={<CalendarPage />} />
+        <Route path="auditions" element={<AuditionsPage />} />
         <Route path="profile" element={<RequireLevel path="/profile"><ProfilePage /></RequireLevel>} />
+        <Route path="pricing" element={<PricingPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Routes>

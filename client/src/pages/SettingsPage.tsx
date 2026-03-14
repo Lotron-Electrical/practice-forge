@@ -5,10 +5,11 @@ import { Input, Textarea } from '../components/ui/Input';
 import { useEffect, useState, useRef } from 'react';
 import { api } from '../api/client';
 import { themes, type ThemeName } from '../themes/tokens';
-import { Bug, Lightbulb, Send, CheckCircle, Palette, Download, Upload, Plus } from 'lucide-react';
+import { Bug, Lightbulb, Send, CheckCircle, Palette, Download, Upload, Plus, CreditCard, ArrowRight, Sparkles } from 'lucide-react';
 import { ThemeGallery } from '../components/community/ThemeGallery';
 import { ThemeCreator } from '../components/community/ThemeCreator';
 import { useExperienceLevel, type ExperienceLevel } from '../hooks/useExperienceLevel';
+import type { SubscriptionInfo, SubscriptionTier } from '../core/types';
 
 export function SettingsPage() {
   const { theme, setTheme, highContrast, setHighContrast, colourVisionMode, setColourVisionMode, reducedMotion, setReducedMotion, fontSize, setFontSize, applyCustomTokens } = useTheme();
@@ -26,6 +27,11 @@ export function SettingsPage() {
   const [timeAllocation, setTimeAllocation] = useState({
     warmup: 15, fundamentals: 10, technique: 20, repertoire: 35, excerpts: 15, buffer: 5,
   });
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
+
+  useEffect(() => {
+    api.getSubscription().then((data: SubscriptionInfo) => setSubscription(data)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     api.getSettings().then((data: Record<string, unknown>) => {
@@ -108,6 +114,98 @@ export function SettingsPage() {
             <p className="text-xs text-[var(--pf-text-secondary)] mt-3">
               Controls which features appear in the sidebar. You can change this any time.
             </p>
+          </CardContent>
+        </Card>
+
+        {/* Plan & Billing */}
+        <Card className="lg:col-span-2">
+          <CardHeader><h2 className="text-lg font-semibold">Plan & Billing</h2></CardHeader>
+          <CardContent>
+            {subscription ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-[var(--pf-accent-gold)]/10 flex items-center justify-center">
+                    <CreditCard size={18} className="text-[var(--pf-accent-gold)]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-lg capitalize">{subscription.tier}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        subscription.status === 'active' ? 'bg-[var(--pf-status-ready)]/10 text-[var(--pf-status-ready)]' :
+                        subscription.status === 'past_due' ? 'bg-[var(--pf-status-needs-work)]/10 text-[var(--pf-status-needs-work)]' :
+                        'bg-[var(--pf-text-secondary)]/10 text-[var(--pf-text-secondary)]'
+                      }`}>
+                        {subscription.status}
+                      </span>
+                    </div>
+                    {subscription.cancel_at_period_end && subscription.current_period_end && (
+                      <p className="text-xs text-[var(--pf-status-needs-work)]">
+                        Cancels {new Date(subscription.current_period_end).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* AI Usage */}
+                {subscription.ai_usage.limit > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm text-[var(--pf-text-secondary)]">
+                        <Sparkles size={12} className="inline mr-1" />
+                        AI Generations
+                      </span>
+                      <span className="text-sm font-mono">
+                        {subscription.ai_usage.used}/{subscription.ai_usage.limit}
+                      </span>
+                    </div>
+                    <div className="h-2 rounded-full bg-[var(--pf-bg-hover)] overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-[var(--pf-accent-gold)] transition-all"
+                        style={{ width: `${Math.min(100, (subscription.ai_usage.used / subscription.ai_usage.limit) * 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-[var(--pf-text-secondary)] mt-1">
+                      {subscription.ai_usage.remaining} remaining this month
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  {subscription.tier === 'free' ? (
+                    <Button size="sm" onClick={() => window.location.href = '/pricing'}>
+                      Upgrade Plan <ArrowRight size={14} />
+                    </Button>
+                  ) : (
+                    <>
+                      <Button size="sm" variant="secondary" onClick={() => window.location.href = '/pricing'}>
+                        Change Plan
+                      </Button>
+                      <Button size="sm" variant="secondary" onClick={async () => {
+                        try {
+                          const { url } = await api.createPortal();
+                          window.location.href = url;
+                        } catch {}
+                      }}>
+                        Manage Billing
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[var(--pf-bg-hover)] flex items-center justify-center">
+                  <CreditCard size={18} className="text-[var(--pf-text-secondary)]" />
+                </div>
+                <div>
+                  <p className="font-medium">Free Plan</p>
+                  <p className="text-sm text-[var(--pf-text-secondary)]">3 sessions/week, 3 pieces, 5 excerpts</p>
+                </div>
+                <Button size="sm" className="ml-auto" onClick={() => window.location.href = '/pricing'}>
+                  Upgrade <ArrowRight size={14} />
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -302,21 +400,21 @@ export function SettingsPage() {
                 </Button>
               </div>
             ) : !feedbackType ? (
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <button
                   onClick={() => setFeedbackType('bug')}
-                  className="flex-1 flex flex-col items-center gap-3 p-6 rounded-pf border-2 border-[var(--pf-border-color)] hover:border-[var(--pf-status-needs-work)] transition-colors"
+                  className="flex-1 flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-6 rounded-pf border-2 border-[var(--pf-border-color)] hover:border-[var(--pf-status-needs-work)] transition-colors"
                 >
-                  <Bug size={32} style={{ color: 'var(--pf-status-needs-work)' }} />
-                  <span className="font-medium">Report a Bug</span>
+                  <Bug size={28} className="sm:w-8 sm:h-8" style={{ color: 'var(--pf-status-needs-work)' }} />
+                  <span className="font-medium text-sm sm:text-base">Report a Bug</span>
                   <span className="text-xs text-[var(--pf-text-secondary)]">Something isn't working right</span>
                 </button>
                 <button
                   onClick={() => setFeedbackType('feature')}
-                  className="flex-1 flex flex-col items-center gap-3 p-6 rounded-pf border-2 border-[var(--pf-border-color)] hover:border-[var(--pf-accent-gold)] transition-colors"
+                  className="flex-1 flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-6 rounded-pf border-2 border-[var(--pf-border-color)] hover:border-[var(--pf-accent-gold)] transition-colors"
                 >
-                  <Lightbulb size={32} style={{ color: 'var(--pf-accent-gold)' }} />
-                  <span className="font-medium">Request a Feature</span>
+                  <Lightbulb size={28} className="sm:w-8 sm:h-8" style={{ color: 'var(--pf-accent-gold)' }} />
+                  <span className="font-medium text-sm sm:text-base">Request a Feature</span>
                   <span className="text-xs text-[var(--pf-text-secondary)]">Suggest an improvement or new idea</span>
                 </button>
               </div>

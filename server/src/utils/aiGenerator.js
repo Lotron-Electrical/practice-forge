@@ -8,6 +8,8 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { execute } from '../db/helpers.js';
+import { v4 as uuid } from 'uuid';
 
 let client = null;
 
@@ -80,6 +82,19 @@ export async function generateWithAI(params) {
   const inputTokens = response.usage?.input_tokens || 0;
   const outputTokens = response.usage?.output_tokens || 0;
   const cost = (inputTokens * 0.003 + outputTokens * 0.015) / 1000; // Sonnet pricing
+
+  // Track AI usage if user_id provided
+  if (params.user_id) {
+    try {
+      await execute(
+        `INSERT INTO ai_usage (id, user_id, generation_type, model, input_tokens, output_tokens, cost_usd)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [uuid(), params.user_id, type, 'claude-sonnet-4-20250514', inputTokens, outputTokens, cost]
+      );
+    } catch (err) {
+      console.error('Failed to track AI usage:', err.message);
+    }
+  }
 
   return {
     title,

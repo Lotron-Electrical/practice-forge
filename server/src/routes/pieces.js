@@ -2,6 +2,9 @@ import { Router } from 'express';
 import { queryAll, queryOne, execute } from '../db/helpers.js';
 import { v4 as uuid } from 'uuid';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { enforceCountLimit } from '../middleware/tierLimits.js';
+
+const pieceLimiter = enforceCountLimit('pieces', 'SELECT COUNT(*) as count FROM pieces');
 
 const router = Router();
 
@@ -51,7 +54,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // POST create piece
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', pieceLimiter, asyncHandler(async (req, res) => {
   const { title, composer = '', difficulty, status = 'not_started', priority = 'medium', target_date, colour_tag, general_notes = '', historical_context } = req.body;
   if (!title) return res.status(400).json({ error: 'title is required' });
   const id = uuid();

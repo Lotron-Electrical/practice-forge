@@ -1,7 +1,8 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Music, BookOpen, ListMusic, FolderOpen, Mic, BarChart3, Settings, ChevronLeft, ChevronRight, Timer, X, User, ClipboardCheck, Users, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, Music, BookOpen, ListMusic, FolderOpen, Mic, BarChart3, Settings, ChevronLeft, ChevronRight, Timer, X, User, ClipboardCheck, Users, ChevronDown, CreditCard, CalendarDays, Target } from 'lucide-react';
 import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { useExperienceLevel, isNavItemAllowed } from '../../hooks/useExperienceLevel';
+import { useModalLock } from '../../hooks/useModalLock';
 
 // Grouped navigation structure
 type NavItem = { to: string; icon: typeof LayoutDashboard; label: string };
@@ -33,7 +34,9 @@ const navGroups: NavGroup[] = [
     header: 'Progress',
     items: [
       { to: '/analytics', icon: BarChart3, label: 'Analytics' },
+      { to: '/calendar', icon: CalendarDays, label: 'Calendar' },
       { to: '/assessments', icon: ClipboardCheck, label: 'Assessments' },
+      { to: '/auditions', icon: Target, label: 'Auditions' },
     ],
   },
   {
@@ -43,6 +46,7 @@ const navGroups: NavGroup[] = [
       { to: '/community', icon: Users, label: 'Community' },
       { to: '/media', icon: FolderOpen, label: 'Media' },
       { to: '/profile', icon: User, label: 'Profile' },
+      { to: '/pricing', icon: CreditCard, label: 'Pricing' },
       { to: '/settings', icon: Settings, label: 'Settings' },
     ],
   },
@@ -114,6 +118,7 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [moreExpanded, setMoreExpanded] = useState(getStoredMoreExpanded);
   const { level } = useExperienceLevel();
+  useModalLock(isMobile && isOpen);
 
   // Filter nav groups based on experience level
   const filteredNavGroups = useMemo(() => {

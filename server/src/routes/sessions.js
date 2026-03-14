@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { queryAll, queryOne, execute } from '../db/helpers.js';
 import { v4 as uuid } from 'uuid';
+import { enforceSessionLimit } from '../middleware/tierLimits.js';
 
 const router = Router();
 
@@ -17,26 +18,55 @@ router.get('/rotation/today', async (req, res) => {
     const countRow = await queryOne("SELECT value FROM settings WHERE key = 'excerptRotationCount'");
     const count = countRow ? JSON.parse(countRow.value) : 3;
 
+    // Smart rotation: weighted scoring algorithm
     const excerpts = await queryAll(`
       SELECT e.*,
-        COALESCE(e.last_practiced, '2000-01-01') as last_p,
-        CASE e.status
-          WHEN 'needs_work' THEN 4
-          WHEN 'acceptable' THEN 3
-          WHEN 'solid' THEN 2
-          WHEN 'audition_ready' THEN 1
-        END as status_priority
+        COALESCE(e.last_practiced, '2000-01-01') as last_p
       FROM excerpts e
-      ORDER BY last_p ASC, status_priority DESC, e.difficulty DESC
     `);
 
+    // Score each excerpt
+    const now = Date.now();
+    const STATUS_WEIGHT = { needs_work: 40, acceptable: 25, solid: 10, audition_ready: 5 };
+    const scored = excerpts.map(ex => {
+      const daysSince = Math.max(0, Math.floor((now - new Date(ex.last_p).getTime()) / 86400000));
+      // Staleness: more days = higher score (caps at 90 days for diminishing returns)
+      const stalenessScore = Math.min(daysSince, 90) * 1.0;
+      // Status: needs_work excerpts get practiced more
+      const statusScore = STATUS_WEIGHT[ex.status] || 15;
+      // Difficulty bonus: harder excerpts get slight priority
+      const difficultyScore = (ex.difficulty || 5) * 1.5;
+      // Audition urgency: if audition_date is set and approaching, massive boost
+      let auditionBoost = 0;
+      if (ex.audition_date) {
+        const daysUntil = Math.floor((new Date(ex.audition_date).getTime() - now) / 86400000);
+        if (daysUntil >= 0 && daysUntil <= 30) {
+          auditionBoost = (30 - daysUntil) * 3; // max 90 points for tomorrow's audition
+        }
+      }
+      return { ...ex, score: stalenessScore + statusScore + difficultyScore + auditionBoost };
+    });
+
+    // Sort by score descending, then pick with difficulty spread
+    scored.sort((a, b) => b.score - a.score);
+
+    // Select with difficulty diversity: avoid picking all same difficulty
     const selected = [];
-    const statusSeen = new Set();
-    for (const ex of excerpts) {
+    const diffBuckets = new Set();
+    // First pass: pick top-scored with different difficulty buckets
+    for (const ex of scored) {
       if (selected.length >= count) break;
-      if (!statusSeen.has(ex.status) || selected.length < count) {
+      const bucket = Math.ceil((ex.difficulty || 5) / 3); // 1-3, 4-6, 7-10
+      if (!diffBuckets.has(bucket) || selected.length >= Math.min(count, 3)) {
         selected.push(ex);
-        statusSeen.add(ex.status);
+        diffBuckets.add(bucket);
+      }
+    }
+    // Fill remaining if diversity pass didn't get enough
+    for (const ex of scored) {
+      if (selected.length >= count) break;
+      if (!selected.find(s => s.id === ex.id)) {
+        selected.push(ex);
       }
     }
 
@@ -73,11 +103,36 @@ router.post('/rotation/:rotationId/practiced', async (req, res) => {
 });
 
 // POST generate a practice session
-router.post('/generate', async (req, res) => {
-  const { duration_min = 60 } = req.body;
+router.post('/generate', enforceSessionLimit, async (req, res) => {
+  const { duration_min = 60, audition_mode } = req.body;
 
   const allocRow = await queryOne("SELECT value FROM settings WHERE key = 'timeAllocation'");
-  const alloc = allocRow ? JSON.parse(allocRow.value) : { warmup: 10, fundamentals: 10, technique: 25, repertoire: 35, excerpts: 15, buffer: 5 };
+  let alloc = allocRow ? JSON.parse(allocRow.value) : { warmup: 10, fundamentals: 10, technique: 25, repertoire: 35, excerpts: 15, buffer: 5 };
+
+  // Audition mode: shift allocation to 50%+ excerpts
+  if (audition_mode) {
+    alloc = { warmup: 10, fundamentals: 5, technique: 10, repertoire: 20, excerpts: 50, buffer: 5 };
+  } else {
+    // Auto-detect: check if any audition within 14 days
+    const twoWeeks = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const upcoming = await queryOne(
+      "SELECT COUNT(*) as count FROM auditions WHERE audition_date >= $1 AND audition_date <= $2 AND (result IS NULL OR result = 'pending')",
+      [todayStr, twoWeeks]
+    );
+    const upcomingExcerpts = await queryOne(
+      "SELECT COUNT(*) as count FROM excerpts WHERE audition_date IS NOT NULL AND audition_date >= $1 AND audition_date <= $2",
+      [todayStr, twoWeeks]
+    );
+    if (parseInt(upcoming?.count || '0') > 0 || parseInt(upcomingExcerpts?.count || '0') > 0) {
+      // Nudge excerpts up to 35% (not full audition mode, just a boost)
+      const excerptBoost = Math.min(20, 50 - alloc.excerpts);
+      if (excerptBoost > 0) {
+        const reduction = Math.round(excerptBoost / 2);
+        alloc = { ...alloc, excerpts: alloc.excerpts + excerptBoost, repertoire: alloc.repertoire - reduction, technique: alloc.technique - (excerptBoost - reduction) };
+      }
+    }
+  }
 
   const minutes = {};
   for (const [cat, pct] of Object.entries(alloc)) {
@@ -259,6 +314,114 @@ router.get('/current', async (req, res) => {
   if (!session) return res.json(null);
   session.blocks = await queryAll('SELECT * FROM session_blocks WHERE session_id = $1 ORDER BY sort_order', [session.id]);
   res.json(session);
+});
+
+// GET latest completed session (for repeat feature)
+router.get('/latest-completed', async (req, res) => {
+  const session = await queryOne(
+    "SELECT * FROM practice_sessions WHERE status = 'completed' ORDER BY date DESC, created_at DESC LIMIT 1"
+  );
+  if (!session) return res.json(null);
+  session.blocks = await queryAll('SELECT * FROM session_blocks WHERE session_id = $1 ORDER BY sort_order', [session.id]);
+  res.json(session);
+});
+
+// POST duplicate a session's block structure into a new session
+router.post('/:id/duplicate', async (req, res) => {
+  const source = await queryOne('SELECT * FROM practice_sessions WHERE id = $1', [req.params.id]);
+  if (!source) return res.status(404).json({ error: 'Not found' });
+
+  const sourceBlocks = await queryAll('SELECT * FROM session_blocks WHERE session_id = $1 ORDER BY sort_order', [source.id]);
+  if (sourceBlocks.length === 0) return res.status(400).json({ error: 'Source session has no blocks' });
+
+  const sessionId = uuid();
+  const today = new Date().toISOString().slice(0, 10);
+
+  await execute(
+    'INSERT INTO practice_sessions (id, date, planned_duration_min, status, time_allocation) VALUES ($1, $2, $3, $4, $5)',
+    [sessionId, today, source.planned_duration_min, 'planned', source.time_allocation || '{}']
+  );
+
+  for (const block of sourceBlocks) {
+    await execute(
+      'INSERT INTO session_blocks (id, session_id, category, title, description, planned_duration_min, sort_order, status, linked_type, linked_id, focus_points) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+      [uuid(), sessionId, block.category, block.title, block.description, block.planned_duration_min, block.sort_order, 'pending', block.linked_type || null, block.linked_id || null, block.focus_points || '']
+    );
+  }
+
+  const session = await queryOne('SELECT * FROM practice_sessions WHERE id = $1', [sessionId]);
+  session.blocks = await queryAll('SELECT * FROM session_blocks WHERE session_id = $1 ORDER BY sort_order', [sessionId]);
+  res.status(201).json(session);
+});
+
+// ─── Session Templates ───
+
+// POST save a session template
+router.post('/templates', async (req, res) => {
+  const { name, planned_duration_min, blocks } = req.body;
+  if (!name || !blocks || !Array.isArray(blocks)) {
+    return res.status(400).json({ error: 'name and blocks[] are required' });
+  }
+  const id = uuid();
+  const userId = req.user?.id || null;
+  await execute(
+    'INSERT INTO session_templates (id, user_id, name, planned_duration_min, blocks) VALUES ($1, $2, $3, $4, $5)',
+    [id, userId, name.trim(), planned_duration_min || 60, JSON.stringify(blocks)]
+  );
+  const template = await queryOne('SELECT * FROM session_templates WHERE id = $1', [id]);
+  template.blocks = typeof template.blocks === 'string' ? JSON.parse(template.blocks) : template.blocks;
+  res.status(201).json(template);
+});
+
+// GET list user's templates
+router.get('/templates', async (req, res) => {
+  const userId = req.user?.id || null;
+  let templates;
+  if (userId) {
+    templates = await queryAll('SELECT * FROM session_templates WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
+  } else {
+    templates = await queryAll('SELECT * FROM session_templates ORDER BY created_at DESC');
+  }
+  for (const t of templates) {
+    t.blocks = typeof t.blocks === 'string' ? JSON.parse(t.blocks) : t.blocks;
+  }
+  res.json(templates);
+});
+
+// DELETE a template
+router.delete('/templates/:id', async (req, res) => {
+  const row = await queryOne('SELECT * FROM session_templates WHERE id = $1', [req.params.id]);
+  if (!row) return res.status(404).json({ error: 'Not found' });
+  await execute('DELETE FROM session_templates WHERE id = $1', [req.params.id]);
+  res.json({ ok: true });
+});
+
+// POST create a session from a template
+router.post('/templates/:id/use', async (req, res) => {
+  const template = await queryOne('SELECT * FROM session_templates WHERE id = $1', [req.params.id]);
+  if (!template) return res.status(404).json({ error: 'Template not found' });
+
+  const blocks = typeof template.blocks === 'string' ? JSON.parse(template.blocks) : template.blocks;
+  if (!blocks || blocks.length === 0) return res.status(400).json({ error: 'Template has no blocks' });
+
+  const sessionId = uuid();
+  const today = new Date().toISOString().slice(0, 10);
+
+  await execute(
+    'INSERT INTO practice_sessions (id, date, planned_duration_min, status, time_allocation) VALUES ($1, $2, $3, $4, $5)',
+    [sessionId, today, template.planned_duration_min, 'planned', '{}']
+  );
+
+  for (const block of blocks) {
+    await execute(
+      'INSERT INTO session_blocks (id, session_id, category, title, description, planned_duration_min, sort_order, status, linked_type, linked_id, focus_points) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+      [uuid(), sessionId, block.category, block.title, block.description || '', block.planned_duration_min, block.sort_order, 'pending', block.linked_type || null, block.linked_id || null, block.focus_points || '']
+    );
+  }
+
+  const session = await queryOne('SELECT * FROM practice_sessions WHERE id = $1', [sessionId]);
+  session.blocks = await queryAll('SELECT * FROM session_blocks WHERE session_id = $1 ORDER BY sort_order', [sessionId]);
+  res.status(201).json(session);
 });
 
 // GET all sessions (history) — bulk fetch blocks (fixes N+1)
@@ -590,6 +753,94 @@ router.get('/stats', async (req, res) => {
     weekHours: +(totalMinutes / 60).toFixed(1),
     weekSessions: sessionCount,
     streak,
+  });
+});
+
+// GET analytics: calendar data (for heatmap)
+router.get('/analytics/calendar', async (req, res) => {
+  // Default: last 12 months
+  const months = parseInt(req.query.months) || 12;
+  const startDate = new Date();
+  startDate.setMonth(startDate.getMonth() - months);
+  const startStr = startDate.toISOString().slice(0, 10);
+
+  const rows = await queryAll(`
+    SELECT
+      date,
+      COUNT(*) as session_count,
+      COALESCE(SUM(actual_duration_min), SUM(planned_duration_min)) as total_minutes,
+      MAX(rating) as best_rating
+    FROM practice_sessions
+    WHERE status = 'completed' AND date >= $1
+    GROUP BY date
+    ORDER BY date
+  `, [startStr]);
+
+  res.json(rows.map(r => ({
+    date: r.date,
+    sessions: parseInt(r.session_count),
+    minutes: parseInt(r.total_minutes) || 0,
+    rating: r.best_rating,
+  })));
+});
+
+// GET analytics: streaks (extended)
+router.get('/analytics/streaks', async (req, res) => {
+  const practiceDates = await queryAll(
+    "SELECT DISTINCT date FROM practice_sessions WHERE status = 'completed' ORDER BY date DESC"
+  );
+
+  const totalDays = practiceDates.length;
+  let currentStreak = 0;
+  let longestStreak = 0;
+
+  if (practiceDates.length > 0) {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const dateSet = new Set(practiceDates.map(d => d.date));
+
+    // Current streak
+    let checkDate = todayStr;
+    if (!dateSet.has(todayStr)) {
+      checkDate = dateSet.has(yesterdayStr) ? yesterdayStr : null;
+    }
+    if (checkDate) {
+      let d = new Date(checkDate);
+      while (dateSet.has(d.toISOString().slice(0, 10))) {
+        currentStreak++;
+        d = new Date(d.getTime() - 86400000);
+      }
+    }
+
+    // Longest streak — walk all dates
+    const sortedDates = practiceDates.map(d => d.date).sort();
+    let running = 1;
+    longestStreak = 1;
+    for (let i = 1; i < sortedDates.length; i++) {
+      const prev = new Date(sortedDates[i - 1]);
+      const curr = new Date(sortedDates[i]);
+      const diffDays = Math.round((curr - prev) / 86400000);
+      if (diffDays === 1) {
+        running++;
+        longestStreak = Math.max(longestStreak, running);
+      } else {
+        running = 1;
+      }
+    }
+    if (totalDays === 0) longestStreak = 0;
+  }
+
+  // Total hours all time
+  const totalRow = await queryOne(
+    "SELECT COALESCE(SUM(actual_duration_min), SUM(planned_duration_min), 0) as total FROM practice_sessions WHERE status = 'completed'"
+  );
+  const totalMinutes = parseInt(totalRow?.total || '0');
+
+  res.json({
+    current_streak: currentStreak,
+    longest_streak: longestStreak,
+    total_practice_days: totalDays,
+    total_hours: +(totalMinutes / 60).toFixed(1),
   });
 });
 

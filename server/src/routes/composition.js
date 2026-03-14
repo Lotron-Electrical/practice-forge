@@ -6,6 +6,7 @@ import {
   generateArticulationDrill, generateFromDemand,
 } from '../utils/ruleGenerator.js';
 import { generateWithAI, estimateCost } from '../utils/aiGenerator.js';
+import { enforceAiLimit } from '../middleware/tierLimits.js';
 
 const router = Router();
 
@@ -71,6 +72,7 @@ router.post('/generate/from-demand', async (req, res) => {
         difficulty: demand.difficulty,
         demands: demand.description,
       },
+      user_id: req.user.id,
     });
 
     res.json(aiResult);
@@ -80,7 +82,7 @@ router.post('/generate/from-demand', async (req, res) => {
 });
 
 // POST /generate/ai — AI-assisted generation (cost confirmation flow)
-router.post('/generate/ai', async (req, res) => {
+router.post('/generate/ai', enforceAiLimit, async (req, res) => {
   try {
     const { type, prompt, context = {}, confirmed } = req.body;
     if (!type || !prompt) return res.status(400).json({ error: 'type and prompt are required' });
@@ -89,12 +91,12 @@ router.post('/generate/ai', async (req, res) => {
       return res.status(400).json({ error: 'ANTHROPIC_API_KEY is not configured' });
     }
 
-    // Cost estimation step
+    // Cost estimation step — include usage info
     if (confirmed !== true) {
-      return res.json({ ...estimateCost(), requires_confirmation: true });
+      return res.json({ ...estimateCost(), requires_confirmation: true, ai_usage: req.aiUsage });
     }
 
-    const result = await generateWithAI({ type, prompt, context });
+    const result = await generateWithAI({ type, prompt, context, user_id: req.user.id });
 
     // Track AI spend
     if (result.cost) {
@@ -148,7 +150,7 @@ router.post('/generate/save', async (req, res) => {
 });
 
 // POST /generate/excerpt-prep — Generate excerpt preparation routine
-router.post('/generate/excerpt-prep', async (req, res) => {
+router.post('/generate/excerpt-prep', enforceAiLimit, async (req, res) => {
   try {
     const { excerpt_id, confirmed } = req.body;
 
@@ -160,7 +162,7 @@ router.post('/generate/excerpt-prep', async (req, res) => {
     }
 
     if (confirmed !== true) {
-      return res.json({ ...estimateCost(), requires_confirmation: true });
+      return res.json({ ...estimateCost(), requires_confirmation: true, ai_usage: req.aiUsage });
     }
 
     const result = await generateWithAI({
@@ -172,6 +174,7 @@ router.post('/generate/excerpt-prep', async (req, res) => {
         difficulty: excerpt.difficulty,
         demands: excerpt.performance_notes || '',
       },
+      user_id: req.user.id,
     });
 
     // Track cost
@@ -192,7 +195,7 @@ router.post('/generate/excerpt-prep', async (req, res) => {
 });
 
 // POST /generate/warmup — Generate session warm-up
-router.post('/generate/warmup', async (req, res) => {
+router.post('/generate/warmup', enforceAiLimit, async (req, res) => {
   try {
     const { session_id, confirmed } = req.body;
 
@@ -201,7 +204,7 @@ router.post('/generate/warmup', async (req, res) => {
     }
 
     if (confirmed !== true) {
-      return res.json({ ...estimateCost(), requires_confirmation: true });
+      return res.json({ ...estimateCost(), requires_confirmation: true, ai_usage: req.aiUsage });
     }
 
     // Gather session context
@@ -230,6 +233,7 @@ router.post('/generate/warmup', async (req, res) => {
       type: 'warmup',
       prompt: keys.length > 0 ? `Warm up covering keys: ${keys.join(', ')}` : 'General warm-up for a practice session',
       context,
+      user_id: req.user.id,
     });
 
     if (result.cost) {
