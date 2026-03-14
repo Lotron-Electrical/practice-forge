@@ -6,6 +6,23 @@ CREATE TABLE IF NOT EXISTS settings (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Users table (must be created before any table that references it)
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  display_name TEXT NOT NULL DEFAULT '',
+  instrument TEXT NOT NULL DEFAULT 'Flute',
+  level TEXT NOT NULL DEFAULT 'student' CHECK(level IN ('student','advanced_student','pre_professional','professional')),
+  institution TEXT,
+  bio TEXT,
+  avatar_url TEXT,
+  privacy_settings JSONB NOT NULL DEFAULT '{"profile_visible":false,"stats_visible":false,"recordings_shareable":false,"activity_visible":false}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
 CREATE TABLE IF NOT EXISTS taxonomy_categories (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -417,24 +434,6 @@ CREATE TABLE IF NOT EXISTS excerpt_community_notes (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_excerpt_notes_excerpt ON excerpt_community_notes(excerpt_id);
-
--- Phase 16: Authentication + User Profiles
-
-CREATE TABLE IF NOT EXISTS users (
-  id TEXT PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
-  display_name TEXT NOT NULL DEFAULT '',
-  instrument TEXT NOT NULL DEFAULT 'Flute',
-  level TEXT NOT NULL DEFAULT 'student' CHECK(level IN ('student','advanced_student','pre_professional','professional')),
-  institution TEXT,
-  bio TEXT,
-  avatar_url TEXT,
-  privacy_settings JSONB NOT NULL DEFAULT '{"profile_visible":false,"stats_visible":false,"recordings_shareable":false,"activity_visible":false}',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
 -- Phase 14: Analytics — add started_at to practice_sessions
 DO $$
