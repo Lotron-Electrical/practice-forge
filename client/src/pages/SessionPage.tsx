@@ -41,13 +41,13 @@ interface SessionTemplate {
   created_at: string;
 }
 
-const CATEGORY_CONFIG: Record<string, { icon: typeof Play; color: string; label: string }> = {
-  warmup: { icon: Sparkles, color: 'var(--pf-accent-gold)', label: 'Warm-up' },
-  fundamentals: { icon: Zap, color: 'var(--pf-accent-teal)', label: 'Fundamentals' },
-  technique: { icon: BookOpen, color: 'var(--pf-accent-teal)', label: 'Technique' },
-  repertoire: { icon: Music, color: 'var(--pf-status-in-progress)', label: 'Repertoire' },
-  excerpts: { icon: ListMusic, color: 'var(--pf-accent-lavender)', label: 'Excerpts' },
-  buffer: { icon: Timer, color: 'var(--pf-text-secondary)', label: 'Flexible time' },
+const CATEGORY_CONFIG: Record<string, { icon: typeof Play; color: string; label: string; hint: string }> = {
+  warmup: { icon: Sparkles, color: 'var(--pf-accent-gold)', label: 'Warm-up', hint: 'Gentle exercises to get your fingers moving' },
+  fundamentals: { icon: Zap, color: 'var(--pf-accent-teal)', label: 'Fundamentals', hint: 'Core skills like scales, tone, and rhythm' },
+  technique: { icon: BookOpen, color: 'var(--pf-accent-teal)', label: 'Technique', hint: 'Targeted drills for tricky passages' },
+  repertoire: { icon: Music, color: 'var(--pf-status-in-progress)', label: 'Repertoire', hint: 'The pieces and songs you are learning' },
+  excerpts: { icon: ListMusic, color: 'var(--pf-accent-lavender)', label: 'Excerpts', hint: 'Short passages for audition preparation' },
+  buffer: { icon: Timer, color: 'var(--pf-text-secondary)', label: 'Flexible time', hint: 'Use for anything that needs extra attention' },
 };
 
 function formatTime(seconds: number) {
@@ -597,8 +597,10 @@ export function SessionPage() {
                         <Badge color={conf.color}>{conf.label}</Badge>
                         <span className="text-xs text-[var(--pf-text-secondary)]">{block.planned_duration_min} min</span>
                       </div>
-                      {block.description && (
+                      {block.description ? (
                         <p className="text-xs text-[var(--pf-text-secondary)]">{block.description}</p>
+                      ) : (
+                        <p className="text-xs text-[var(--pf-text-secondary)] italic">{conf.hint}</p>
                       )}
                       {block.focus_points && (
                         <p className="text-xs mt-1" style={{ color: conf.color }}>Focus: {block.focus_points}</p>

@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Music, BookOpen, ListMusic, FolderOpen, Mic, BarChart3, Settings, ChevronLeft, ChevronRight, Timer, X, User, ClipboardCheck, Users, ChevronDown, CreditCard, CalendarDays, Target } from 'lucide-react';
+import { LayoutDashboard, Music, BookOpen, ListMusic, FolderOpen, Mic, BarChart3, Settings, ChevronLeft, ChevronRight, Timer, X, User, ClipboardCheck, Users, ChevronDown, CreditCard, CalendarDays, Target, HelpCircle } from 'lucide-react';
 import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { useExperienceLevel, isNavItemAllowed } from '../../hooks/useExperienceLevel';
 import { useModalLock } from '../../hooks/useModalLock';
@@ -47,6 +47,7 @@ const navGroups: NavGroup[] = [
       { to: '/media', icon: FolderOpen, label: 'Media' },
       { to: '/profile', icon: User, label: 'Profile' },
       { to: '/pricing', icon: CreditCard, label: 'Pricing' },
+      { to: '/tutorial', icon: HelpCircle, label: 'Help & Tour' },
       { to: '/settings', icon: Settings, label: 'Settings' },
     ],
   },
@@ -216,7 +217,7 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
             <div className="flex flex-col leading-tight">
               <span className="text-white font-heading font-bold text-lg tracking-tight">PRACTICE</span>
               <span className="font-heading font-bold text-lg tracking-tight" style={{ color: 'var(--pf-accent-gold)' }}>FORGE</span>
-              <span className="text-[10px] tracking-wide mt-0.5" style={{ color: 'var(--pf-text-nav)', opacity: 0.4 }}>v0.19.Ravel</span>
+              <span className="text-[10px] tracking-wide mt-0.5" style={{ color: 'var(--pf-text-nav)', opacity: 0.4 }}>v0.20.Holst</span>
             </div>
             <button
               onClick={onClose}
@@ -248,7 +249,7 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
           <div className="flex flex-col leading-tight">
             <span className="text-white font-heading font-bold text-lg tracking-tight">PRACTICE</span>
             <span className="font-heading font-bold text-lg tracking-tight" style={{ color: 'var(--pf-accent-gold)' }}>FORGE</span>
-            <span className="text-[10px] tracking-wide mt-0.5" style={{ color: 'var(--pf-text-nav)', opacity: 0.4 }}>v0.19.Ravel</span>
+            <span className="text-[10px] tracking-wide mt-0.5" style={{ color: 'var(--pf-text-nav)', opacity: 0.4 }}>v0.20.Holst</span>
           </div>
         )}
         {collapsed && (

@@ -9,6 +9,7 @@ import { api } from '../api/client';
 import type { Piece, Excerpt } from '../core/types';
 import { Play, Clock, Flame, Target, AlertTriangle, CheckCircle, BarChart3, Music, BookOpen, Mic, PenLine, ChevronDown, ChevronUp, ThumbsUp, Meh, ThumbsDown, Info, X, Trophy, CalendarDays } from 'lucide-react';
 import { AuditionCountdown } from '../components/auditions/AuditionCountdown';
+import { MilestoneToast } from '../components/onboarding/MilestoneToast';
 import { useExperienceLevel } from '../hooks/useExperienceLevel';
 
 interface Stats {
@@ -117,17 +118,17 @@ export function DashboardPage() {
               <Link to="/pieces" className="flex flex-col items-center gap-2 p-4 rounded-pf border border-[var(--pf-border-color)] hover:border-[var(--pf-accent-gold)] transition-colors">
                 <Music size={24} style={{ color: 'var(--pf-accent-gold)' }} />
                 <span className="text-sm font-medium">1. Add a piece</span>
-                <span className="text-xs text-[var(--pf-text-secondary)]">Your repertoire</span>
+                <span className="text-xs text-[var(--pf-text-secondary)]">A song or work you're learning</span>
               </Link>
-              <Link to="/media" className="flex flex-col items-center gap-2 p-4 rounded-pf border border-[var(--pf-border-color)] hover:border-[var(--pf-accent-teal)] transition-colors">
-                <BookOpen size={24} style={{ color: 'var(--pf-accent-teal)' }} />
-                <span className="text-sm font-medium">2. Upload music</span>
-                <span className="text-xs text-[var(--pf-text-secondary)]">Scores & recordings</span>
+              <Link to="/session" className="flex flex-col items-center gap-2 p-4 rounded-pf border border-[var(--pf-border-color)] hover:border-[var(--pf-accent-teal)] transition-colors">
+                <Play size={24} style={{ color: 'var(--pf-accent-teal)' }} />
+                <span className="text-sm font-medium">2. Start a session</span>
+                <span className="text-xs text-[var(--pf-text-secondary)]">AI plans your practice time</span>
               </Link>
-              <Link to="/session" className="flex flex-col items-center gap-2 p-4 rounded-pf border border-[var(--pf-border-color)] hover:border-[var(--pf-accent-lavender)] transition-colors">
-                <Play size={24} style={{ color: 'var(--pf-accent-lavender)' }} />
-                <span className="text-sm font-medium">3. Start practising</span>
-                <span className="text-xs text-[var(--pf-text-secondary)]">AI-planned sessions</span>
+              <Link to="/tutorial" className="flex flex-col items-center gap-2 p-4 rounded-pf border border-[var(--pf-border-color)] hover:border-[var(--pf-accent-lavender)] transition-colors">
+                <BookOpen size={24} style={{ color: 'var(--pf-accent-lavender)' }} />
+                <span className="text-sm font-medium">3. Take the tour</span>
+                <span className="text-xs text-[var(--pf-text-secondary)]">See how everything works</span>
               </Link>
             </div>
           </CardContent>
@@ -186,7 +187,7 @@ export function DashboardPage() {
                 <div className="h-full" style={{ flex: timeAlloc.excerpts, backgroundColor: 'var(--pf-accent-lavender)' }} />
                 <div className="h-full" style={{ flex: timeAlloc.buffer, backgroundColor: 'var(--pf-text-secondary)' }} />
               </div>
-              <p className="text-xs text-[var(--pf-text-secondary)] mt-1">Warm-up → Fundamentals → Technique → Repertoire → Excerpts</p>
+              <p className="text-xs text-[var(--pf-text-secondary)] mt-1">Warm-up → Fundamentals → Technique → Your pieces → Excerpts</p>
             </div>
             <Button onClick={() => navigate('/session')}>
               <Play size={16} /> Start Session
@@ -469,6 +470,9 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Milestone celebrations */}
+      <MilestoneToast activePieces={activePieces.length} totalSessions={stats.weekSessions} streak={stats.streak} />
 
       {/* Bottom row: Alerts */}
       {alerts.length > 0 && (

@@ -180,7 +180,7 @@ export function PiecesPage() {
             <Music size={48} className="mx-auto mb-4 text-[var(--pf-text-secondary)]" />
             <p className="text-[var(--pf-text-secondary)]">
               {pieces.length === 0
-                ? 'No pieces yet. Add your first piece to start tracking sections, tricky spots, and practice time.'
+                ? "No pieces yet. A piece is any song, study, or work you're learning. Add your first one to get started."
                 : 'No pieces match your filters.'}
             </p>
           </CardContent>

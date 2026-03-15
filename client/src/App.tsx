@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from './components/layout/MainLayout';
 import { AuthProvider, useAuth } from './auth/AuthContext';
@@ -21,11 +22,15 @@ import { CommunityPage } from './pages/CommunityPage';
 import { PricingPage } from './pages/PricingPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { AuditionsPage } from './pages/AuditionsPage';
+import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
 import { Loader } from 'lucide-react';
 import { useExperienceLevel, isPathAllowed } from './hooks/useExperienceLevel';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
+  const [onboardingDone, setOnboardingDone] = useState(() =>
+    localStorage.getItem('pf-onboarding-complete') === 'true'
+  );
 
   if (isLoading) {
     return (
@@ -40,6 +45,12 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   // will be true even without logging in. When AUTH_REQUIRED=true on the
   // server, the user must have a real token.
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+
+  // Show onboarding wizard for new users
+  if (!onboardingDone) {
+    return <OnboardingWizard onComplete={() => setOnboardingDone(true)} />;
+  }
+
   return <>{children}</>;
 }
 
@@ -74,6 +85,7 @@ function AppRoutes() {
         <Route path="profile" element={<RequireLevel path="/profile"><ProfilePage /></RequireLevel>} />
         <Route path="pricing" element={<PricingPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="tutorial" element={<TutorialPage />} />
       </Route>
     </Routes>
   );

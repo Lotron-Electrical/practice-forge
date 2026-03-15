@@ -342,10 +342,43 @@ export function SettingsPage() {
 
             <div>
               <h3 className="text-sm font-medium text-[var(--pf-text-secondary)] mb-2">Time allocation (%)</h3>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {[
+                  { name: 'Balanced', alloc: { warmup: 15, fundamentals: 10, technique: 20, repertoire: 35, excerpts: 15, buffer: 5 } },
+                  { name: 'Beginner', alloc: { warmup: 20, fundamentals: 25, technique: 15, repertoire: 30, excerpts: 0, buffer: 10 } },
+                  { name: 'Audition Prep', alloc: { warmup: 10, fundamentals: 5, technique: 15, repertoire: 20, excerpts: 45, buffer: 5 } },
+                  { name: 'Performance', alloc: { warmup: 10, fundamentals: 5, technique: 10, repertoire: 60, excerpts: 10, buffer: 5 } },
+                ].map(preset => {
+                  const isActive = Object.entries(preset.alloc).every(([k, v]) => timeAllocation[k as keyof typeof timeAllocation] === v);
+                  return (
+                    <button
+                      key={preset.name}
+                      onClick={() => {
+                        setTimeAllocation(preset.alloc);
+                        api.updateSetting('timeAllocation', preset.alloc).catch(() => {});
+                      }}
+                      className={`px-3 py-1.5 rounded-pf text-xs font-medium transition-colors border ${
+                        isActive
+                          ? 'border-[var(--pf-accent-gold)] bg-[var(--pf-accent-gold)]/10 text-[var(--pf-accent-gold)]'
+                          : 'border-[var(--pf-border-color)] text-[var(--pf-text-secondary)] hover:border-[var(--pf-accent-gold)]/50'
+                      }`}
+                    >
+                      {preset.name}
+                    </button>
+                  );
+                })}
+              </div>
               <div className="space-y-2">
                 {Object.entries(timeAllocation).map(([key, value]) => (
                   <div key={key} className="flex items-center gap-3">
-                    <span className="text-xs w-24 text-[var(--pf-text-secondary)] capitalize">{key === 'warmup' ? 'Warm-up' : key}</span>
+                    <span className="text-xs w-24 text-[var(--pf-text-secondary)] capitalize" title={
+                      key === 'warmup' ? 'Gentle exercises to get going' :
+                      key === 'fundamentals' ? 'Core skills: scales, tone, rhythm' :
+                      key === 'technique' ? 'Drills for tricky passages' :
+                      key === 'repertoire' ? 'The pieces you are learning' :
+                      key === 'excerpts' ? 'Short passages for auditions' :
+                      'Extra time for anything'
+                    }>{key === 'warmup' ? 'Warm-up' : key}</span>
                     <input
                       type="range"
                       min={0}
@@ -450,7 +483,7 @@ export function SettingsPage() {
       </div>
 
       {/* Version */}
-      <p className="text-xs text-[var(--pf-text-secondary)] text-center mt-8">Practice Forge v0.19.Ravel</p>
+      <p className="text-xs text-[var(--pf-text-secondary)] text-center mt-8">Practice Forge v0.20.Holst</p>
 
       <ThemeCreator open={showCreator} onClose={() => setShowCreator(false)} onCreated={() => { setShowCreator(false); }} />
     </div>

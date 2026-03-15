@@ -46,7 +46,7 @@ export function LoginPage() {
             <span className="font-heading font-bold text-3xl tracking-tight" style={{ color: 'var(--pf-accent-gold)' }}>FORGE</span>
           </div>
           <p className="text-sm text-[var(--pf-text-secondary)] mt-2">Shape your sound.</p>
-          <p className="text-xs mt-1" style={{ color: 'var(--pf-text-secondary)', opacity: 0.5 }}>v0.19.Ravel</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--pf-text-secondary)', opacity: 0.5 }}>v0.20.Holst</p>
         </div>
 
         <Card>

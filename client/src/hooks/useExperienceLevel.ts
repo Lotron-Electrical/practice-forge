@@ -39,7 +39,7 @@ export function useExperienceLevel() {
 }
 
 // Which routes are visible at each level
-const BEGINNER_PATHS = new Set(['/', '/pieces', '/session', '/record', '/settings']);
+const BEGINNER_PATHS = new Set(['/', '/pieces', '/session', '/record', '/tutorial', '/settings']);
 const INTERMEDIATE_PATHS = new Set([...BEGINNER_PATHS, '/exercises', '/excerpts', '/analytics', '/profile']);
 const ADVANCED_PATHS = new Set([...INTERMEDIATE_PATHS, '/media', '/assessments', '/community', '/taxonomy']);
 
@@ -65,7 +65,7 @@ export function isPathAllowed(path: string, level: ExperienceLevel): boolean {
 }
 
 // Filter sidebar nav items by label
-const BEGINNER_LABELS = new Set(['Dashboard', 'Pieces', 'Session', 'Record', 'Settings']);
+const BEGINNER_LABELS = new Set(['Dashboard', 'Pieces', 'Session', 'Record', 'Help & Tour', 'Settings']);
 const INTERMEDIATE_LABELS = new Set([...BEGINNER_LABELS, 'Exercises', 'Excerpts', 'Analytics', 'Profile']);
 
 export function isNavItemAllowed(label: string, level: ExperienceLevel): boolean {
