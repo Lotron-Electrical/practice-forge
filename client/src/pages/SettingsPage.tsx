@@ -483,7 +483,7 @@ export function SettingsPage() {
       </div>
 
       {/* Version */}
-      <p className="text-xs text-[var(--pf-text-secondary)] text-center mt-8">Practice Forge v0.20.Ibert</p>
+      <p className="text-xs text-[var(--pf-text-secondary)] text-center mt-8">Practice Forge v0.20.Jolivet</p>
 
       <ThemeCreator open={showCreator} onClose={() => setShowCreator(false)} onCreated={() => { setShowCreator(false); }} />
     </div>
