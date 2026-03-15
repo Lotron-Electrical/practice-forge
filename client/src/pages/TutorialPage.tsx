@@ -455,20 +455,40 @@ export function TutorialPage() {
           </div>
         )}
 
-        {/* Progress dots */}
-        <div className="flex justify-center gap-1.5 mb-4">
-          {steps.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentStep(i)}
-              className="w-2 h-2 rounded-full transition-all"
-              style={{
-                backgroundColor: i === currentStep ? 'var(--pf-accent-gold)' : 'var(--pf-border-color)',
-                transform: i === currentStep ? 'scale(1.3)' : 'scale(1)',
-              }}
-              aria-label={`Go to step ${i + 1}`}
-            />
-          ))}
+        {/* Navigation + progress dots */}
+        <div className="flex items-center justify-between mb-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => isFirst ? (isEmbedded ? navigate(-1) : navigate('/login')) : setCurrentStep(s => s - 1)}
+          >
+            <ArrowLeft size={16} /> Back
+          </Button>
+
+          <div className="flex items-center gap-1.5">
+            {steps.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentStep(i)}
+                className="w-2 h-2 rounded-full transition-all"
+                style={{
+                  backgroundColor: i === currentStep ? 'var(--pf-accent-gold)' : 'var(--pf-border-color)',
+                  transform: i === currentStep ? 'scale(1.3)' : 'scale(1)',
+                }}
+                aria-label={`Go to step ${i + 1}`}
+              />
+            ))}
+          </div>
+
+          {isLast ? (
+            <Button size="sm" onClick={() => isEmbedded ? navigate(-1) : navigate('/login')}>
+              {isEmbedded ? 'Done' : 'Get Started'} {isEmbedded ? <CheckCircle2 size={16} /> : <ArrowRight size={16} />}
+            </Button>
+          ) : (
+            <Button size="sm" onClick={() => setCurrentStep(s => s + 1)}>
+              Next <ArrowRight size={16} />
+            </Button>
+          )}
         </div>
 
         {/* Content card */}
@@ -494,43 +514,6 @@ export function TutorialPage() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between mt-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => isFirst ? (isEmbedded ? navigate(-1) : navigate('/login')) : setCurrentStep(s => s - 1)}
-          >
-            <ArrowLeft size={16} /> Back
-          </Button>
-
-          <span className="text-xs text-[var(--pf-text-secondary)]">
-            {currentStep + 1} / {steps.length}
-          </span>
-
-          {isLast ? (
-            <Button size="sm" onClick={() => isEmbedded ? navigate(-1) : navigate('/login')}>
-              {isEmbedded ? 'Done' : 'Get Started'} {isEmbedded ? <CheckCircle2 size={16} /> : <ArrowRight size={16} />}
-            </Button>
-          ) : (
-            <Button size="sm" onClick={() => setCurrentStep(s => s + 1)}>
-              Next <ArrowRight size={16} />
-            </Button>
-          )}
-        </div>
-
-        {/* Skip link — only when standalone */}
-        {!isEmbedded && (
-          <div className="text-center mt-4">
-            <button
-              onClick={() => navigate('/login')}
-              className="text-xs text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)] transition-colors underline"
-            >
-              Skip to sign in
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
