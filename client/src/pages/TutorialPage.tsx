@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { useAuth } from '../auth/AuthContext';
 import {
   ArrowLeft,
   ArrowRight,
+  X,
   LayoutDashboard,
   Music,
   Timer,
@@ -422,24 +424,43 @@ const steps: TutorialStep[] = [
 
 export function TutorialPage() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const step = steps[currentStep];
   const isFirst = currentStep === 0;
   const isLast = currentStep === steps.length - 1;
 
+  // When accessed from inside the app (authenticated), we're embedded in MainLayout
+  const isEmbedded = isAuthenticated;
+
   return (
-    <div className="min-h-screen bg-[var(--pf-bg-primary)] p-4">
-      <div className="max-w-lg mx-auto pt-8">
-        {/* Brand */}
-        <div className="text-center mb-6">
-          <div className="flex flex-col items-center leading-tight">
-            <span className="text-[var(--pf-text-primary)] font-heading font-bold text-2xl tracking-tight">PRACTICE</span>
-            <span className="font-heading font-bold text-2xl tracking-tight" style={{ color: 'var(--pf-accent-gold)' }}>FORGE</span>
+    <div className={`${isEmbedded ? '' : 'min-h-screen bg-[var(--pf-bg-primary)]'} p-4`}>
+      <div className={`max-w-lg mx-auto ${isEmbedded ? 'pt-0' : 'pt-8'}`}>
+        {/* Close button when inside the app */}
+        {isEmbedded && (
+          <div className="flex justify-end mb-2">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 -mr-2 rounded-[var(--pf-radius-sm)] text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)] hover:bg-[var(--pf-bg-hover)] transition-colors"
+              aria-label="Close tutorial"
+            >
+              <X size={20} />
+            </button>
           </div>
-        </div>
+        )}
+
+        {/* Brand — only show when standalone */}
+        {!isEmbedded && (
+          <div className="text-center mb-6">
+            <div className="flex flex-col items-center leading-tight">
+              <span className="text-[var(--pf-text-primary)] font-heading font-bold text-2xl tracking-tight">PRACTICE</span>
+              <span className="font-heading font-bold text-2xl tracking-tight" style={{ color: 'var(--pf-accent-gold)' }}>FORGE</span>
+            </div>
+          </div>
+        )}
 
         {/* Progress dots */}
-        <div className="flex justify-center gap-1.5 mb-6">
+        <div className="flex justify-center gap-1.5 mb-4">
           {steps.map((_, i) => (
             <button
               key={i}
@@ -458,16 +479,16 @@ export function TutorialPage() {
         <Card>
           <CardContent>
             {/* Step header */}
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-3">
               <div
-                className="w-12 h-12 rounded-[var(--pf-radius-md)] flex items-center justify-center flex-shrink-0"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-[var(--pf-radius-md)] flex items-center justify-center flex-shrink-0"
                 style={{ backgroundColor: step.color, color: 'white', opacity: 0.9 }}
               >
                 {step.icon}
               </div>
               <div>
-                <h2 className="text-lg font-heading font-bold text-[var(--pf-text-primary)]">{step.title}</h2>
-                <p className="text-sm text-[var(--pf-text-secondary)]">{step.subtitle}</p>
+                <h2 className="text-base sm:text-lg font-heading font-bold text-[var(--pf-text-primary)]">{step.title}</h2>
+                <p className="text-xs sm:text-sm text-[var(--pf-text-secondary)]">{step.subtitle}</p>
               </div>
             </div>
 
@@ -479,7 +500,7 @@ export function TutorialPage() {
         </Card>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between mt-6">
+        <div className="flex items-center justify-between mt-4">
           <Button
             variant="ghost"
             size="sm"
@@ -494,8 +515,8 @@ export function TutorialPage() {
           </span>
 
           {isLast ? (
-            <Button size="sm" onClick={() => navigate('/login')}>
-              Get Started <ArrowRight size={16} />
+            <Button size="sm" onClick={() => isEmbedded ? navigate(-1) : navigate('/login')}>
+              {isEmbedded ? 'Done' : 'Get Started'} {isEmbedded ? <CheckCircle2 size={16} /> : <ArrowRight size={16} />}
             </Button>
           ) : (
             <Button size="sm" onClick={() => setCurrentStep(s => s + 1)}>
@@ -504,15 +525,17 @@ export function TutorialPage() {
           )}
         </div>
 
-        {/* Skip link */}
-        <div className="text-center mt-4">
-          <button
-            onClick={() => navigate('/login')}
-            className="text-xs text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)] transition-colors underline"
-          >
-            Skip to sign in
-          </button>
-        </div>
+        {/* Skip link — only when standalone */}
+        {!isEmbedded && (
+          <div className="text-center mt-4">
+            <button
+              onClick={() => navigate('/login')}
+              className="text-xs text-[var(--pf-text-secondary)] hover:text-[var(--pf-text-primary)] transition-colors underline"
+            >
+              Skip to sign in
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
