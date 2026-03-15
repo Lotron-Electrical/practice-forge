@@ -261,7 +261,7 @@ const steps: TutorialStep[] = [
             <Sparkles size={14} style={{ color: 'var(--pf-accent-gold)' }} />
             <span className="font-medium text-[var(--pf-text-primary)]">Adapts to you</span>
           </div>
-          <p className="text-[var(--pf-text-secondary)] text-xs">Tell us your instrument, genre, and level. Practice Forge tailors sessions, analysis, and exercises to how you play.</p>
+          <p className="text-[var(--pf-text-secondary)] text-xs">Practice Forge tailors sessions, analysis, and exercises to how you play.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
@@ -302,13 +302,12 @@ const steps: TutorialStep[] = [
     color: 'var(--pf-status-in-progress)',
     content: (
       <div className="space-y-3">
-        <p>Set a duration and the AI suggests a plan — or build your own from scratch. Adjust any block, skip what you do not need, add what you do.</p>
+        <p>Set a duration and the AI builds a plan — or create your own.</p>
         <div className="grid grid-cols-3 gap-1.5 text-xs">
           {['Warmup', 'Fundamentals', 'Technique', 'Repertoire', 'Excerpts', 'Sight-reading'].map(cat => (
             <div key={cat} className="px-2 py-1.5 rounded-[var(--pf-radius-sm)] bg-[var(--pf-bg-hover)] text-[var(--pf-text-secondary)] text-center">{cat}</div>
           ))}
         </div>
-        <p className="text-sm text-[var(--pf-text-secondary)]">Built-in metronome and recording — no need to leave the session.</p>
         <MockSessionTimer />
       </div>
     ),
@@ -321,7 +320,7 @@ const steps: TutorialStep[] = [
     color: 'var(--pf-accent-lavender)',
     content: (
       <div className="space-y-3">
-        <p>Add pieces with composer, difficulty, and target dates. Break each into sections and track their status from first read-through to performance-ready.</p>
+        <p>Add pieces, break them into sections, and track status from first read-through to performance-ready. Set audition dates and the app rotates your repertoire so nothing goes stale.</p>
         <div className="flex flex-wrap gap-1.5 text-xs">
           {[
             { label: 'Not Started', color: 'var(--pf-text-secondary)' },
@@ -332,7 +331,6 @@ const steps: TutorialStep[] = [
             <span key={s.label} className="px-2 py-1 rounded-[var(--pf-radius-sm)]" style={{ backgroundColor: s.color, color: 'white', opacity: 0.9 }}>{s.label}</span>
           ))}
         </div>
-        <p className="text-sm text-[var(--pf-text-secondary)]">Preparing for an audition or recital? Link your required pieces and excerpts, set the date, and the app auto-selects daily rotation so nothing goes stale.</p>
         <MockPieceCard />
       </div>
     ),
@@ -345,8 +343,7 @@ const steps: TutorialStep[] = [
     color: 'var(--pf-accent-orange)',
     content: (
       <div className="space-y-3">
-        <p>Upload a PDF score and the AI analyses it — key, tempo, difficulty, and detected patterns like scales, arpeggios, and articulations. Get instrument-specific insights (breathing points, alternate fingerings, bowing suggestions).</p>
-        <p className="text-sm text-[var(--pf-text-secondary)]">Record yourself during practice and get bar-level feedback on pitch accuracy, rhythm, and dynamics. Pinpoint exactly which bars need work.</p>
+        <p>Upload a PDF score for AI analysis — key, tempo, difficulty, and instrument-specific insights. Record yourself to get bar-level feedback on pitch, rhythm, and dynamics.</p>
         <MockAnalysis />
       </div>
     ),
@@ -359,8 +356,7 @@ const steps: TutorialStep[] = [
     color: 'var(--pf-status-ready)',
     content: (
       <div className="space-y-3">
-        <p>See how your practice time breaks down across days and categories. Spot trends, maintain streaks, and get alerts when your actual practice drifts from your plan.</p>
-        <p className="text-sm text-[var(--pf-text-secondary)]">Run piece audits and spot-checks to evaluate readiness before a performance. Weekly reviews summarise what improved and what still needs attention.</p>
+        <p>Track practice time by day and category, maintain streaks, and run piece audits to evaluate performance readiness. Weekly reviews highlight what improved.</p>
         <MockAnalytics />
       </div>
     ),
@@ -504,8 +500,7 @@ export function TutorialPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setCurrentStep(s => s - 1)}
-            disabled={isFirst}
+            onClick={() => isFirst ? (isEmbedded ? navigate(-1) : navigate('/login')) : setCurrentStep(s => s - 1)}
           >
             <ArrowLeft size={16} /> Back
           </Button>
