@@ -6,7 +6,7 @@ import { enforceCountLimit } from "../middleware/tierLimits.js";
 
 const excerptLimiter = enforceCountLimit(
   "excerpts",
-  "SELECT COUNT(*) as count FROM excerpts",
+  "SELECT COUNT(*) as count FROM excerpts WHERE user_id = $1",
 );
 
 const router = Router();
@@ -14,15 +14,16 @@ const router = Router();
 router.get(
   "/",
   asyncHandler(async (req, res) => {
-    res.json(await queryAll("SELECT * FROM excerpts ORDER BY updated_at DESC"));
+    res.json(await queryAll("SELECT * FROM excerpts WHERE user_id = $1 ORDER BY updated_at DESC", [req.user.id]));
   }),
 );
 
 router.get(
   "/:id",
   asyncHandler(async (req, res) => {
-    const ex = await queryOne("SELECT * FROM excerpts WHERE id = $1", [
+    const ex = await queryOne("SELECT * FROM excerpts WHERE id = $1 AND user_id = $2", [
       req.params.id,
+      req.user.id,
     ]);
     if (!ex) return res.status(404).json({ error: "Not found" });
     res.json(ex);
@@ -48,9 +49,10 @@ router.post(
     if (!title) return res.status(400).json({ error: "title is required" });
     const id = uuid();
     await execute(
-      "INSERT INTO excerpts (id, title, composer, full_work_title, location_in_score, recording_reference, historical_context, performance_notes, difficulty, status, tags) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+      "INSERT INTO excerpts (id, user_id, title, composer, full_work_title, location_in_score, recording_reference, historical_context, performance_notes, difficulty, status, tags) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
       [
         id,
+        req.user.id,
         title,
         composer,
         full_work_title,
@@ -72,8 +74,9 @@ router.post(
 router.put(
   "/:id",
   asyncHandler(async (req, res) => {
-    const existing = await queryOne("SELECT * FROM excerpts WHERE id = $1", [
+    const existing = await queryOne("SELECT * FROM excerpts WHERE id = $1 AND user_id = $2", [
       req.params.id,
+      req.user.id,
     ]);
     if (!existing) return res.status(404).json({ error: "Not found" });
     const {
@@ -89,7 +92,7 @@ router.put(
       tags,
     } = req.body;
     await execute(
-      "UPDATE excerpts SET title=$1, composer=$2, full_work_title=$3, location_in_score=$4, recording_reference=$5, historical_context=$6, performance_notes=$7, difficulty=$8, status=$9, tags=$10, updated_at=NOW() WHERE id=$11",
+      "UPDATE excerpts SET title=$1, composer=$2, full_work_title=$3, location_in_score=$4, recording_reference=$5, historical_context=$6, performance_notes=$7, difficulty=$8, status=$9, tags=$10, updated_at=NOW() WHERE id=$11 AND user_id=$12",
       [
         title ?? existing.title,
         composer ?? existing.composer,
@@ -104,6 +107,7 @@ router.put(
         status ?? existing.status,
         tags ? JSON.stringify(tags) : existing.tags,
         req.params.id,
+        req.user.id,
       ],
     );
     res.json(
@@ -116,8 +120,9 @@ router.delete(
   "/:id",
   asyncHandler(async (req, res) => {
     if (
-      !(await queryOne("SELECT id FROM excerpts WHERE id = $1", [
+      !(await queryOne("SELECT id FROM excerpts WHERE id = $1 AND user_id = $2", [
         req.params.id,
+        req.user.id,
       ]))
     )
       return res.status(404).json({ error: "Not found" });

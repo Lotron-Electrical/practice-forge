@@ -10,7 +10,8 @@ router.get(
   "/",
   asyncHandler(async (req, res) => {
     const rows = await queryAll(
-      "SELECT * FROM auditions ORDER BY audition_date DESC",
+      "SELECT * FROM auditions WHERE user_id = $1 ORDER BY audition_date DESC",
+      [req.user.id],
     );
     for (const r of rows) {
       r.repertoire =
@@ -30,8 +31,8 @@ router.get(
 
     // From auditions table
     const auditions = await queryAll(
-      "SELECT * FROM auditions WHERE audition_date >= $1 AND (result IS NULL OR result = 'pending') ORDER BY audition_date ASC",
-      [today],
+      "SELECT * FROM auditions WHERE audition_date >= $1 AND (result IS NULL OR result = 'pending') AND user_id = $2 ORDER BY audition_date ASC",
+      [today, req.user.id],
     );
     for (const a of auditions) {
       a.repertoire =
@@ -45,12 +46,12 @@ router.get(
 
     // Also check pieces/excerpts with audition_date set
     const pieces = await queryAll(
-      "SELECT id, title, composer, audition_date FROM pieces WHERE audition_date IS NOT NULL AND audition_date >= $1 ORDER BY audition_date ASC",
-      [today],
+      "SELECT id, title, composer, audition_date FROM pieces WHERE audition_date IS NOT NULL AND audition_date >= $1 AND user_id = $2 ORDER BY audition_date ASC",
+      [today, req.user.id],
     );
     const excerpts = await queryAll(
-      "SELECT id, title, composer, audition_date, status FROM excerpts WHERE audition_date IS NOT NULL AND audition_date >= $1 ORDER BY audition_date ASC",
-      [today],
+      "SELECT id, title, composer, audition_date, status FROM excerpts WHERE audition_date IS NOT NULL AND audition_date >= $1 AND user_id = $2 ORDER BY audition_date ASC",
+      [today, req.user.id],
     );
 
     res.json({
@@ -83,8 +84,8 @@ router.post(
 
     const id = uuid();
     await execute(
-      "INSERT INTO auditions (id, title, audition_date, notes, repertoire) VALUES ($1, $2, $3, $4, $5)",
-      [id, title, audition_date, notes, JSON.stringify(repertoire)],
+      "INSERT INTO auditions (id, title, audition_date, notes, repertoire, user_id) VALUES ($1, $2, $3, $4, $5, $6)",
+      [id, title, audition_date, notes, JSON.stringify(repertoire), req.user.id],
     );
 
     const row = await queryOne("SELECT * FROM auditions WHERE id = $1", [id]);
@@ -101,8 +102,8 @@ router.put(
   "/:id",
   asyncHandler(async (req, res) => {
     const { title, audition_date, result, notes, repertoire } = req.body;
-    const existing = await queryOne("SELECT * FROM auditions WHERE id = $1", [
-      req.params.id,
+    const existing = await queryOne("SELECT * FROM auditions WHERE id = $1 AND user_id = $2", [
+      req.params.id, req.user.id,
     ]);
     if (!existing) return res.status(404).json({ error: "Not found" });
 
@@ -135,11 +136,11 @@ router.put(
 router.delete(
   "/:id",
   asyncHandler(async (req, res) => {
-    const existing = await queryOne("SELECT * FROM auditions WHERE id = $1", [
-      req.params.id,
+    const existing = await queryOne("SELECT * FROM auditions WHERE id = $1 AND user_id = $2", [
+      req.params.id, req.user.id,
     ]);
     if (!existing) return res.status(404).json({ error: "Not found" });
-    await execute("DELETE FROM auditions WHERE id = $1", [req.params.id]);
+    await execute("DELETE FROM auditions WHERE id = $1 AND user_id = $2", [req.params.id, req.user.id]);
     res.json({ ok: true });
   }),
 );

@@ -27,6 +27,11 @@ export function PricingPage() {
   const [interval, setInterval] = useState<"monthly" | "annual">("monthly");
   const [currentTier, setCurrentTier] = useState<SubscriptionTier>("free");
   const [loading, setLoading] = useState<string | null>(null);
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const [waitlistEmail, setWaitlistEmail] = useState("");
+  const [waitlistStudioSize, setWaitlistStudioSize] = useState("");
+  const [waitlistSubmitted, setWaitlistSubmitted] = useState(false);
+  const [waitlistError, setWaitlistError] = useState("");
 
   useEffect(() => {
     api
@@ -47,6 +52,19 @@ export function PricingPage() {
     } catch {
       // Stripe not configured — show message
       setLoading(null);
+    }
+  };
+
+  const handleWaitlist = async () => {
+    setWaitlistError("");
+    try {
+      await api.joinWaitlist(
+        waitlistEmail,
+        waitlistStudioSize ? parseInt(waitlistStudioSize) : undefined,
+      );
+      setWaitlistSubmitted(true);
+    } catch {
+      setWaitlistError("Something went wrong. Please try again.");
     }
   };
 
@@ -168,9 +186,56 @@ export function PricingPage() {
               </ul>
 
               {isComingSoon ? (
-                <Button variant="ghost" size="sm" className="w-full" disabled>
-                  Coming Soon
-                </Button>
+                waitlistSubmitted ? (
+                  <p
+                    className="text-sm text-center"
+                    style={{ color: "var(--pf-status-ready)" }}
+                  >
+                    You're on the list!
+                  </p>
+                ) : waitlistOpen ? (
+                  <div className="space-y-2">
+                    <input
+                      type="email"
+                      placeholder="Your email"
+                      value={waitlistEmail}
+                      onChange={(e) => setWaitlistEmail(e.target.value)}
+                      className="w-full px-3 py-2 text-sm rounded-pf border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)]"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Studio size (optional)"
+                      value={waitlistStudioSize}
+                      onChange={(e) => setWaitlistStudioSize(e.target.value)}
+                      className="w-full px-3 py-2 text-sm rounded-pf border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)]"
+                    />
+                    {waitlistError && (
+                      <p
+                        className="text-xs"
+                        style={{ color: "var(--pf-status-needs-work)" }}
+                      >
+                        {waitlistError}
+                      </p>
+                    )}
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={handleWaitlist}
+                      disabled={!waitlistEmail}
+                    >
+                      Submit
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setWaitlistOpen(true)}
+                  >
+                    Join Waitlist
+                  </Button>
+                )
               ) : isCurrent ? (
                 <Button
                   variant="secondary"

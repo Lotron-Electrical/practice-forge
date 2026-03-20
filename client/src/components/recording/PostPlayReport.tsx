@@ -317,7 +317,7 @@ export function PostPlayReport({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Recording title (optional)"
-              className="flex-1 px-3 py-2 text-sm rounded-pf border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] focus:outline-none focus:border-[var(--pf-accent-gold)]"
+              className="flex-1 px-3 py-2 text-sm rounded-pf border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)]"
             />
             <Button onClick={() => onSave(title)} disabled={isSaving}>
               <Save size={14} /> {isSaving ? "Saving..." : "Save"}

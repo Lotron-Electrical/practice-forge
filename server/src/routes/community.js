@@ -98,6 +98,21 @@ router.get(
   }),
 );
 
+// GET — discover feed (all recent events)
+router.get(
+  "/discover",
+  asyncHandler(async (req, res) => {
+    const events = await queryAll(
+      `SELECT fe.*, u.display_name, u.instrument
+     FROM feed_events fe
+     JOIN users u ON fe.user_id = u.id
+     ORDER BY fe.created_at DESC
+     LIMIT 50`,
+    );
+    res.json(events);
+  }),
+);
+
 // GET — search users by display_name (only public profiles)
 router.get(
   "/users/search",

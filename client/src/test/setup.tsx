@@ -87,6 +87,7 @@ vi.mock("../api/client", () => ({
     getAnalyticsDrift: vi.fn().mockResolvedValue(null),
     getSessionHistory: vi.fn().mockResolvedValue(null),
     getFeed: vi.fn().mockResolvedValue([]),
+    getDiscoverFeed: vi.fn().mockResolvedValue([]),
     getChallenges: vi.fn().mockResolvedValue([]),
     getFollowers: vi.fn().mockResolvedValue([]),
     getFollowing: vi.fn().mockResolvedValue([]),

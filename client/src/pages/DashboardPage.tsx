@@ -503,7 +503,7 @@ export function DashboardPage() {
                     onChange={(e) => setQlNotes(e.target.value)}
                     placeholder="What did you practise? e.g. Scales 20 min, Mozart concerto 40 min"
                     rows={3}
-                    className="w-full px-3 py-2 rounded-pf border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm resize-none focus:outline-none focus:border-[var(--pf-accent-gold)]"
+                    className="w-full px-3 py-2 rounded-pf border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm resize-none"
                   />
                   <div className="flex items-center gap-4 flex-wrap">
                     <div className="flex items-center gap-2">
@@ -519,7 +519,7 @@ export function DashboardPage() {
                             Math.max(1, parseInt(e.target.value) || 1),
                           )
                         }
-                        className="w-20 px-2 py-1.5 rounded-pf border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm focus:outline-none focus:border-[var(--pf-accent-gold)]"
+                        className="w-20 px-2 py-1.5 rounded-pf border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm"
                       />
                       <span className="text-sm text-[var(--pf-text-secondary)]">
                         min
@@ -551,6 +551,7 @@ export function DashboardPage() {
                           onClick={() =>
                             setQlRating(qlRating === rating ? null : rating)
                           }
+                          aria-pressed={qlRating === rating}
                           className="flex items-center gap-1 px-2 py-1.5 rounded-pf text-xs font-medium transition-colors border"
                           style={{
                             borderColor:

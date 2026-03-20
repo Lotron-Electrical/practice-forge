@@ -6,7 +6,7 @@ import { enforceCountLimit } from "../middleware/tierLimits.js";
 
 const pieceLimiter = enforceCountLimit(
   "pieces",
-  "SELECT COUNT(*) as count FROM pieces",
+  "SELECT COUNT(*) as count FROM pieces WHERE user_id = $1",
 );
 
 const router = Router();
@@ -16,7 +16,8 @@ router.get(
   "/",
   asyncHandler(async (req, res) => {
     const pieces = await queryAll(
-      "SELECT * FROM pieces ORDER BY updated_at DESC",
+      "SELECT * FROM pieces WHERE user_id = $1 ORDER BY updated_at DESC",
+      [req.user.id],
     );
     if (pieces.length === 0) return res.json([]);
 
@@ -51,8 +52,9 @@ router.get(
 router.get(
   "/:id",
   asyncHandler(async (req, res) => {
-    const piece = await queryOne("SELECT * FROM pieces WHERE id = $1", [
+    const piece = await queryOne("SELECT * FROM pieces WHERE id = $1 AND user_id = $2", [
       req.params.id,
+      req.user.id,
     ]);
     if (!piece) return res.status(404).json({ error: "Not found" });
     piece.sections = await queryAll(
@@ -103,9 +105,10 @@ router.post(
     if (!title) return res.status(400).json({ error: "title is required" });
     const id = uuid();
     await execute(
-      "INSERT INTO pieces (id, title, composer, difficulty, status, priority, target_date, colour_tag, general_notes, historical_context) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+      "INSERT INTO pieces (id, user_id, title, composer, difficulty, status, priority, target_date, colour_tag, general_notes, historical_context) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
       [
         id,
+        req.user.id,
         title,
         composer,
         difficulty || null,
@@ -128,8 +131,9 @@ router.post(
 router.put(
   "/:id",
   asyncHandler(async (req, res) => {
-    const existing = await queryOne("SELECT * FROM pieces WHERE id = $1", [
+    const existing = await queryOne("SELECT * FROM pieces WHERE id = $1 AND user_id = $2", [
       req.params.id,
+      req.user.id,
     ]);
     if (!existing) return res.status(404).json({ error: "Not found" });
     const {
@@ -144,7 +148,7 @@ router.put(
       historical_context,
     } = req.body;
     await execute(
-      "UPDATE pieces SET title=$1, composer=$2, difficulty=$3, status=$4, priority=$5, target_date=$6, colour_tag=$7, general_notes=$8, historical_context=$9, updated_at=NOW() WHERE id=$10",
+      "UPDATE pieces SET title=$1, composer=$2, difficulty=$3, status=$4, priority=$5, target_date=$6, colour_tag=$7, general_notes=$8, historical_context=$9, updated_at=NOW() WHERE id=$10 AND user_id=$11",
       [
         title ?? existing.title,
         composer ?? existing.composer,
@@ -158,6 +162,7 @@ router.put(
           ? historical_context
           : existing.historical_context,
         req.params.id,
+        req.user.id,
       ],
     );
     res.json(
@@ -171,7 +176,7 @@ router.delete(
   "/:id",
   asyncHandler(async (req, res) => {
     if (
-      !(await queryOne("SELECT id FROM pieces WHERE id = $1", [req.params.id]))
+      !(await queryOne("SELECT id FROM pieces WHERE id = $1 AND user_id = $2", [req.params.id, req.user.id]))
     )
       return res.status(404).json({ error: "Not found" });
 
@@ -206,7 +211,7 @@ router.post(
   "/:pieceId/sections",
   asyncHandler(async (req, res) => {
     const { pieceId } = req.params;
-    if (!(await queryOne("SELECT id FROM pieces WHERE id = $1", [pieceId])))
+    if (!(await queryOne("SELECT id FROM pieces WHERE id = $1 AND user_id = $2", [pieceId, req.user.id])))
       return res.status(404).json({ error: "Piece not found" });
     const {
       name,
@@ -275,7 +280,7 @@ router.post(
   "/:pieceId/demands",
   asyncHandler(async (req, res) => {
     const { pieceId } = req.params;
-    if (!(await queryOne("SELECT id FROM pieces WHERE id = $1", [pieceId])))
+    if (!(await queryOne("SELECT id FROM pieces WHERE id = $1 AND user_id = $2", [pieceId, req.user.id])))
       return res.status(404).json({ error: "Piece not found" });
     const {
       description,

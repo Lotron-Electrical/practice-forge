@@ -26,12 +26,13 @@ import {
   Loader,
   Plus,
   Palette,
+  Globe,
 } from "lucide-react";
 import { ThemeGallery } from "../components/community/ThemeGallery";
 
 // ---------- constants ----------
 
-type TabId = "feed" | "challenges" | "people" | "themes";
+type TabId = "feed" | "discover" | "challenges" | "people" | "themes";
 
 const CHALLENGE_TYPE_CONFIG: Record<
   ChallengeType,
@@ -105,6 +106,10 @@ export function CommunityPage() {
   const [feed, setFeed] = useState<FeedEvent[]>([]);
   const [feedLoading, setFeedLoading] = useState(false);
 
+  // Discover state
+  const [discover, setDiscover] = useState<FeedEvent[]>([]);
+  const [discoverLoading, setDiscoverLoading] = useState(false);
+
   // Challenges state
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [challengesLoading, setChallengesLoading] = useState(false);
@@ -129,6 +134,16 @@ export function CommunityPage() {
       setFeed(data as FeedEvent[]);
     } catch {}
     setFeedLoading(false);
+  }, []);
+
+  // Discover load
+  const loadDiscover = useCallback(async () => {
+    setDiscoverLoading(true);
+    try {
+      const data = await api.getDiscoverFeed();
+      setDiscover(data as FeedEvent[]);
+    } catch {}
+    setDiscoverLoading(false);
   }, []);
 
   // Challenges load
@@ -158,9 +173,10 @@ export function CommunityPage() {
 
   useEffect(() => {
     if (tab === "feed") loadFeed();
+    if (tab === "discover") loadDiscover();
     if (tab === "challenges") loadChallenges();
     if (tab === "people") loadFollowing();
-  }, [tab, loadFeed, loadChallenges, loadFollowing]);
+  }, [tab, loadFeed, loadDiscover, loadChallenges, loadFollowing]);
 
   // Search users
   const handleSearch = async () => {
@@ -217,6 +233,7 @@ export function CommunityPage() {
 
   const tabs: { id: TabId; label: string; icon: typeof Users }[] = [
     { id: "feed", label: "Feed", icon: Send },
+    { id: "discover", label: "Discover", icon: Globe },
     { id: "challenges", label: "Challenges", icon: Trophy },
     { id: "people", label: "People", icon: Users },
     { id: "themes", label: "Themes", icon: Palette },
@@ -283,6 +300,65 @@ export function CommunityPage() {
           ) : (
             <div className="space-y-3">
               {feed.map((event) => (
+                <Card key={event.id}>
+                  <CardContent className="flex items-start gap-3">
+                    <Avatar name={event.display_name || "U"} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-semibold">
+                          {event.display_name}
+                        </span>
+                        {event.instrument && (
+                          <span className="text-xs text-[var(--pf-text-secondary)]">
+                            {event.instrument}
+                          </span>
+                        )}
+                        <span className="text-xs text-[var(--pf-text-secondary)] ml-auto">
+                          {timeAgo(event.created_at)}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium mt-0.5">
+                        {event.title}
+                      </p>
+                      {event.description && (
+                        <p className="text-xs text-[var(--pf-text-secondary)] mt-1">
+                          {event.description}
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Discover tab */}
+      {tab === "discover" && (
+        <div>
+          {discoverLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader
+                size={20}
+                className="animate-spin text-[var(--pf-accent-gold)]"
+              />
+            </div>
+          ) : discover.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Globe
+                  size={32}
+                  className="mx-auto mb-3 text-[var(--pf-text-secondary)]"
+                />
+                <p className="text-sm text-[var(--pf-text-secondary)]">
+                  No activity yet. Be the first to share something!
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {discover.map((event) => (
                 <Card key={event.id}>
                   <CardContent className="flex items-start gap-3">
                     <Avatar name={event.display_name || "U"} />

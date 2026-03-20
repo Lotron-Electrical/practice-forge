@@ -421,7 +421,7 @@ export function SessionPage() {
               session based on your pieces, exercises, and excerpt rotation.
             </p>
             <div className="flex items-center justify-center gap-2 sm:gap-4 mb-6 flex-wrap">
-              {[30, 45, 60, 90, 120].map((m) => (
+              {[15, 30, 45, 60, 90, 120].map((m) => (
                 <button
                   key={m}
                   onClick={() => setDuration(m)}
@@ -677,6 +677,7 @@ export function SessionPage() {
                 <button
                   key={rating}
                   onClick={() => setSelectedRating(rating)}
+                  aria-pressed={selectedRating === rating}
                   className={`flex flex-col items-center gap-1 sm:gap-2 px-4 py-4 sm:p-6 rounded-pf border-2 transition-colors ${
                     selectedRating === rating
                       ? "border-[var(--pf-accent-gold)] bg-[var(--pf-bg-hover)]"
@@ -694,7 +695,7 @@ export function SessionPage() {
                 onChange={(e) => setSessionNotes(e.target.value)}
                 placeholder="Session notes — what went well, what needs work"
                 rows={3}
-                className="w-full px-3 py-2 rounded-pf border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm resize-none focus:outline-none focus:border-[var(--pf-accent-gold)]"
+                className="w-full px-3 py-2 rounded-pf border border-[var(--pf-border-color)] bg-[var(--pf-bg-primary)] text-[var(--pf-text-primary)] text-sm resize-none"
               />
             </div>
             <Button

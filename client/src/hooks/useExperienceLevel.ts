@@ -63,6 +63,7 @@ const BEGINNER_PATHS = new Set([
   "/record",
   "/tutorial",
   "/settings",
+  "/community",
 ]);
 const INTERMEDIATE_PATHS = new Set([
   ...BEGINNER_PATHS,
@@ -75,7 +76,6 @@ const ADVANCED_PATHS = new Set([
   ...INTERMEDIATE_PATHS,
   "/media",
   "/assessments",
-  "/community",
   "/taxonomy",
 ]);
 
@@ -111,6 +111,7 @@ const BEGINNER_LABELS = new Set([
   "Record",
   "Help & Tour",
   "Settings",
+  "Community",
 ]);
 const INTERMEDIATE_LABELS = new Set([
   ...BEGINNER_LABELS,

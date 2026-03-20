@@ -10,8 +10,8 @@ router.get("/rotation/today", async (req, res) => {
   const today = new Date().toISOString().slice(0, 10);
 
   let rotation = await queryAll(
-    "SELECT rl.*, e.title, e.composer, e.status, e.difficulty, e.full_work_title, e.location_in_score FROM excerpt_rotation_log rl JOIN excerpts e ON rl.excerpt_id = e.id WHERE rl.date = $1 ORDER BY rl.created_at",
-    [today],
+    "SELECT rl.*, e.title, e.composer, e.status, e.difficulty, e.full_work_title, e.location_in_score FROM excerpt_rotation_log rl JOIN excerpts e ON rl.excerpt_id = e.id WHERE rl.date = $1 AND rl.user_id = $2 ORDER BY rl.created_at",
+    [today, req.user.id],
   );
 
   if (rotation.length === 0) {
@@ -25,7 +25,8 @@ router.get("/rotation/today", async (req, res) => {
       SELECT e.*,
         COALESCE(e.last_practiced, '2000-01-01') as last_p
       FROM excerpts e
-    `);
+      WHERE e.user_id = $1
+    `, [req.user.id]);
 
     // Score each excerpt
     const now = Date.now();
@@ -88,14 +89,14 @@ router.get("/rotation/today", async (req, res) => {
     for (const ex of selected) {
       const id = uuid();
       await execute(
-        "INSERT INTO excerpt_rotation_log (id, date, excerpt_id) VALUES ($1, $2, $3)",
-        [id, today, ex.id],
+        "INSERT INTO excerpt_rotation_log (id, date, excerpt_id, user_id) VALUES ($1, $2, $3, $4)",
+        [id, today, ex.id, req.user.id],
       );
     }
 
     rotation = await queryAll(
-      "SELECT rl.*, e.title, e.composer, e.status, e.difficulty, e.full_work_title, e.location_in_score FROM excerpt_rotation_log rl JOIN excerpts e ON rl.excerpt_id = e.id WHERE rl.date = $1 ORDER BY rl.created_at",
-      [today],
+      "SELECT rl.*, e.title, e.composer, e.status, e.difficulty, e.full_work_title, e.location_in_score FROM excerpt_rotation_log rl JOIN excerpts e ON rl.excerpt_id = e.id WHERE rl.date = $1 AND rl.user_id = $2 ORDER BY rl.created_at",
+      [today, req.user.id],
     );
   }
 
@@ -158,12 +159,12 @@ router.post("/generate", enforceSessionLimit, async (req, res) => {
       .slice(0, 10);
     const todayStr = new Date().toISOString().slice(0, 10);
     const upcoming = await queryOne(
-      "SELECT COUNT(*) as count FROM auditions WHERE audition_date >= $1 AND audition_date <= $2 AND (result IS NULL OR result = 'pending')",
-      [todayStr, twoWeeks],
+      "SELECT COUNT(*) as count FROM auditions WHERE audition_date >= $1 AND audition_date <= $2 AND (result IS NULL OR result = 'pending') AND user_id = $3",
+      [todayStr, twoWeeks, req.user.id],
     );
     const upcomingExcerpts = await queryOne(
-      "SELECT COUNT(*) as count FROM excerpts WHERE audition_date IS NOT NULL AND audition_date >= $1 AND audition_date <= $2",
-      [todayStr, twoWeeks],
+      "SELECT COUNT(*) as count FROM excerpts WHERE audition_date IS NOT NULL AND audition_date >= $1 AND audition_date <= $2 AND user_id = $3",
+      [todayStr, twoWeeks, req.user.id],
     );
     if (
       parseInt(upcoming?.count || "0") > 0 ||
@@ -207,7 +208,8 @@ router.post("/generate", enforceSessionLimit, async (req, res) => {
   // 2. Fundamentals
   if (minutes.fundamentals > 0) {
     const fundExercises = await queryAll(
-      "SELECT e.*, tc.name as category_name FROM exercises e LEFT JOIN taxonomy_categories tc ON e.category_id = tc.id WHERE tc.name ILIKE ANY(ARRAY['%scale%','%tone%','%long tone%','%fundamental%']) ORDER BY e.last_used ASC NULLS FIRST, e.times_used ASC LIMIT 3",
+      "SELECT e.*, tc.name as category_name FROM exercises e LEFT JOIN taxonomy_categories tc ON e.category_id = tc.id WHERE tc.name ILIKE ANY(ARRAY['%scale%','%tone%','%long tone%','%fundamental%']) AND e.user_id = $1 ORDER BY e.last_used ASC NULLS FIRST, e.times_used ASC LIMIT 3",
+      [req.user.id],
     );
     if (fundExercises.length > 0) {
       const perEx = Math.round(minutes.fundamentals / fundExercises.length);
@@ -246,10 +248,10 @@ router.post("/generate", enforceSessionLimit, async (req, res) => {
       JOIN technical_demands td ON de.demand_id = td.id
       JOIN pieces p ON td.piece_id = p.id
       LEFT JOIN taxonomy_categories tc ON e.category_id = tc.id
-      WHERE p.status = 'in_progress'
+      WHERE p.status = 'in_progress' AND p.user_id = $1
       ORDER BY e.id, p.priority DESC, td.difficulty DESC
       LIMIT 4
-    `);
+    `, [req.user.id]);
 
     if (techExercises.length > 0) {
       const perEx = Math.round(minutes.technique / techExercises.length);
@@ -293,14 +295,14 @@ router.post("/generate", enforceSessionLimit, async (req, res) => {
         END as status_priority
       FROM sections s
       JOIN pieces p ON s.piece_id = p.id
-      WHERE p.status = 'in_progress'
+      WHERE p.status = 'in_progress' AND p.user_id = $1
       ORDER BY
         CASE p.priority WHEN 'high' THEN 3 WHEN 'medium' THEN 2 WHEN 'low' THEN 1 END DESC,
         p.target_date ASC NULLS LAST,
         status_priority DESC,
         s.sort_order ASC
       LIMIT 4
-    `);
+    `, [req.user.id]);
 
     if (sections.length > 0) {
       const perSection = Math.round(minutes.repertoire / sections.length);
@@ -335,8 +337,8 @@ router.post("/generate", enforceSessionLimit, async (req, res) => {
   if (minutes.excerpts > 0) {
     const today = new Date().toISOString().slice(0, 10);
     const rotation = await queryAll(
-      "SELECT rl.*, e.title, e.composer, e.location_in_score, e.performance_notes FROM excerpt_rotation_log rl JOIN excerpts e ON rl.excerpt_id = e.id WHERE rl.date = $1",
-      [today],
+      "SELECT rl.*, e.title, e.composer, e.location_in_score, e.performance_notes FROM excerpt_rotation_log rl JOIN excerpts e ON rl.excerpt_id = e.id WHERE rl.date = $1 AND rl.user_id = $2",
+      [today, req.user.id],
     );
 
     if (rotation.length > 0) {
@@ -1055,32 +1057,30 @@ router.get("/stats", async (req, res) => {
   );
   const sessionCount = weekSessions.length;
 
-  // Streak — single query instead of per-day loop
+  // Streak with 1-day grace period (allows rest days without breaking streak)
   let streak = 0;
+  const graceDays = 1;
   const practiceDates = await queryAll(
     "SELECT DISTINCT date FROM practice_sessions WHERE status = 'completed' ORDER BY date DESC",
   );
   if (practiceDates.length > 0) {
     const todayStr = new Date().toISOString().slice(0, 10);
-    const yesterdayStr = new Date(Date.now() - 86400000)
-      .toISOString()
-      .slice(0, 10);
-    // Start counting from today or yesterday
-    let checkDate = todayStr;
-    if (practiceDates[0].date !== todayStr) {
-      if (practiceDates[0].date === yesterdayStr) {
-        checkDate = yesterdayStr;
-      } else {
-        // Last practice was before yesterday — streak is 0
-        checkDate = null;
-      }
-    }
-    if (checkDate) {
-      const dateSet = new Set(practiceDates.map((d) => d.date));
-      let d = new Date(checkDate);
-      while (dateSet.has(d.toISOString().slice(0, 10))) {
-        streak++;
-        d = new Date(d.getTime() - 86400000);
+    const dates = practiceDates.map((d) => d.date);
+    // Most recent practice must be within grace_days+1 of today
+    const mostRecent = new Date(dates[0]);
+    const today = new Date(todayStr);
+    const daysSinceLast = Math.round((today - mostRecent) / 86400000);
+    if (daysSinceLast <= graceDays + 1) {
+      streak = 1; // count the most recent day
+      for (let i = 1; i < dates.length; i++) {
+        const prev = new Date(dates[i - 1]);
+        const curr = new Date(dates[i]);
+        const gap = Math.round((prev - curr) / 86400000);
+        if (gap <= graceDays + 1) {
+          streak++;
+        } else {
+          break;
+        }
       }
     }
   }

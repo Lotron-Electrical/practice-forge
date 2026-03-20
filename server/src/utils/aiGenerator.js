@@ -83,7 +83,7 @@ export async function generateWithAI(params) {
       break;
     case "custom_study":
     default:
-      userPrompt = buildCustomStudyPrompt(prompt, context);
+      userPrompt = buildCustomStudyPrompt(prompt, context, instrument);
       break;
   }
 
@@ -193,8 +193,8 @@ function buildVariationPrompt(prompt, context) {
   return parts.join("\n");
 }
 
-function buildCustomStudyPrompt(prompt, context) {
-  const parts = [`Generate a custom technical study for flute.`];
+function buildCustomStudyPrompt(prompt, context, instrument) {
+  const parts = [`Generate a custom technical study for ${instrument || 'flute'}.`];
   if (prompt) parts.push(`Request: ${prompt}`);
   if (context.key) parts.push(`Key: ${context.key}`);
   if (context.difficulty) parts.push(`Difficulty: ${context.difficulty}/10`);

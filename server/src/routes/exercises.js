@@ -22,6 +22,10 @@ router.get(
     const params = [];
     let n = 0;
 
+    n++;
+    sql += ` AND e.user_id = $${n}`;
+    params.push(req.user.id);
+
     if (category_id) {
       n++;
       sql += ` AND e.category_id = $${n}`;
@@ -64,8 +68,8 @@ router.get(
   "/:id",
   asyncHandler(async (req, res) => {
     const ex = await queryOne(
-      "SELECT e.*, tc.name as category_name FROM exercises e LEFT JOIN taxonomy_categories tc ON e.category_id = tc.id WHERE e.id = $1",
-      [req.params.id],
+      "SELECT e.*, tc.name as category_name FROM exercises e LEFT JOIN taxonomy_categories tc ON e.category_id = tc.id WHERE e.id = $1 AND e.user_id = $2",
+      [req.params.id, req.user.id],
     );
     if (!ex) return res.status(404).json({ error: "Not found" });
     ex.linked_demands = await queryAll(
@@ -97,9 +101,10 @@ router.post(
     if (!title) return res.status(400).json({ error: "title is required" });
     const id = uuid();
     await execute(
-      "INSERT INTO exercises (id, title, source, source_type, category_id, secondary_categories, key, difficulty, description, tags, notation_data, notation_format, generation_context) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
+      "INSERT INTO exercises (id, user_id, title, source, source_type, category_id, secondary_categories, key, difficulty, description, tags, notation_data, notation_format, generation_context) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
       [
         id,
+        req.user.id,
         title,
         source,
         source_type,
@@ -124,8 +129,9 @@ router.post(
 router.put(
   "/:id",
   asyncHandler(async (req, res) => {
-    const existing = await queryOne("SELECT * FROM exercises WHERE id = $1", [
+    const existing = await queryOne("SELECT * FROM exercises WHERE id = $1 AND user_id = $2", [
       req.params.id,
+      req.user.id,
     ]);
     if (!existing) return res.status(404).json({ error: "Not found" });
     const {
@@ -142,7 +148,7 @@ router.put(
       notation_format,
     } = req.body;
     await execute(
-      "UPDATE exercises SET title=$1, source=$2, source_type=$3, category_id=$4, secondary_categories=$5, key=$6, difficulty=$7, description=$8, tags=$9, notation_data=$10, notation_format=$11, updated_at=NOW() WHERE id=$12",
+      "UPDATE exercises SET title=$1, source=$2, source_type=$3, category_id=$4, secondary_categories=$5, key=$6, difficulty=$7, description=$8, tags=$9, notation_data=$10, notation_format=$11, updated_at=NOW() WHERE id=$12 AND user_id=$13",
       [
         title ?? existing.title,
         source ?? existing.source,
@@ -158,6 +164,7 @@ router.put(
         notation_data !== undefined ? notation_data : existing.notation_data,
         notation_format ?? existing.notation_format,
         req.params.id,
+        req.user.id,
       ],
     );
     res.json(
@@ -171,8 +178,9 @@ router.delete(
   "/:id",
   asyncHandler(async (req, res) => {
     if (
-      !(await queryOne("SELECT id FROM exercises WHERE id = $1", [
+      !(await queryOne("SELECT id FROM exercises WHERE id = $1 AND user_id = $2", [
         req.params.id,
+        req.user.id,
       ]))
     )
       return res.status(404).json({ error: "Not found" });

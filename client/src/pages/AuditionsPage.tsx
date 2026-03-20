@@ -167,6 +167,7 @@ export function AuditionsPage() {
                         result: f.result === key ? "" : key,
                       }))
                     }
+                    aria-pressed={form.result === key}
                     className={`px-3 py-1.5 rounded-pf-sm text-xs font-medium border transition-colors ${
                       form.result === key
                         ? "border-current bg-current/10"
@@ -196,6 +197,7 @@ export function AuditionsPage() {
                         onClick={() =>
                           toggleRepertoireItem("excerpt", e.id, e.title)
                         }
+                        aria-pressed={selected}
                         className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                           selected
                             ? "border-[var(--pf-accent-gold)] bg-[var(--pf-accent-gold)]/10 text-[var(--pf-text-primary)]"
@@ -219,6 +221,7 @@ export function AuditionsPage() {
                           onClick={() =>
                             toggleRepertoireItem("piece", p.id, p.title)
                           }
+                          aria-pressed={selected}
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                             selected
                               ? "border-[var(--pf-accent-teal)] bg-[var(--pf-accent-teal)]/10 text-[var(--pf-text-primary)]"

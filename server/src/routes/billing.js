@@ -346,4 +346,30 @@ router.post(
   }),
 );
 
+// POST /waitlist — Teacher Studio waitlist signup (no auth required)
+router.post(
+  "/waitlist",
+  asyncHandler(async (req, res) => {
+    const { email, studio_size } = req.body;
+    if (!email || !email.includes("@")) {
+      return res.status(400).json({ error: "Valid email required" });
+    }
+
+    const existing = await queryOne(
+      "SELECT id FROM waitlist WHERE email = $1 AND tier = 'teacher'",
+      [email],
+    );
+    if (existing) {
+      return res.json({ already_registered: true, message: "You're already on the waitlist!" });
+    }
+
+    const id = uuid();
+    await execute(
+      "INSERT INTO waitlist (id, email, tier, studio_size) VALUES ($1, $2, 'teacher', $3)",
+      [id, email, studio_size || null],
+    );
+    res.status(201).json({ id, message: "You've been added to the waitlist!" });
+  }),
+);
+
 export default router;

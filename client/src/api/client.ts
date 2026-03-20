@@ -450,6 +450,7 @@ export const api = {
   getFollowers: () => request<unknown[]>("/community/followers"),
   getFollowing: () => request<unknown[]>("/community/following"),
   getFeed: () => request<unknown[]>("/community/feed"),
+  getDiscoverFeed: () => request<unknown[]>("/community/discover"),
   searchUsers: (q: string) =>
     request<unknown[]>(`/community/users/search?q=${encodeURIComponent(q)}`),
   getPublicProfile: (userId: string) => request(`/community/users/${userId}`),
@@ -561,4 +562,12 @@ export const api = {
     request<{ url: string }>("/billing/create-portal-session", {
       method: "POST",
     }),
+  joinWaitlist: (email: string, studio_size?: number) =>
+    request<{ id?: string; already_registered?: boolean; message: string }>(
+      "/billing/waitlist",
+      {
+        method: "POST",
+        body: JSON.stringify({ email, studio_size }),
+      },
+    ),
 };

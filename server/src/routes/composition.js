@@ -192,9 +192,10 @@ router.post("/generate/save", async (req, res) => {
     });
 
     await execute(
-      "INSERT INTO exercises (id, title, source, source_type, category_id, key, difficulty, description, tags, notation_data, notation_format, generation_context) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
+      "INSERT INTO exercises (id, user_id, title, source, source_type, category_id, key, difficulty, description, tags, notation_data, notation_format, generation_context) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
       [
         id,
+        req.user.id,
         title,
         "Generated",
         sourceType,
@@ -238,8 +239,9 @@ router.post("/generate/excerpt-prep", enforceAiLimit, async (req, res) => {
   try {
     const { excerpt_id, confirmed } = req.body;
 
-    const excerpt = await queryOne("SELECT * FROM excerpts WHERE id = $1", [
+    const excerpt = await queryOne("SELECT * FROM excerpts WHERE id = $1 AND user_id = $2", [
       excerpt_id,
+      req.user.id,
     ]);
     if (!excerpt) return res.status(404).json({ error: "Excerpt not found" });
 

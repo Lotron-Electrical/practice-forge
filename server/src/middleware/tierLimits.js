@@ -182,8 +182,8 @@ export async function enforceSessionLimit(req, res, next) {
 
     const row = await queryOne(
       `SELECT COUNT(*) as count FROM practice_sessions
-       WHERE created_at >= date_trunc('week', NOW())`,
-      [],
+       WHERE user_id = $1 AND created_at >= date_trunc('week', NOW())`,
+      [req.user.id],
     );
     const count = parseInt(row?.count || "0", 10);
 

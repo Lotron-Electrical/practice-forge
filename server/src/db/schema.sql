@@ -2,9 +2,11 @@
 
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
+  user_id TEXT,
   value TEXT NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_settings_user_id ON settings(user_id);
 
 -- Users table (must be created before any table that references it)
 CREATE TABLE IF NOT EXISTS users (
@@ -37,6 +39,7 @@ CREATE INDEX IF NOT EXISTS idx_taxonomy_parent ON taxonomy_categories(parent_id)
 
 CREATE TABLE IF NOT EXISTS pieces (
   id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   composer TEXT NOT NULL DEFAULT '',
   difficulty INTEGER CHECK(difficulty BETWEEN 1 AND 10),
@@ -49,9 +52,11 @@ CREATE TABLE IF NOT EXISTS pieces (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_pieces_user_id ON pieces(user_id);
 
 CREATE TABLE IF NOT EXISTS sections (
   id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   piece_id TEXT NOT NULL REFERENCES pieces(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   sort_order INTEGER NOT NULL DEFAULT 0,
@@ -63,9 +68,11 @@ CREATE TABLE IF NOT EXISTS sections (
 );
 
 CREATE INDEX IF NOT EXISTS idx_sections_piece ON sections(piece_id);
+CREATE INDEX IF NOT EXISTS idx_sections_user_id ON sections(user_id);
 
 CREATE TABLE IF NOT EXISTS technical_demands (
   id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   piece_id TEXT NOT NULL REFERENCES pieces(id) ON DELETE CASCADE,
   description TEXT NOT NULL,
   category_id TEXT REFERENCES taxonomy_categories(id) ON DELETE SET NULL,
@@ -79,9 +86,11 @@ CREATE TABLE IF NOT EXISTS technical_demands (
 
 CREATE INDEX IF NOT EXISTS idx_demands_piece ON technical_demands(piece_id);
 CREATE INDEX IF NOT EXISTS idx_demands_category ON technical_demands(category_id);
+CREATE INDEX IF NOT EXISTS idx_technical_demands_user_id ON technical_demands(user_id);
 
 CREATE TABLE IF NOT EXISTS exercises (
   id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   source TEXT DEFAULT '',
   source_type TEXT NOT NULL DEFAULT 'manual' CHECK(source_type IN ('manual','book','teacher','generated_rule','generated_ai')),
@@ -101,6 +110,7 @@ CREATE TABLE IF NOT EXISTS exercises (
 );
 
 CREATE INDEX IF NOT EXISTS idx_exercises_category ON exercises(category_id);
+CREATE INDEX IF NOT EXISTS idx_exercises_user_id ON exercises(user_id);
 
 CREATE TABLE IF NOT EXISTS demand_exercises (
   demand_id TEXT NOT NULL REFERENCES technical_demands(id) ON DELETE CASCADE,
@@ -110,6 +120,7 @@ CREATE TABLE IF NOT EXISTS demand_exercises (
 
 CREATE TABLE IF NOT EXISTS excerpts (
   id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   composer TEXT NOT NULL DEFAULT '',
   full_work_title TEXT DEFAULT '',
@@ -125,9 +136,11 @@ CREATE TABLE IF NOT EXISTS excerpts (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_excerpts_user_id ON excerpts(user_id);
 
 CREATE TABLE IF NOT EXISTS uploaded_files (
   id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   original_filename TEXT NOT NULL,
   file_type TEXT NOT NULL CHECK(file_type IN ('sheet_music_digital','sheet_music_scanned','audio','video','document')),
   mime_type TEXT NOT NULL,
@@ -141,11 +154,13 @@ CREATE TABLE IF NOT EXISTS uploaded_files (
   tags TEXT DEFAULT '[]',
   notes TEXT DEFAULT ''
 );
+CREATE INDEX IF NOT EXISTS idx_uploaded_files_user_id ON uploaded_files(user_id);
 
 -- Phase 2: Session planner + logging + excerpt rotation
 
 CREATE TABLE IF NOT EXISTS practice_sessions (
   id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   date TEXT NOT NULL,
   planned_duration_min INTEGER NOT NULL,
   actual_duration_min INTEGER,
@@ -157,9 +172,11 @@ CREATE TABLE IF NOT EXISTS practice_sessions (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_practice_sessions_user_id ON practice_sessions(user_id);
 
 CREATE TABLE IF NOT EXISTS session_blocks (
   id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   session_id TEXT NOT NULL REFERENCES practice_sessions(id) ON DELETE CASCADE,
   category TEXT NOT NULL CHECK(category IN ('warmup','fundamentals','technique','repertoire','excerpts','buffer')),
   title TEXT NOT NULL,
@@ -177,9 +194,11 @@ CREATE TABLE IF NOT EXISTS session_blocks (
 );
 
 CREATE INDEX IF NOT EXISTS idx_session_blocks_session ON session_blocks(session_id);
+CREATE INDEX IF NOT EXISTS idx_session_blocks_user_id ON session_blocks(user_id);
 
 CREATE TABLE IF NOT EXISTS excerpt_rotation_log (
   id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   date TEXT NOT NULL,
   excerpt_id TEXT NOT NULL REFERENCES excerpts(id) ON DELETE CASCADE,
   practiced BOOLEAN NOT NULL DEFAULT FALSE,
@@ -189,11 +208,13 @@ CREATE TABLE IF NOT EXISTS excerpt_rotation_log (
 
 CREATE INDEX IF NOT EXISTS idx_rotation_date ON excerpt_rotation_log(date);
 CREATE INDEX IF NOT EXISTS idx_rotation_excerpt ON excerpt_rotation_log(excerpt_id);
+CREATE INDEX IF NOT EXISTS idx_excerpt_rotation_log_user_id ON excerpt_rotation_log(user_id);
 
 -- Phase 7: Sheet Music Intelligence Engine
 
 CREATE TABLE IF NOT EXISTS omr_results (
   id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   file_id TEXT NOT NULL REFERENCES uploaded_files(id) ON DELETE CASCADE,
   musicxml_path TEXT,
   confidence REAL,
@@ -207,9 +228,11 @@ CREATE TABLE IF NOT EXISTS omr_results (
 );
 
 CREATE INDEX IF NOT EXISTS idx_omr_file ON omr_results(file_id);
+CREATE INDEX IF NOT EXISTS idx_omr_results_user_id ON omr_results(user_id);
 
 CREATE TABLE IF NOT EXISTS analysis_results (
   id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   file_id TEXT NOT NULL REFERENCES uploaded_files(id) ON DELETE CASCADE,
   omr_result_id TEXT REFERENCES omr_results(id) ON DELETE SET NULL,
   analysis_type TEXT NOT NULL DEFAULT 'full',
@@ -229,9 +252,11 @@ CREATE TABLE IF NOT EXISTS analysis_results (
 );
 
 CREATE INDEX IF NOT EXISTS idx_analysis_file ON analysis_results(file_id);
+CREATE INDEX IF NOT EXISTS idx_analysis_results_user_id ON analysis_results(user_id);
 
 CREATE TABLE IF NOT EXISTS analysis_demands (
   id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   analysis_id TEXT NOT NULL REFERENCES analysis_results(id) ON DELETE CASCADE,
   description TEXT NOT NULL,
   category_id TEXT REFERENCES taxonomy_categories(id) ON DELETE SET NULL,
@@ -522,3 +547,12 @@ BEGIN
     ALTER TABLE practice_sessions ADD COLUMN started_at TIMESTAMPTZ;
   END IF;
 END $$;
+
+-- Teacher Studio waitlist
+CREATE TABLE IF NOT EXISTS waitlist (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  tier TEXT NOT NULL DEFAULT 'teacher',
+  studio_size INTEGER,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
