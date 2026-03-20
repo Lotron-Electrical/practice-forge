@@ -194,7 +194,7 @@ router.post(
 
     const id = uuid();
     await execute(
-      `INSERT INTO assessments (id, type, results) VALUES ($1, 'excerpt_spot_check', $2)`,
+      `INSERT INTO assessments (id, type, results, user_id) VALUES ($1, 'excerpt_spot_check', $2, $3)`,
       [
         id,
         JSON.stringify({
@@ -205,6 +205,7 @@ router.post(
             status: e.status,
           })),
         }),
+        req.user.id,
       ],
     );
 
@@ -227,8 +228,8 @@ router.post(
 
     // Gather week's data
     const sessions = await queryAll(
-      "SELECT * FROM practice_sessions WHERE date >= $1 AND status = 'completed'",
-      [weekAgo],
+      "SELECT * FROM practice_sessions WHERE date >= $1 AND status = 'completed' AND user_id = $2",
+      [weekAgo, req.user.id],
     );
     const totalMin = sessions.reduce(
       (s, sess) =>
@@ -251,18 +252,18 @@ router.post(
 
     // Status changes
     const recentPieceChanges = await queryAll(
-      "SELECT title, status FROM pieces WHERE updated_at >= $1 ORDER BY updated_at DESC LIMIT 5",
-      [weekAgo],
+      "SELECT title, status FROM pieces WHERE updated_at >= $1 AND user_id = $2 ORDER BY updated_at DESC LIMIT 5",
+      [weekAgo, req.user.id],
     );
     const recentSectionChanges = await queryAll(
-      "SELECT s.name, s.status, p.title as piece_title FROM sections s JOIN pieces p ON s.piece_id = p.id WHERE s.updated_at >= $1 ORDER BY s.updated_at DESC LIMIT 10",
-      [weekAgo],
+      "SELECT s.name, s.status, p.title as piece_title FROM sections s JOIN pieces p ON s.piece_id = p.id WHERE s.updated_at >= $1 AND p.user_id = $2 ORDER BY s.updated_at DESC LIMIT 10",
+      [weekAgo, req.user.id],
     );
 
     // Recordings this week
     const recordings = await queryAll(
-      "SELECT r.*, a.pitch_accuracy_pct, a.overall_rating FROM audio_recordings r LEFT JOIN audio_analyses a ON a.recording_id = r.id WHERE r.created_at >= $1 ORDER BY r.created_at DESC",
-      [weekAgo],
+      "SELECT r.*, a.pitch_accuracy_pct, a.overall_rating FROM audio_recordings r LEFT JOIN audio_analyses a ON a.recording_id = r.id WHERE r.created_at >= $1 AND r.user_id = $2 ORDER BY r.created_at DESC",
+      [weekAgo, req.user.id],
     );
 
     const results = {
@@ -292,8 +293,8 @@ router.post(
 
     const id = uuid();
     await execute(
-      `INSERT INTO assessments (id, type, status, results, completed_at) VALUES ($1, 'weekly_review', 'completed', $2, NOW())`,
-      [id, JSON.stringify(results)],
+      `INSERT INTO assessments (id, type, status, results, completed_at, user_id) VALUES ($1, 'weekly_review', 'completed', $2, NOW(), $3)`,
+      [id, JSON.stringify(results), req.user.id],
     );
 
     res
@@ -307,8 +308,8 @@ router.get(
   "/compare/:pieceId",
   asyncHandler(async (req, res) => {
     const audits = await queryAll(
-      "SELECT id, overall_score, overall_rating, results, completed_at FROM assessments WHERE type = 'piece_audit' AND piece_id = $1 AND status = 'completed' ORDER BY completed_at DESC LIMIT 10",
-      [req.params.pieceId],
+      "SELECT id, overall_score, overall_rating, results, completed_at FROM assessments WHERE type = 'piece_audit' AND piece_id = $1 AND status = 'completed' AND user_id = $2 ORDER BY completed_at DESC LIMIT 10",
+      [req.params.pieceId, req.user.id],
     );
     res.json(audits);
   }),
