@@ -19,9 +19,10 @@ const router = Router();
 // POST — trigger OMR processing for a file
 router.post("/trigger-omr/:fileId", async (req, res) => {
   try {
-    const file = await queryOne("SELECT * FROM uploaded_files WHERE id = $1", [
-      req.params.fileId,
-    ]);
+    const file = await queryOne(
+      "SELECT * FROM uploaded_files WHERE id = $1 AND user_id = $2",
+      [req.params.fileId, req.user.id],
+    );
     if (!file) return res.status(404).json({ error: "File not found" });
 
     const filePath = path.resolve(DATA_DIR, file.file_path);
@@ -101,9 +102,10 @@ router.post("/trigger-omr/:fileId", async (req, res) => {
 // POST — trigger analysis for a file
 router.post("/trigger-analysis/:fileId", async (req, res) => {
   try {
-    const file = await queryOne("SELECT * FROM uploaded_files WHERE id = $1", [
-      req.params.fileId,
-    ]);
+    const file = await queryOne(
+      "SELECT * FROM uploaded_files WHERE id = $1 AND user_id = $2",
+      [req.params.fileId, req.user.id],
+    );
     if (!file) return res.status(404).json({ error: "File not found" });
 
     let musicxmlContent;
@@ -202,9 +204,11 @@ router.post("/trigger-claude/:analysisId", async (req, res) => {
 
     // Get MusicXML content
     let musicxmlContent;
-    const file = await queryOne("SELECT * FROM uploaded_files WHERE id = $1", [
-      analysis.file_id,
-    ]);
+    const file = await queryOne(
+      "SELECT * FROM uploaded_files WHERE id = $1 AND user_id = $2",
+      [analysis.file_id, req.user.id],
+    );
+    if (!file) return res.status(404).json({ error: "File not found" });
 
     if (file.file_type === "sheet_music_digital") {
       const filePath = path.resolve(DATA_DIR, file.file_path);
@@ -272,6 +276,12 @@ router.post("/trigger-claude/:analysisId", async (req, res) => {
 
 // GET — OMR result for a file
 router.get("/omr/:fileId", async (req, res) => {
+  const file = await queryOne(
+    "SELECT id FROM uploaded_files WHERE id = $1 AND user_id = $2",
+    [req.params.fileId, req.user.id],
+  );
+  if (!file) return res.status(404).json({ error: "File not found" });
+
   const omr = await queryOne(
     "SELECT * FROM omr_results WHERE file_id = $1 ORDER BY created_at DESC LIMIT 1",
     [req.params.fileId],
@@ -282,6 +292,12 @@ router.get("/omr/:fileId", async (req, res) => {
 
 // GET — analysis result for a file
 router.get("/results/:fileId", async (req, res) => {
+  const file = await queryOne(
+    "SELECT id FROM uploaded_files WHERE id = $1 AND user_id = $2",
+    [req.params.fileId, req.user.id],
+  );
+  if (!file) return res.status(404).json({ error: "File not found" });
+
   const analysis = await queryOne(
     "SELECT * FROM analysis_results WHERE file_id = $1 ORDER BY created_at DESC LIMIT 1",
     [req.params.fileId],
@@ -344,9 +360,10 @@ router.post("/demands/:demandId/import", async (req, res) => {
 
 // GET — combined status for a file
 router.get("/status/:fileId", async (req, res) => {
-  const file = await queryOne("SELECT * FROM uploaded_files WHERE id = $1", [
-    req.params.fileId,
-  ]);
+  const file = await queryOne(
+    "SELECT * FROM uploaded_files WHERE id = $1 AND user_id = $2",
+    [req.params.fileId, req.user.id],
+  );
   if (!file) return res.status(404).json({ error: "File not found" });
 
   const omr = await queryOne(

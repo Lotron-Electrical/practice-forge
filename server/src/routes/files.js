@@ -204,9 +204,10 @@ router.delete(
 router.post(
   "/:id/link",
   asyncHandler(async (req, res) => {
-    const file = await queryOne("SELECT * FROM uploaded_files WHERE id = $1", [
-      req.params.id,
-    ]);
+    const file = await queryOne(
+      "SELECT * FROM uploaded_files WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.user.id],
+    );
     if (!file) return res.status(404).json({ error: "Not found" });
 
     const { linked_type, linked_id } = req.body;
@@ -226,9 +227,10 @@ router.post(
 router.delete(
   "/:id/link",
   asyncHandler(async (req, res) => {
-    const file = await queryOne("SELECT * FROM uploaded_files WHERE id = $1", [
-      req.params.id,
-    ]);
+    const file = await queryOne(
+      "SELECT * FROM uploaded_files WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.user.id],
+    );
     if (!file) return res.status(404).json({ error: "Not found" });
 
     await execute(
@@ -247,9 +249,10 @@ router.delete(
 router.get(
   "/:id/musicxml",
   asyncHandler(async (req, res) => {
-    const file = await queryOne("SELECT * FROM uploaded_files WHERE id = $1", [
-      req.params.id,
-    ]);
+    const file = await queryOne(
+      "SELECT * FROM uploaded_files WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.user.id],
+    );
     if (!file) return res.status(404).json({ error: "Not found" });
 
     if (file.file_type === "sheet_music_digital") {

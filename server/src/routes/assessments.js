@@ -14,8 +14,8 @@ router.post(
 
     const id = uuid();
     await execute(
-      `INSERT INTO assessments (id, type, piece_id, notes) VALUES ($1, $2, $3, $4)`,
-      [id, type, piece_id || null, notes],
+      `INSERT INTO assessments (id, type, piece_id, notes, user_id) VALUES ($1, $2, $3, $4, $5)`,
+      [id, type, piece_id || null, notes, req.user.id],
     );
     const assessment = await queryOne(
       "SELECT * FROM assessments WHERE id = $1",
@@ -33,6 +33,9 @@ router.get(
     let sql = "SELECT * FROM assessments WHERE 1=1";
     const params = [];
     let idx = 1;
+
+    sql += ` AND user_id = $${idx++}`;
+    params.push(req.user.id);
 
     if (type) {
       sql += ` AND type = $${idx++}`;
@@ -57,8 +60,8 @@ router.get(
   "/:id",
   asyncHandler(async (req, res) => {
     const assessment = await queryOne(
-      "SELECT * FROM assessments WHERE id = $1",
-      [req.params.id],
+      "SELECT * FROM assessments WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.user.id],
     );
     if (!assessment) return res.status(404).json({ error: "Not found" });
 
@@ -78,9 +81,10 @@ router.get(
 router.put(
   "/:id",
   asyncHandler(async (req, res) => {
-    const existing = await queryOne("SELECT * FROM assessments WHERE id = $1", [
-      req.params.id,
-    ]);
+    const existing = await queryOne(
+      "SELECT * FROM assessments WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.user.id],
+    );
     if (!existing) return res.status(404).json({ error: "Not found" });
 
     const { status, overall_score, overall_rating, results, notes } = req.body;
@@ -111,12 +115,16 @@ router.delete(
   "/:id",
   asyncHandler(async (req, res) => {
     if (
-      !(await queryOne("SELECT id FROM assessments WHERE id = $1", [
-        req.params.id,
-      ]))
+      !(await queryOne(
+        "SELECT id FROM assessments WHERE id = $1 AND user_id = $2",
+        [req.params.id, req.user.id],
+      ))
     )
       return res.status(404).json({ error: "Not found" });
-    await execute("DELETE FROM assessments WHERE id = $1", [req.params.id]);
+    await execute("DELETE FROM assessments WHERE id = $1 AND user_id = $2", [
+      req.params.id,
+      req.user.id,
+    ]);
     res.json({ deleted: true });
   }),
 );
@@ -126,8 +134,8 @@ router.post(
   "/:id/recordings",
   asyncHandler(async (req, res) => {
     const assessment = await queryOne(
-      "SELECT * FROM assessments WHERE id = $1",
-      [req.params.id],
+      "SELECT * FROM assessments WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.user.id],
     );
     if (!assessment)
       return res.status(404).json({ error: "Assessment not found" });
@@ -177,8 +185,8 @@ router.post(
   asyncHandler(async (req, res) => {
     const { count = 5 } = req.body;
     const excerpts = await queryAll(
-      "SELECT * FROM excerpts ORDER BY RANDOM() LIMIT $1",
-      [Math.min(Math.max(count, 3), 10)],
+      "SELECT * FROM excerpts WHERE user_id = $1 ORDER BY RANDOM() LIMIT $2",
+      [req.user.id, Math.min(Math.max(count, 3), 10)],
     );
 
     if (excerpts.length === 0)

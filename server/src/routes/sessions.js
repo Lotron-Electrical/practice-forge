@@ -110,14 +110,14 @@ router.get("/rotation/today", async (req, res) => {
 router.post("/rotation/:rotationId/practiced", async (req, res) => {
   const { rotationId } = req.params;
   const row = await queryOne(
-    "SELECT * FROM excerpt_rotation_log WHERE id = $1",
-    [rotationId],
+    "SELECT * FROM excerpt_rotation_log WHERE id = $1 AND user_id = $2",
+    [rotationId, req.user.id],
   );
   if (!row) return res.status(404).json({ error: "Not found" });
 
   await execute(
-    "UPDATE excerpt_rotation_log SET practiced = TRUE WHERE id = $1",
-    [rotationId],
+    "UPDATE excerpt_rotation_log SET practiced = TRUE WHERE id = $1 AND user_id = $2",
+    [rotationId, req.user.id],
   );
   await execute(
     "UPDATE excerpts SET last_practiced = CURRENT_DATE::TEXT, times_practiced = times_practiced + 1, updated_at = NOW() WHERE id = $1",
@@ -580,11 +580,15 @@ router.get("/templates", async (req, res) => {
 
 // DELETE a template
 router.delete("/templates/:id", async (req, res) => {
-  const row = await queryOne("SELECT * FROM session_templates WHERE id = $1", [
-    req.params.id,
-  ]);
+  const row = await queryOne(
+    "SELECT * FROM session_templates WHERE id = $1 AND user_id = $2",
+    [req.params.id, req.user.id],
+  );
   if (!row) return res.status(404).json({ error: "Not found" });
-  await execute("DELETE FROM session_templates WHERE id = $1", [req.params.id]);
+  await execute(
+    "DELETE FROM session_templates WHERE id = $1 AND user_id = $2",
+    [req.params.id, req.user.id],
+  );
   res.json({ ok: true });
 });
 
@@ -855,17 +859,17 @@ router.get("/analytics/trends", async (req, res) => {
   const today = now.toISOString().slice(0, 10);
 
   const current = await queryAll(
-    "SELECT * FROM practice_sessions WHERE status = 'completed' AND date >= $1 AND date <= $2",
-    [currentStart, today],
+    "SELECT * FROM practice_sessions WHERE status = 'completed' AND date >= $1 AND date <= $2 AND user_id = $3",
+    [currentStart, today, req.user.id],
   );
   const previous = await queryAll(
-    "SELECT * FROM practice_sessions WHERE status = 'completed' AND date >= $1 AND date < $2",
-    [prevStart, currentStart],
+    "SELECT * FROM practice_sessions WHERE status = 'completed' AND date >= $1 AND date < $2 AND user_id = $3",
+    [prevStart, currentStart, req.user.id],
   );
 
   const allPeriod = await queryAll(
-    "SELECT * FROM practice_sessions WHERE date >= $1 AND date <= $2",
-    [currentStart, today],
+    "SELECT * FROM practice_sessions WHERE date >= $1 AND date <= $2 AND user_id = $3",
+    [currentStart, today, req.user.id],
   );
 
   const curMinutes = current.reduce(
@@ -910,19 +914,22 @@ router.get("/analytics/trends", async (req, res) => {
 
 // GET analytics: stalled pieces
 router.get("/analytics/stalled-pieces", async (req, res) => {
-  const rows = await queryAll(`
+  const rows = await queryAll(
+    `
     SELECT p.id as piece_id, p.title, p.composer,
       COALESCE(SUM(sb.actual_duration_min), 0) AS total_minutes,
       MAX(s.updated_at) AS last_status_change
     FROM pieces p
     JOIN sections s ON s.piece_id = p.id
     JOIN session_blocks sb ON sb.linked_type = 'section' AND sb.linked_id = s.id AND sb.status = 'completed'
-    WHERE p.status = 'in_progress'
+    WHERE p.status = 'in_progress' AND p.user_id = $1
     GROUP BY p.id, p.title, p.composer
     HAVING COALESCE(SUM(sb.actual_duration_min), 0) > 120
       AND MAX(s.updated_at) < NOW() - INTERVAL '14 days'
     ORDER BY total_minutes DESC
-  `);
+  `,
+    [req.user.id],
+  );
 
   res.json(
     rows.map((r) => ({
@@ -962,10 +969,10 @@ router.get("/analytics/drift", async (req, res) => {
     SELECT sb.category, COALESCE(SUM(sb.actual_duration_min), SUM(sb.planned_duration_min)) AS minutes
     FROM practice_sessions ps
     JOIN session_blocks sb ON sb.session_id = ps.id
-    WHERE ps.status = 'completed' AND ps.date >= $1 AND sb.status = 'completed'
+    WHERE ps.status = 'completed' AND ps.date >= $1 AND sb.status = 'completed' AND ps.user_id = $2
     GROUP BY sb.category
   `,
-    [twoWeeksAgo],
+    [twoWeeksAgo, req.user.id],
   );
 
   const totalActual = rows.reduce((s, r) => s + Number(r.minutes), 0);
@@ -1007,9 +1014,9 @@ router.get("/analytics/history", async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 20, 100);
   const offset = (page - 1) * limit;
 
-  let whereClause = "WHERE status = 'completed'";
-  const params = [];
-  let paramIdx = 1;
+  let whereClause = "WHERE status = 'completed' AND user_id = $1";
+  const params = [req.user.id];
+  let paramIdx = 2;
 
   if (req.query.from) {
     whereClause += ` AND date >= $${paramIdx++}`;
@@ -1056,8 +1063,15 @@ router.post("/quick-log", async (req, res) => {
   const logDate = date || new Date().toISOString().slice(0, 10);
 
   await execute(
-    "INSERT INTO practice_sessions (id, date, planned_duration_min, actual_duration_min, status, rating, updated_at) VALUES ($1, $2, $3, $4, 'completed', $5, NOW())",
-    [sessionId, logDate, duration_min, duration_min, rating || null],
+    "INSERT INTO practice_sessions (id, date, planned_duration_min, actual_duration_min, status, rating, updated_at, user_id) VALUES ($1, $2, $3, $4, 'completed', $5, NOW(), $6)",
+    [
+      sessionId,
+      logDate,
+      duration_min,
+      duration_min,
+      rating || null,
+      req.user.id,
+    ],
   );
 
   const blockId = uuid();
@@ -1083,8 +1097,8 @@ router.get("/stats", async (req, res) => {
     .toISOString()
     .slice(0, 10);
   const weekSessions = await queryAll(
-    "SELECT * FROM practice_sessions WHERE date >= $1 AND status = 'completed'",
-    [weekAgo],
+    "SELECT * FROM practice_sessions WHERE date >= $1 AND status = 'completed' AND user_id = $2",
+    [weekAgo, req.user.id],
   );
 
   const totalMinutes = weekSessions.reduce(
@@ -1097,7 +1111,8 @@ router.get("/stats", async (req, res) => {
   let streak = 0;
   const graceDays = 1;
   const practiceDates = await queryAll(
-    "SELECT DISTINCT date FROM practice_sessions WHERE status = 'completed' ORDER BY date DESC",
+    "SELECT DISTINCT date FROM practice_sessions WHERE status = 'completed' AND user_id = $1 ORDER BY date DESC",
+    [req.user.id],
   );
   if (practiceDates.length > 0) {
     const todayStr = new Date().toISOString().slice(0, 10);
@@ -1145,11 +1160,11 @@ router.get("/analytics/calendar", async (req, res) => {
       COALESCE(SUM(actual_duration_min), SUM(planned_duration_min)) as total_minutes,
       MAX(rating) as best_rating
     FROM practice_sessions
-    WHERE status = 'completed' AND date >= $1
+    WHERE status = 'completed' AND date >= $1 AND user_id = $2
     GROUP BY date
     ORDER BY date
   `,
-    [startStr],
+    [startStr, req.user.id],
   );
 
   res.json(
@@ -1165,7 +1180,8 @@ router.get("/analytics/calendar", async (req, res) => {
 // GET analytics: streaks (extended)
 router.get("/analytics/streaks", async (req, res) => {
   const practiceDates = await queryAll(
-    "SELECT DISTINCT date FROM practice_sessions WHERE status = 'completed' ORDER BY date DESC",
+    "SELECT DISTINCT date FROM practice_sessions WHERE status = 'completed' AND user_id = $1 ORDER BY date DESC",
+    [req.user.id],
   );
 
   const totalDays = practiceDates.length;
@@ -1212,7 +1228,8 @@ router.get("/analytics/streaks", async (req, res) => {
 
   // Total hours all time
   const totalRow = await queryOne(
-    "SELECT COALESCE(SUM(actual_duration_min), SUM(planned_duration_min), 0) as total FROM practice_sessions WHERE status = 'completed'",
+    "SELECT COALESCE(SUM(actual_duration_min), SUM(planned_duration_min), 0) as total FROM practice_sessions WHERE status = 'completed' AND user_id = $1",
+    [req.user.id],
   );
   const totalMinutes = parseInt(totalRow?.total || "0");
 
