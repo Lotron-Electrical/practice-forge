@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-CREATE INDEX IF NOT EXISTS idx_settings_user_id ON settings(user_id);
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'settings' AND column_name = 'user_id') THEN CREATE INDEX IF NOT EXISTS idx_settings_user_id ON settings(user_id); END IF; END $$;
 
 -- Users table (must be created before any table that references it)
 CREATE TABLE IF NOT EXISTS users (
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS pieces (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-CREATE INDEX IF NOT EXISTS idx_pieces_user_id ON pieces(user_id);
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'pieces' AND column_name = 'user_id') THEN CREATE INDEX IF NOT EXISTS idx_pieces_user_id ON pieces(user_id); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS sections (
   id TEXT PRIMARY KEY,
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS sections (
 );
 
 CREATE INDEX IF NOT EXISTS idx_sections_piece ON sections(piece_id);
-CREATE INDEX IF NOT EXISTS idx_sections_user_id ON sections(user_id);
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'sections' AND column_name = 'user_id') THEN CREATE INDEX IF NOT EXISTS idx_sections_user_id ON sections(user_id); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS technical_demands (
   id TEXT PRIMARY KEY,
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS technical_demands (
 
 CREATE INDEX IF NOT EXISTS idx_demands_piece ON technical_demands(piece_id);
 CREATE INDEX IF NOT EXISTS idx_demands_category ON technical_demands(category_id);
-CREATE INDEX IF NOT EXISTS idx_technical_demands_user_id ON technical_demands(user_id);
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'technical_demands' AND column_name = 'user_id') THEN CREATE INDEX IF NOT EXISTS idx_technical_demands_user_id ON technical_demands(user_id); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS exercises (
   id TEXT PRIMARY KEY,
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS exercises (
 );
 
 CREATE INDEX IF NOT EXISTS idx_exercises_category ON exercises(category_id);
-CREATE INDEX IF NOT EXISTS idx_exercises_user_id ON exercises(user_id);
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'exercises' AND column_name = 'user_id') THEN CREATE INDEX IF NOT EXISTS idx_exercises_user_id ON exercises(user_id); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS demand_exercises (
   demand_id TEXT NOT NULL REFERENCES technical_demands(id) ON DELETE CASCADE,
@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS excerpts (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-CREATE INDEX IF NOT EXISTS idx_excerpts_user_id ON excerpts(user_id);
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'excerpts' AND column_name = 'user_id') THEN CREATE INDEX IF NOT EXISTS idx_excerpts_user_id ON excerpts(user_id); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS uploaded_files (
   id TEXT PRIMARY KEY,
@@ -154,7 +154,7 @@ CREATE TABLE IF NOT EXISTS uploaded_files (
   tags TEXT DEFAULT '[]',
   notes TEXT DEFAULT ''
 );
-CREATE INDEX IF NOT EXISTS idx_uploaded_files_user_id ON uploaded_files(user_id);
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'uploaded_files' AND column_name = 'user_id') THEN CREATE INDEX IF NOT EXISTS idx_uploaded_files_user_id ON uploaded_files(user_id); END IF; END $$;
 
 -- Phase 2: Session planner + logging + excerpt rotation
 
@@ -172,7 +172,7 @@ CREATE TABLE IF NOT EXISTS practice_sessions (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-CREATE INDEX IF NOT EXISTS idx_practice_sessions_user_id ON practice_sessions(user_id);
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'practice_sessions' AND column_name = 'user_id') THEN CREATE INDEX IF NOT EXISTS idx_practice_sessions_user_id ON practice_sessions(user_id); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS session_blocks (
   id TEXT PRIMARY KEY,
@@ -194,7 +194,7 @@ CREATE TABLE IF NOT EXISTS session_blocks (
 );
 
 CREATE INDEX IF NOT EXISTS idx_session_blocks_session ON session_blocks(session_id);
-CREATE INDEX IF NOT EXISTS idx_session_blocks_user_id ON session_blocks(user_id);
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'session_blocks' AND column_name = 'user_id') THEN CREATE INDEX IF NOT EXISTS idx_session_blocks_user_id ON session_blocks(user_id); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS excerpt_rotation_log (
   id TEXT PRIMARY KEY,
@@ -208,7 +208,7 @@ CREATE TABLE IF NOT EXISTS excerpt_rotation_log (
 
 CREATE INDEX IF NOT EXISTS idx_rotation_date ON excerpt_rotation_log(date);
 CREATE INDEX IF NOT EXISTS idx_rotation_excerpt ON excerpt_rotation_log(excerpt_id);
-CREATE INDEX IF NOT EXISTS idx_excerpt_rotation_log_user_id ON excerpt_rotation_log(user_id);
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'excerpt_rotation_log' AND column_name = 'user_id') THEN CREATE INDEX IF NOT EXISTS idx_excerpt_rotation_log_user_id ON excerpt_rotation_log(user_id); END IF; END $$;
 
 -- Phase 7: Sheet Music Intelligence Engine
 
@@ -228,7 +228,7 @@ CREATE TABLE IF NOT EXISTS omr_results (
 );
 
 CREATE INDEX IF NOT EXISTS idx_omr_file ON omr_results(file_id);
-CREATE INDEX IF NOT EXISTS idx_omr_results_user_id ON omr_results(user_id);
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'omr_results' AND column_name = 'user_id') THEN CREATE INDEX IF NOT EXISTS idx_omr_results_user_id ON omr_results(user_id); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS analysis_results (
   id TEXT PRIMARY KEY,
@@ -252,7 +252,7 @@ CREATE TABLE IF NOT EXISTS analysis_results (
 );
 
 CREATE INDEX IF NOT EXISTS idx_analysis_file ON analysis_results(file_id);
-CREATE INDEX IF NOT EXISTS idx_analysis_results_user_id ON analysis_results(user_id);
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'analysis_results' AND column_name = 'user_id') THEN CREATE INDEX IF NOT EXISTS idx_analysis_results_user_id ON analysis_results(user_id); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS analysis_demands (
   id TEXT PRIMARY KEY,
@@ -269,7 +269,7 @@ CREATE TABLE IF NOT EXISTS analysis_demands (
 );
 
 CREATE INDEX IF NOT EXISTS idx_analysis_demands_analysis ON analysis_demands(analysis_id);
-CREATE INDEX IF NOT EXISTS idx_analysis_demands_user_id ON analysis_demands(user_id);
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'analysis_demands' AND column_name = 'user_id') THEN CREATE INDEX IF NOT EXISTS idx_analysis_demands_user_id ON analysis_demands(user_id); END IF; END $$;
 
 -- Phase: Resource Finder
 
@@ -288,7 +288,7 @@ CREATE TABLE IF NOT EXISTS resources (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_resources_linked ON resources(linked_type, linked_id);
-CREATE INDEX IF NOT EXISTS idx_resources_user_id ON resources(user_id);
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resources' AND column_name = 'user_id') THEN CREATE INDEX IF NOT EXISTS idx_resources_user_id ON resources(user_id); END IF; END $$;
 
 -- Phase 10: Audio Listening & Feedback Engine
 
@@ -311,7 +311,7 @@ CREATE TABLE IF NOT EXISTS audio_recordings (
 );
 CREATE INDEX IF NOT EXISTS idx_recordings_linked ON audio_recordings(linked_type, linked_id);
 CREATE INDEX IF NOT EXISTS idx_recordings_session ON audio_recordings(session_id);
-CREATE INDEX IF NOT EXISTS idx_audio_recordings_user_id ON audio_recordings(user_id);
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'audio_recordings' AND column_name = 'user_id') THEN CREATE INDEX IF NOT EXISTS idx_audio_recordings_user_id ON audio_recordings(user_id); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS audio_analyses (
   id TEXT PRIMARY KEY,
@@ -346,7 +346,7 @@ CREATE TABLE IF NOT EXISTS assessments (
 );
 CREATE INDEX IF NOT EXISTS idx_assessments_type ON assessments(type);
 CREATE INDEX IF NOT EXISTS idx_assessments_piece ON assessments(piece_id);
-CREATE INDEX IF NOT EXISTS idx_assessments_user_id ON assessments(user_id);
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'assessments' AND column_name = 'user_id') THEN CREATE INDEX IF NOT EXISTS idx_assessments_user_id ON assessments(user_id); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS assessment_recordings (
   id TEXT PRIMARY KEY,
@@ -544,7 +544,7 @@ CREATE TABLE IF NOT EXISTS auditions (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_auditions_date ON auditions(audition_date);
-CREATE INDEX IF NOT EXISTS idx_auditions_user_id ON auditions(user_id);
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'auditions' AND column_name = 'user_id') THEN CREATE INDEX IF NOT EXISTS idx_auditions_user_id ON auditions(user_id); END IF; END $$;
 
 -- Phase 14: Analytics — add started_at to practice_sessions
 DO $$
