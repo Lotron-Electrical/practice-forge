@@ -1,19 +1,23 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect } from "react";
 
-type TimeSignature = '2/4' | '3/4' | '4/4' | '6/8';
+type TimeSignature = "2/4" | "3/4" | "4/4" | "6/8";
 
 function beatsPerMeasure(ts: TimeSignature): number {
   switch (ts) {
-    case '2/4': return 2;
-    case '3/4': return 3;
-    case '4/4': return 4;
-    case '6/8': return 6;
+    case "2/4":
+      return 2;
+    case "3/4":
+      return 3;
+    case "4/4":
+      return 4;
+    case "6/8":
+      return 6;
   }
 }
 
 export function useMetronome() {
   const [bpm, setBpm] = useState(120);
-  const [timeSignature, setTimeSignature] = useState<TimeSignature>('4/4');
+  const [timeSignature, setTimeSignature] = useState<TimeSignature>("4/4");
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentBeat, setCurrentBeat] = useState(0);
 
@@ -31,22 +35,25 @@ export function useMetronome() {
     return audioCtxRef.current;
   }, []);
 
-  const scheduleClick = useCallback((time: number, isDownbeat: boolean) => {
-    const ctx = getAudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+  const scheduleClick = useCallback(
+    (time: number, isDownbeat: boolean) => {
+      const ctx = getAudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
 
-    osc.frequency.value = isDownbeat ? 800 : 600;
-    osc.type = 'sine';
+      osc.frequency.value = isDownbeat ? 800 : 600;
+      osc.type = "sine";
 
-    gain.gain.setValueAtTime(isDownbeat ? 0.5 : 0.3, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+      gain.gain.setValueAtTime(isDownbeat ? 0.5 : 0.3, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
 
-    osc.start(time);
-    osc.stop(time + 0.05);
-  }, [getAudioContext]);
+      osc.start(time);
+      osc.stop(time + 0.05);
+    },
+    [getAudioContext],
+  );
 
   const scheduler = useCallback(() => {
     if (!isPlayingRef.current) return;
@@ -62,7 +69,10 @@ export function useMetronome() {
 
       const beat = currentBeatRef.current + 1;
       // Update UI beat on next tick
-      setTimeout(() => setCurrentBeat(beat), Math.max(0, (nextNoteTimeRef.current - ctx.currentTime) * 1000));
+      setTimeout(
+        () => setCurrentBeat(beat),
+        Math.max(0, (nextNoteTimeRef.current - ctx.currentTime) * 1000),
+      );
 
       currentBeatRef.current = (currentBeatRef.current + 1) % beats;
       nextNoteTimeRef.current += secondsPerBeat;
@@ -73,7 +83,7 @@ export function useMetronome() {
 
   const start = useCallback(() => {
     const ctx = getAudioContext();
-    if (ctx.state === 'suspended') ctx.resume();
+    if (ctx.state === "suspended") ctx.resume();
 
     isPlayingRef.current = true;
     currentBeatRef.current = 0;
@@ -100,14 +110,15 @@ export function useMetronome() {
 
     // Keep only recent taps (within 2 seconds)
     const cutoff = now - 2000;
-    tapTimesRef.current = taps.filter(t => t > cutoff);
+    tapTimesRef.current = taps.filter((t) => t > cutoff);
 
     if (tapTimesRef.current.length >= 2) {
       const intervals: number[] = [];
       for (let i = 1; i < tapTimesRef.current.length; i++) {
         intervals.push(tapTimesRef.current[i] - tapTimesRef.current[i - 1]);
       }
-      const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+      const avgInterval =
+        intervals.reduce((a, b) => a + b, 0) / intervals.length;
       const newBpm = Math.round(60000 / avgInterval);
       setBpm(Math.max(30, Math.min(240, newBpm)));
     }
@@ -133,9 +144,15 @@ export function useMetronome() {
   }, []);
 
   return {
-    bpm, setBpm, timeSignature, setTimeSignature,
-    isPlaying, currentBeat,
+    bpm,
+    setBpm,
+    timeSignature,
+    setTimeSignature,
+    isPlaying,
+    currentBeat,
     beatsInMeasure: beatsPerMeasure(timeSignature),
-    start, stop, tap,
+    start,
+    stop,
+    tap,
   };
 }

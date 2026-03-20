@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { Badge } from '../ui/Badge';
-import { Button } from '../ui/Button';
-import { ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
+import { useState } from "react";
+import { Badge } from "../ui/Badge";
+import { Button } from "../ui/Button";
+import { ChevronDown, ChevronRight, ChevronLeft } from "lucide-react";
 
 interface HistorySession {
   id: string;
@@ -22,25 +22,38 @@ interface HistoryData {
 }
 
 const RATING_COLORS: Record<string, string> = {
-  good: 'var(--pf-status-ready)',
-  okay: 'var(--pf-accent-gold)',
-  bad: 'var(--pf-status-needs-work)',
+  good: "var(--pf-status-ready)",
+  okay: "var(--pf-accent-gold)",
+  bad: "var(--pf-status-needs-work)",
 };
 
-export function SessionHistoryList({ data, onPageChange }: { data: HistoryData; onPageChange: (page: number) => void }) {
+export function SessionHistoryList({
+  data,
+  onPageChange,
+}: {
+  data: HistoryData;
+  onPageChange: (page: number) => void;
+}) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   if (data.sessions.length === 0) {
-    return <p className="text-sm text-[var(--pf-text-secondary)] text-center py-8">No completed sessions yet.</p>;
+    return (
+      <p className="text-sm text-[var(--pf-text-secondary)] text-center py-8">
+        No completed sessions yet.
+      </p>
+    );
   }
 
   return (
     <div>
       <div className="space-y-1">
-        {data.sessions.map(s => {
+        {data.sessions.map((s) => {
           const isExpanded = expanded === s.id;
           const duration = s.actual_duration_min || s.planned_duration_min;
-          const dateStr = new Date(s.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+          const dateStr = new Date(s.date + "T00:00:00").toLocaleDateString(
+            "en-GB",
+            { weekday: "short", day: "numeric", month: "short" },
+          );
 
           return (
             <div key={s.id}>
@@ -48,10 +61,20 @@ export function SessionHistoryList({ data, onPageChange }: { data: HistoryData; 
                 onClick={() => setExpanded(isExpanded ? null : s.id)}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-pf-sm hover:bg-[var(--pf-bg-hover)] transition-colors text-left"
               >
-                {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                <span className="text-sm font-medium w-20 sm:w-28 shrink-0">{dateStr}</span>
-                <span className="text-sm text-[var(--pf-text-secondary)] w-10 sm:w-16 shrink-0">{duration}m</span>
-                {s.rating && <Badge color={RATING_COLORS[s.rating]}>{s.rating}</Badge>}
+                {isExpanded ? (
+                  <ChevronDown size={14} />
+                ) : (
+                  <ChevronRight size={14} />
+                )}
+                <span className="text-sm font-medium w-20 sm:w-28 shrink-0">
+                  {dateStr}
+                </span>
+                <span className="text-sm text-[var(--pf-text-secondary)] w-10 sm:w-16 shrink-0">
+                  {duration}m
+                </span>
+                {s.rating && (
+                  <Badge color={RATING_COLORS[s.rating]}>{s.rating}</Badge>
+                )}
                 <span className="text-xs text-[var(--pf-text-secondary)] ml-auto">
                   {s.blocks_completed}/{s.blocks_total} blocks
                 </span>

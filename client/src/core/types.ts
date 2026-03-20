@@ -1,10 +1,23 @@
 // Pure TypeScript models — no React imports
 
-export type PieceStatus = 'not_started' | 'in_progress' | 'performance_ready' | 'archived';
-export type Priority = 'high' | 'medium' | 'low';
-export type SectionStatus = 'not_started' | 'working_on' | 'solid' | 'polished';
-export type ExcerptStatus = 'needs_work' | 'acceptable' | 'solid' | 'audition_ready';
-export type ExerciseSourceType = 'manual' | 'book' | 'teacher' | 'generated_rule' | 'generated_ai';
+export type PieceStatus =
+  | "not_started"
+  | "in_progress"
+  | "performance_ready"
+  | "archived";
+export type Priority = "high" | "medium" | "low";
+export type SectionStatus = "not_started" | "working_on" | "solid" | "polished";
+export type ExcerptStatus =
+  | "needs_work"
+  | "acceptable"
+  | "solid"
+  | "audition_ready";
+export type ExerciseSourceType =
+  | "manual"
+  | "book"
+  | "teacher"
+  | "generated_rule"
+  | "generated_ai";
 
 export interface TaxonomyCategory {
   id: string;
@@ -98,9 +111,24 @@ export interface Excerpt {
   updated_at: string;
 }
 
-export type FileType = 'sheet_music_digital' | 'sheet_music_scanned' | 'audio' | 'video' | 'document';
-export type ProcessingStatus = 'pending' | 'processing' | 'complete' | 'failed' | 'needs_review';
-export type LinkedType = 'piece' | 'section' | 'excerpt' | 'exercise' | 'freeform';
+export type FileType =
+  | "sheet_music_digital"
+  | "sheet_music_scanned"
+  | "audio"
+  | "video"
+  | "document";
+export type ProcessingStatus =
+  | "pending"
+  | "processing"
+  | "complete"
+  | "failed"
+  | "needs_review";
+export type LinkedType =
+  | "piece"
+  | "section"
+  | "excerpt"
+  | "exercise"
+  | "freeform";
 
 export interface UploadedFile {
   id: string;
@@ -231,10 +259,22 @@ export interface AnalysisData {
 }
 
 export interface FluteAnalysis {
-  breathing_points: Array<{ measure: number; beat: number; suggestion: string }>;
-  alternate_fingerings: Array<{ note: string; measure: number; fingering: string }>;
+  breathing_points: Array<{
+    measure: number;
+    beat: number;
+    suggestion: string;
+  }>;
+  alternate_fingerings: Array<{
+    note: string;
+    measure: number;
+    fingering: string;
+  }>;
   tone_color_notes: string[];
-  technique_warnings: Array<{ description: string; measure: number; suggestion: string }>;
+  technique_warnings: Array<{
+    description: string;
+    measure: number;
+    suggestion: string;
+  }>;
   practice_suggestions: string[];
 }
 
@@ -273,9 +313,9 @@ export interface AnalysisDemand {
 
 // Resource Finder
 
-export type ResourceType = 'score' | 'recording' | 'article' | 'other';
-export type ResourceSource = 'imslp' | 'youtube' | 'wikipedia' | 'manual';
-export type ResourceLinkedType = 'piece' | 'excerpt';
+export type ResourceType = "score" | "recording" | "article" | "other";
+export type ResourceSource = "imslp" | "youtube" | "wikipedia" | "manual";
+export type ResourceLinkedType = "piece" | "excerpt";
 
 export interface Resource {
   id: string;
@@ -308,8 +348,12 @@ export interface AutoDiscoverResults {
 
 // Phase 13: Audits & Assessments
 
-export type AssessmentType = 'piece_audit' | 'excerpt_spot_check' | 'technique_assessment' | 'weekly_review';
-export type AssessmentStatus = 'in_progress' | 'completed';
+export type AssessmentType =
+  | "piece_audit"
+  | "excerpt_spot_check"
+  | "technique_assessment"
+  | "weekly_review";
+export type AssessmentStatus = "in_progress" | "completed";
 
 export interface Assessment {
   id: string;
@@ -317,7 +361,7 @@ export interface Assessment {
   piece_id: string | null;
   status: AssessmentStatus;
   overall_score: number | null;
-  overall_rating: 'needs_work' | 'acceptable' | 'solid' | 'excellent' | null;
+  overall_rating: "needs_work" | "acceptable" | "solid" | "excellent" | null;
   results: Record<string, unknown>;
   notes: string;
   created_at: string;
@@ -346,16 +390,34 @@ export interface WeeklyReviewData {
   total_practice_minutes: number;
   total_practice_hours: number;
   category_breakdown: Record<string, number>;
-  status_changes: { pieces: { title: string; status: string }[]; sections: { name: string; status: string; piece_title: string }[] };
+  status_changes: {
+    pieces: { title: string; status: string }[];
+    sections: { name: string; status: string; piece_title: string }[];
+  };
   recordings_made: number;
   avg_pitch_accuracy: number | null;
 }
 
 // Phase 17: Community & Challenges
 
-export type ChallengeType = 'excerpt_duel' | 'scale_sprint' | 'sight_reading' | 'practice_marathon' | 'technique_showdown' | 'weekly';
-export type ChallengeStatus = 'pending' | 'active' | 'completed' | 'expired' | 'cancelled';
-export type ParticipantStatus = 'invited' | 'accepted' | 'declined' | 'submitted';
+export type ChallengeType =
+  | "excerpt_duel"
+  | "scale_sprint"
+  | "sight_reading"
+  | "practice_marathon"
+  | "technique_showdown"
+  | "weekly";
+export type ChallengeStatus =
+  | "pending"
+  | "active"
+  | "completed"
+  | "expired"
+  | "cancelled";
+export type ParticipantStatus =
+  | "invited"
+  | "accepted"
+  | "declined"
+  | "submitted";
 
 export interface Challenge {
   id: string;
@@ -413,7 +475,11 @@ export interface PublicProfile {
 
 // Phase 16: Authentication + User Profiles
 
-export type UserLevel = 'student' | 'advanced_student' | 'pre_professional' | 'professional';
+export type UserLevel =
+  | "student"
+  | "advanced_student"
+  | "pre_professional"
+  | "professional";
 
 export interface User {
   id: string;
@@ -476,7 +542,7 @@ export interface AudioAnalysis {
   avg_spectral_centroid: number | null;
   avg_spectral_flatness: number | null;
   pitch_stability: number | null;
-  overall_rating: 'needs_work' | 'acceptable' | 'solid' | 'excellent' | null;
+  overall_rating: "needs_work" | "acceptable" | "solid" | "excellent" | null;
   analysis_data: AudioAnalysisData;
   created_at: string;
 }
@@ -507,9 +573,9 @@ export interface DynamicsSample {
 export interface ProblemSpot {
   time_start: number;
   time_end: number;
-  type: 'pitch' | 'rhythm' | 'dynamics';
+  type: "pitch" | "rhythm" | "dynamics";
   description: string;
-  severity: 'minor' | 'moderate' | 'major';
+  severity: "minor" | "moderate" | "major";
   bar_number?: number;
 }
 
@@ -525,13 +591,17 @@ export interface BarResult {
   bar_number: number;
   pitch_accuracy: number;
   rhythm_accuracy: number;
-  status: 'accurate' | 'minor_issues' | 'inaccurate';
+  status: "accurate" | "minor_issues" | "inaccurate";
 }
 
 // Phase 12: Composition & Exercise Generation Engine
 
-export type GenerationType = 'scale' | 'arpeggio' | 'interval' | 'articulation';
-export type AiGenerationType = 'excerpt_prep' | 'warmup' | 'variation' | 'custom_study';
+export type GenerationType = "scale" | "arpeggio" | "interval" | "articulation";
+export type AiGenerationType =
+  | "excerpt_prep"
+  | "warmup"
+  | "variation"
+  | "custom_study";
 
 export interface GeneratedExercise {
   title: string;
@@ -541,7 +611,7 @@ export interface GeneratedExercise {
   difficulty: number;
   category_hint?: string;
   tags: string[];
-  generation_method?: 'rule_based' | 'claude_api';
+  generation_method?: "rule_based" | "claude_api";
   prompt_used?: string;
   cost?: number;
 }
@@ -557,7 +627,12 @@ export interface RuleGenerationParams {
   pattern?: string;
 }
 
-export type HighlightMode = 'none' | 'scales' | 'arpeggios' | 'difficulty' | 'dynamics';
+export type HighlightMode =
+  | "none"
+  | "scales"
+  | "arpeggios"
+  | "difficulty"
+  | "dynamics";
 
 export interface AnalysisStatus {
   file: UploadedFile;
@@ -600,8 +675,12 @@ export interface CommunityNote {
 
 // Phase 19: Subscriptions & Billing
 
-export type SubscriptionTier = 'free' | 'solo' | 'pro' | 'teacher';
-export type SubscriptionStatus = 'active' | 'past_due' | 'cancelled' | 'trialing';
+export type SubscriptionTier = "free" | "solo" | "pro" | "teacher";
+export type SubscriptionStatus =
+  | "active"
+  | "past_due"
+  | "cancelled"
+  | "trialing";
 
 export interface TierLimits {
   pieces: number;
@@ -637,12 +716,13 @@ export interface TierDefinition {
   price_annual: number;
   per_student_monthly?: number;
   per_student_annual?: number;
+  coming_soon?: boolean;
   features: string[];
   limits: TierLimits;
 }
 
 export interface UpgradeRequiredError {
-  error: 'upgrade_required' | 'limit_reached';
+  error: "upgrade_required" | "limit_reached";
   message: string;
   current_tier: SubscriptionTier;
   required_tiers?: SubscriptionTier[];
@@ -653,7 +733,12 @@ export interface UpgradeRequiredError {
 
 // Phase 20: Auditions
 
-export type AuditionResult = 'won' | 'callback' | 'unsuccessful' | 'pending' | 'cancelled';
+export type AuditionResult =
+  | "won"
+  | "callback"
+  | "unsuccessful"
+  | "pending"
+  | "cancelled";
 
 export interface Audition {
   id: string;
@@ -661,7 +746,7 @@ export interface Audition {
   audition_date: string;
   result: AuditionResult | null;
   notes: string;
-  repertoire: Array<{ type: 'piece' | 'excerpt'; id: string; title: string }>;
+  repertoire: Array<{ type: "piece" | "excerpt"; id: string; title: string }>;
   days_until?: number;
   created_at: string;
   updated_at: string;
@@ -669,20 +754,80 @@ export interface Audition {
 
 export interface UpcomingAuditions {
   auditions: Audition[];
-  pieces_with_dates: Array<{ id: string; title: string; composer: string; audition_date: string; days_until: number }>;
-  excerpts_with_dates: Array<{ id: string; title: string; composer: string; audition_date: string; status: string; days_until: number }>;
+  pieces_with_dates: Array<{
+    id: string;
+    title: string;
+    composer: string;
+    audition_date: string;
+    days_until: number;
+  }>;
+  excerpts_with_dates: Array<{
+    id: string;
+    title: string;
+    composer: string;
+    audition_date: string;
+    status: string;
+    days_until: number;
+  }>;
 }
 
-export const ACHIEVEMENT_DEFS: Record<string, { label: string; description: string; icon: string }> = {
-  first_steps: { label: 'First Steps', description: 'Complete your first practice session', icon: 'music' },
-  streak_7: { label: 'Week Warrior', description: '7-day practice streak', icon: 'flame' },
-  streak_30: { label: 'Monthly Master', description: '30-day practice streak', icon: 'flame' },
-  streak_100: { label: 'Century Streak', description: '100-day practice streak', icon: 'flame' },
-  century: { label: 'Century', description: '100 hours total practice', icon: 'clock' },
-  excerpt_explorer: { label: 'Excerpt Explorer', description: 'Practice 50 different excerpts', icon: 'map-pin' },
-  challenge_champion: { label: 'Challenge Champion', description: 'Win 10 challenges', icon: 'trophy' },
-  composers_friend: { label: "Composer's Friend", description: '50 AI-generated exercises', icon: 'sparkles' },
-  community_contributor: { label: 'Community Contributor', description: 'Share 10 tips or recordings', icon: 'heart' },
-  perfectionist: { label: 'Perfectionist', description: 'Score 95%+ on a piece audit', icon: 'diamond' },
-  audition_ready: { label: 'Audition Ready', description: 'All excerpts solid or above', icon: 'star' },
+export const ACHIEVEMENT_DEFS: Record<
+  string,
+  { label: string; description: string; icon: string }
+> = {
+  first_steps: {
+    label: "First Steps",
+    description: "Complete your first practice session",
+    icon: "music",
+  },
+  streak_7: {
+    label: "Week Warrior",
+    description: "7-day practice streak",
+    icon: "flame",
+  },
+  streak_30: {
+    label: "Monthly Master",
+    description: "30-day practice streak",
+    icon: "flame",
+  },
+  streak_100: {
+    label: "Century Streak",
+    description: "100-day practice streak",
+    icon: "flame",
+  },
+  century: {
+    label: "Century",
+    description: "100 hours total practice",
+    icon: "clock",
+  },
+  excerpt_explorer: {
+    label: "Excerpt Explorer",
+    description: "Practice 50 different excerpts",
+    icon: "map-pin",
+  },
+  challenge_champion: {
+    label: "Challenge Champion",
+    description: "Win 10 challenges",
+    icon: "trophy",
+  },
+  composers_friend: {
+    label: "Composer's Friend",
+    description: "50 AI-generated exercises",
+    icon: "sparkles",
+  },
+  community_contributor: {
+    label: "Community Contributor",
+    description: "Share 10 tips or recordings",
+    icon: "heart",
+  },
+  perfectionist: {
+    label: "Perfectionist",
+    description: "Score 95%+ on a piece audit",
+    icon: "diamond",
+  },
+  audition_ready: {
+    label: "Audition Ready",
+    description: "All excerpts solid or above",
+    icon: "star",
+  },
 };

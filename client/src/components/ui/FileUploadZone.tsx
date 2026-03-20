@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { Upload } from 'lucide-react';
+import { useRef, useState } from "react";
+import { Upload } from "lucide-react";
 
 interface FileUploadZoneProps {
   onFilesSelected: (files: File[]) => void;
@@ -8,7 +8,12 @@ interface FileUploadZoneProps {
   className?: string;
 }
 
-export function FileUploadZone({ onFilesSelected, accept, multiple = true, className = '' }: FileUploadZoneProps) {
+export function FileUploadZone({
+  onFilesSelected,
+  accept,
+  multiple = true,
+  className = "",
+}: FileUploadZoneProps) {
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -22,7 +27,7 @@ export function FileUploadZone({ onFilesSelected, accept, multiple = true, class
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length) onFilesSelected(files);
-    e.target.value = '';
+    e.target.value = "";
   };
 
   return (
@@ -30,19 +35,29 @@ export function FileUploadZone({ onFilesSelected, accept, multiple = true, class
       role="button"
       tabIndex={0}
       aria-label="Upload files — drop files here or press Enter to browse"
-      onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragOver(true);
+      }}
       onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}
       onClick={() => inputRef.current?.click()}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inputRef.current?.click(); } }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          inputRef.current?.click();
+        }
+      }}
       className={`flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-pf cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--pf-accent-teal)] ${
         dragOver
-          ? 'border-[var(--pf-accent-teal)] bg-[var(--pf-accent-teal)]/10'
-          : 'border-[var(--pf-border-color)] hover:border-[var(--pf-text-secondary)]'
+          ? "border-[var(--pf-accent-teal)] bg-[var(--pf-accent-teal)]/10"
+          : "border-[var(--pf-border-color)] hover:border-[var(--pf-text-secondary)]"
       } ${className}`}
     >
       <Upload size={24} className="text-[var(--pf-text-secondary)]" />
-      <p className="text-sm text-[var(--pf-text-secondary)]">Drop files here or click to browse</p>
+      <p className="text-sm text-[var(--pf-text-secondary)]">
+        Drop files here or click to browse
+      </p>
       <input
         ref={inputRef}
         type="file"

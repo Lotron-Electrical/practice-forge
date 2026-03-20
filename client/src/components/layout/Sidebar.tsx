@@ -1,63 +1,89 @@
-import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Music, BookOpen, ListMusic, FolderOpen, Mic, BarChart3, Settings, ChevronLeft, ChevronRight, Timer, X, User, ClipboardCheck, Users, ChevronDown, CreditCard, CalendarDays, Target, HelpCircle } from 'lucide-react';
-import { useState, useEffect, useMemo, type ReactNode } from 'react';
-import { useExperienceLevel, isNavItemAllowed } from '../../hooks/useExperienceLevel';
-import { useModalLock } from '../../hooks/useModalLock';
+import { NavLink } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Music,
+  BookOpen,
+  ListMusic,
+  FolderOpen,
+  Mic,
+  BarChart3,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+  Timer,
+  X,
+  User,
+  ClipboardCheck,
+  Users,
+  ChevronDown,
+  CreditCard,
+  CalendarDays,
+  Target,
+  HelpCircle,
+} from "lucide-react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
+import {
+  useExperienceLevel,
+  isNavItemAllowed,
+} from "../../hooks/useExperienceLevel";
+import { useModalLock } from "../../hooks/useModalLock";
 
 // Grouped navigation structure
 type NavItem = { to: string; icon: typeof LayoutDashboard; label: string };
-type NavGroup = { header: string | null; items: NavItem[]; collapsible?: boolean };
+type NavGroup = {
+  header: string | null;
+  items: NavItem[];
+  collapsible?: boolean;
+};
 
 const navGroups: NavGroup[] = [
   {
     header: null,
+    items: [{ to: "/", icon: LayoutDashboard, label: "Dashboard" }],
+  },
+  {
+    header: "Practice",
     items: [
-      { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+      { to: "/session", icon: Timer, label: "Session" },
+      { to: "/record", icon: Mic, label: "Record" },
     ],
   },
   {
-    header: 'Practice',
+    header: "Library",
     items: [
-      { to: '/session', icon: Timer, label: 'Session' },
-      { to: '/record', icon: Mic, label: 'Record' },
+      { to: "/pieces", icon: Music, label: "Pieces" },
+      { to: "/exercises", icon: BookOpen, label: "Exercises" },
+      { to: "/excerpts", icon: ListMusic, label: "Excerpts" },
     ],
   },
   {
-    header: 'Library',
+    header: "Progress",
     items: [
-      { to: '/pieces', icon: Music, label: 'Pieces' },
-      { to: '/exercises', icon: BookOpen, label: 'Exercises' },
-      { to: '/excerpts', icon: ListMusic, label: 'Excerpts' },
+      { to: "/analytics", icon: BarChart3, label: "Analytics" },
+      { to: "/calendar", icon: CalendarDays, label: "Calendar" },
+      { to: "/assessments", icon: ClipboardCheck, label: "Assessments" },
+      { to: "/auditions", icon: Target, label: "Auditions" },
     ],
   },
   {
-    header: 'Progress',
-    items: [
-      { to: '/analytics', icon: BarChart3, label: 'Analytics' },
-      { to: '/calendar', icon: CalendarDays, label: 'Calendar' },
-      { to: '/assessments', icon: ClipboardCheck, label: 'Assessments' },
-      { to: '/auditions', icon: Target, label: 'Auditions' },
-    ],
-  },
-  {
-    header: 'More',
+    header: "More",
     collapsible: true,
     items: [
-      { to: '/community', icon: Users, label: 'Community' },
-      { to: '/media', icon: FolderOpen, label: 'Media' },
-      { to: '/profile', icon: User, label: 'Profile' },
-      { to: '/pricing', icon: CreditCard, label: 'Pricing' },
-      { to: '/tutorial', icon: HelpCircle, label: 'Help & Tour' },
-      { to: '/settings', icon: Settings, label: 'Settings' },
+      { to: "/community", icon: Users, label: "Community" },
+      { to: "/media", icon: FolderOpen, label: "Media" },
+      { to: "/profile", icon: User, label: "Profile" },
+      { to: "/pricing", icon: CreditCard, label: "Pricing" },
+      { to: "/tutorial", icon: HelpCircle, label: "Help & Tour" },
+      { to: "/settings", icon: Settings, label: "Settings" },
     ],
   },
 ];
 
-const MORE_EXPANDED_KEY = 'pf-sidebar-more-expanded';
+const MORE_EXPANDED_KEY = "pf-sidebar-more-expanded";
 
 function getStoredMoreExpanded(): boolean {
   try {
-    return localStorage.getItem(MORE_EXPANDED_KEY) === 'true';
+    return localStorage.getItem(MORE_EXPANDED_KEY) === "true";
   } catch {
     return false;
   }
@@ -69,7 +95,13 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-function SectionHeader({ label, collapsed }: { label: string; collapsed: boolean }) {
+function SectionHeader({
+  label,
+  collapsed,
+}: {
+  label: string;
+  collapsed: boolean;
+}) {
   if (collapsed) {
     return <div className="mx-auto my-2 w-6 border-t border-white/20" />;
   }
@@ -92,19 +124,19 @@ function NavItemLink({
   mobile?: boolean;
 }) {
   const { to, icon: Icon, label } = item;
-  const py = mobile ? 'py-3.5' : 'py-2.5';
-  const px = mobile ? 'px-4' : 'px-3';
+  const py = mobile ? "py-3.5" : "py-2.5";
+  const px = mobile ? "px-4" : "px-3";
   return (
     <NavLink
       key={to}
       to={to}
-      end={to === '/'}
+      end={to === "/"}
       onClick={onClick}
       className={({ isActive }) =>
         `flex items-center gap-3 ${px} ${py} rounded-pf-sm text-sm font-medium transition-colors ${
           isActive
-            ? 'bg-white/10 text-[var(--pf-text-nav-active)]'
-            : 'hover:bg-white/5 text-[var(--pf-text-nav)]'
+            ? "bg-white/10 text-[var(--pf-text-nav-active)]"
+            : "hover:bg-white/5 text-[var(--pf-text-nav)]"
         }`
       }
       title={label}
@@ -124,11 +156,13 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
   // Filter nav groups based on experience level
   const filteredNavGroups = useMemo(() => {
     return navGroups
-      .map(group => ({
+      .map((group) => ({
         ...group,
-        items: group.items.filter(item => isNavItemAllowed(item.label, level)),
+        items: group.items.filter((item) =>
+          isNavItemAllowed(item.label, level),
+        ),
       }))
-      .filter(group => group.items.length > 0);
+      .filter((group) => group.items.length > 0);
   }, [level]);
 
   useEffect(() => {
@@ -160,8 +194,9 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
             <SectionHeader label={group.header} collapsed={sidebarCollapsed} />
           )}
 
-          {isMore && group.header && (
-            sidebarCollapsed ? (
+          {isMore &&
+            group.header &&
+            (sidebarCollapsed ? (
               <div className="mx-auto my-2 w-6 border-t border-white/20" />
             ) : forceMoreOpen ? (
               <SectionHeader label={group.header} collapsed={false} />
@@ -173,11 +208,10 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
                 <span>{group.header}</span>
                 <ChevronDown
                   size={14}
-                  className={`transition-transform ${moreExpanded ? 'rotate-180' : ''}`}
+                  className={`transition-transform ${moreExpanded ? "rotate-180" : ""}`}
                 />
               </button>
-            )
-          )}
+            ))}
 
           {showItems &&
             group.items.map((item) => (
@@ -209,15 +243,27 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
         {/* Drawer */}
         <aside
           className={`fixed inset-y-0 left-0 z-50 w-72 flex flex-col bg-[var(--pf-bg-nav)] text-[var(--pf-text-nav)] transition-transform duration-300 ${
-            isOpen ? 'translate-x-0' : '-translate-x-full'
+            isOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
           {/* Drawer header */}
           <div className="flex items-center justify-between px-4 py-5">
             <div className="flex flex-col leading-tight">
-              <span className="text-white font-heading font-bold text-lg tracking-tight">PRACTICE</span>
-              <span className="font-heading font-bold text-lg tracking-tight" style={{ color: 'var(--pf-accent-gold)' }}>FORGE</span>
-              <span className="text-[10px] tracking-wide mt-0.5" style={{ color: 'var(--pf-text-nav)', opacity: 0.4 }}>v0.20.Jolivet</span>
+              <span className="text-white font-heading font-bold text-lg tracking-tight">
+                PRACTICE
+              </span>
+              <span
+                className="font-heading font-bold text-lg tracking-tight"
+                style={{ color: "var(--pf-accent-gold)" }}
+              >
+                FORGE
+              </span>
+              <span
+                className="text-[10px] tracking-wide mt-0.5"
+                style={{ color: "var(--pf-text-nav)", opacity: 0.4 }}
+              >
+                v0.20.Jolivet
+              </span>
             </div>
             <button
               onClick={onClose}
@@ -230,7 +276,12 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
 
           {/* Navigation — larger touch targets, More always expanded */}
           <nav className="flex-1 flex flex-col gap-1 px-2 mt-2 overflow-y-auto">
-            {renderGroups({ sidebarCollapsed: false, onClick: onClose, mobile: true, forceMoreOpen: true })}
+            {renderGroups({
+              sidebarCollapsed: false,
+              onClick: onClose,
+              mobile: true,
+              forceMoreOpen: true,
+            })}
           </nav>
         </aside>
       </>
@@ -240,20 +291,37 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
   // Desktop: original sticky sidebar
   return (
     <aside
-      className={`flex flex-col bg-[var(--pf-bg-nav)] text-[var(--pf-text-nav)] h-screen sticky top-0 transition-all ${collapsed ? 'w-16' : 'w-56'}`}
-      style={{ transitionDuration: 'var(--pf-animation-duration)' }}
+      className={`flex flex-col bg-[var(--pf-bg-nav)] text-[var(--pf-text-nav)] h-screen sticky top-0 transition-all ${collapsed ? "w-16" : "w-56"}`}
+      style={{ transitionDuration: "var(--pf-animation-duration)" }}
     >
       {/* Brand */}
       <div className="flex items-center gap-2 px-4 py-5">
         {!collapsed && (
           <div className="flex flex-col leading-tight">
-            <span className="text-white font-heading font-bold text-lg tracking-tight">PRACTICE</span>
-            <span className="font-heading font-bold text-lg tracking-tight" style={{ color: 'var(--pf-accent-gold)' }}>FORGE</span>
-            <span className="text-[10px] tracking-wide mt-0.5" style={{ color: 'var(--pf-text-nav)', opacity: 0.4 }}>v0.20.Jolivet</span>
+            <span className="text-white font-heading font-bold text-lg tracking-tight">
+              PRACTICE
+            </span>
+            <span
+              className="font-heading font-bold text-lg tracking-tight"
+              style={{ color: "var(--pf-accent-gold)" }}
+            >
+              FORGE
+            </span>
+            <span
+              className="text-[10px] tracking-wide mt-0.5"
+              style={{ color: "var(--pf-text-nav)", opacity: 0.4 }}
+            >
+              v0.20.Jolivet
+            </span>
           </div>
         )}
         {collapsed && (
-          <span className="font-heading font-bold text-lg" style={{ color: 'var(--pf-accent-gold)' }}>PF</span>
+          <span
+            className="font-heading font-bold text-lg"
+            style={{ color: "var(--pf-accent-gold)" }}
+          >
+            PF
+          </span>
         )}
       </div>
 
@@ -266,7 +334,7 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
       <button
         onClick={() => setCollapsed(!collapsed)}
         className="flex items-center justify-center p-3 hover:bg-white/5 text-[var(--pf-text-nav)] transition-colors"
-        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
       </button>

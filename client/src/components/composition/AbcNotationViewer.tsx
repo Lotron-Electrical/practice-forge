@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from "react";
 
 interface Props {
   abc: string;
@@ -9,7 +9,7 @@ interface Props {
  * Renders ABC notation as sheet music using abcjs (loaded from CDN).
  * Falls back to showing raw ABC text if abcjs isn't available.
  */
-export function AbcNotationViewer({ abc, className = '' }: Props) {
+export function AbcNotationViewer({ abc, className = "" }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -21,8 +21,9 @@ export function AbcNotationViewer({ abc, className = '' }: Props) {
       return;
     }
 
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/abcjs@6.4.4/dist/abcjs-basic-min.js';
+    const script = document.createElement("script");
+    script.src =
+      "https://cdn.jsdelivr.net/npm/abcjs@6.4.4/dist/abcjs-basic-min.js";
     script.onload = () => setLoaded(true);
     script.onerror = () => setError(true);
     document.head.appendChild(script);
@@ -40,7 +41,7 @@ export function AbcNotationViewer({ abc, className = '' }: Props) {
       const ABCJS = (window as any).ABCJS;
       if (ABCJS?.renderAbc) {
         ABCJS.renderAbc(containerRef.current, abc, {
-          responsive: 'resize',
+          responsive: "resize",
           paddingtop: 10,
           paddingbottom: 10,
         });
@@ -53,8 +54,10 @@ export function AbcNotationViewer({ abc, className = '' }: Props) {
   if (error || !abc) {
     // Fallback: show raw ABC
     return (
-      <pre className={`text-xs font-mono p-3 rounded-pf bg-[var(--pf-bg-hover)] text-[var(--pf-text-secondary)] overflow-x-auto ${className}`}>
-        {abc || 'No notation data'}
+      <pre
+        className={`text-xs font-mono p-3 rounded-pf bg-[var(--pf-bg-hover)] text-[var(--pf-text-secondary)] overflow-x-auto ${className}`}
+      >
+        {abc || "No notation data"}
       </pre>
     );
   }

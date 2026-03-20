@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
-import { Card, CardContent } from '../ui/Card';
-import { Button } from '../ui/Button';
-import { Textarea } from '../ui/Input';
-import { DifficultyDots } from '../ui/DifficultyDots';
-import { api } from '../../api/client';
-import type { ExcerptCommunityData, CommunityNote } from '../../core/types';
-import { ThumbsUp, MessageSquare, Loader } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { Card, CardContent } from "../ui/Card";
+import { Button } from "../ui/Button";
+import { Textarea } from "../ui/Input";
+import { DifficultyDots } from "../ui/DifficultyDots";
+import { api } from "../../api/client";
+import type { ExcerptCommunityData, CommunityNote } from "../../core/types";
+import { ThumbsUp, MessageSquare, Loader } from "lucide-react";
 
 interface Props {
   excerptId: string;
@@ -15,20 +15,24 @@ export function ExcerptCommunityPanel({ excerptId }: Props) {
   const [data, setData] = useState<ExcerptCommunityData | null>(null);
   const [loading, setLoading] = useState(true);
   const [userRating, setUserRating] = useState<number | null>(null);
-  const [noteText, setNoteText] = useState('');
+  const [noteText, setNoteText] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
-      const result = await api.getExcerptCommunity(excerptId) as ExcerptCommunityData;
+      const result = (await api.getExcerptCommunity(
+        excerptId,
+      )) as ExcerptCommunityData;
       setData(result);
       setUserRating(result.user_rating ?? null);
     } catch {}
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [excerptId]);
+  useEffect(() => {
+    load();
+  }, [excerptId]);
 
   const handleRate = async (rating: number) => {
     setUserRating(rating);
@@ -43,7 +47,7 @@ export function ExcerptCommunityPanel({ excerptId }: Props) {
     setSubmitting(true);
     try {
       await api.addExcerptNote(excerptId, noteText.trim());
-      setNoteText('');
+      setNoteText("");
       load();
     } catch {}
     setSubmitting(false);
@@ -59,7 +63,10 @@ export function ExcerptCommunityPanel({ excerptId }: Props) {
   if (loading) {
     return (
       <div className="flex justify-center py-4">
-        <Loader size={16} className="animate-spin text-[var(--pf-accent-gold)]" />
+        <Loader
+          size={16}
+          className="animate-spin text-[var(--pf-accent-gold)]"
+        />
       </div>
     );
   }
@@ -72,22 +79,30 @@ export function ExcerptCommunityPanel({ excerptId }: Props) {
     <Card>
       <CardContent className="space-y-4">
         <h3 className="text-sm font-semibold flex items-center gap-2">
-          <MessageSquare size={14} style={{ color: 'var(--pf-accent-teal)' }} />
+          <MessageSquare size={14} style={{ color: "var(--pf-accent-teal)" }} />
           Community
         </h3>
 
         {/* Average difficulty */}
         <div className="flex items-center gap-3">
-          <span className="text-xs text-[var(--pf-text-secondary)]">Avg difficulty:</span>
-          <DifficultyDots value={data.avg_difficulty ? Math.round(data.avg_difficulty) : null} />
-          <span className="text-xs text-[var(--pf-text-secondary)]">({data.rating_count} ratings)</span>
+          <span className="text-xs text-[var(--pf-text-secondary)]">
+            Avg difficulty:
+          </span>
+          <DifficultyDots
+            value={data.avg_difficulty ? Math.round(data.avg_difficulty) : null}
+          />
+          <span className="text-xs text-[var(--pf-text-secondary)]">
+            ({data.rating_count} ratings)
+          </span>
         </div>
 
         {/* Rate this */}
         <div>
-          <span className="text-xs text-[var(--pf-text-secondary)] block mb-1">Rate difficulty:</span>
+          <span className="text-xs text-[var(--pf-text-secondary)] block mb-1">
+            Rate difficulty:
+          </span>
           <div className="flex gap-1">
-            {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
+            {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
               <button
                 key={n}
                 onClick={() => handleRate(n)}
@@ -95,8 +110,8 @@ export function ExcerptCommunityPanel({ excerptId }: Props) {
                 style={{
                   backgroundColor:
                     userRating !== null && n <= userRating
-                      ? 'var(--pf-accent-gold)'
-                      : 'var(--pf-border-color)',
+                      ? "var(--pf-accent-gold)"
+                      : "var(--pf-border-color)",
                 }}
                 title={`${n}/10`}
               />
@@ -106,9 +121,13 @@ export function ExcerptCommunityPanel({ excerptId }: Props) {
 
         {/* Notes */}
         <div className="space-y-2">
-          <span className="text-xs font-medium text-[var(--pf-text-secondary)]">Tips & Notes</span>
+          <span className="text-xs font-medium text-[var(--pf-text-secondary)]">
+            Tips & Notes
+          </span>
           {sortedNotes.length === 0 ? (
-            <p className="text-xs text-[var(--pf-text-secondary)]">No tips yet. Be the first to share one.</p>
+            <p className="text-xs text-[var(--pf-text-secondary)]">
+              No tips yet. Be the first to share one.
+            </p>
           ) : (
             sortedNotes.map((note: CommunityNote) => (
               <div
@@ -117,7 +136,9 @@ export function ExcerptCommunityPanel({ excerptId }: Props) {
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold">{note.display_name}</span>
+                    <span className="text-xs font-semibold">
+                      {note.display_name}
+                    </span>
                   </div>
                   <p className="text-xs mt-0.5">{note.note}</p>
                 </div>
@@ -139,7 +160,7 @@ export function ExcerptCommunityPanel({ excerptId }: Props) {
             <Textarea
               placeholder="Share a tip for this excerpt..."
               value={noteText}
-              onChange={e => setNoteText(e.target.value)}
+              onChange={(e) => setNoteText(e.target.value)}
             />
           </div>
           <Button
@@ -147,7 +168,7 @@ export function ExcerptCommunityPanel({ excerptId }: Props) {
             onClick={handleAddNote}
             disabled={!noteText.trim() || submitting}
           >
-            {submitting ? <Loader size={14} className="animate-spin" /> : 'Add'}
+            {submitting ? <Loader size={14} className="animate-spin" /> : "Add"}
           </Button>
         </div>
       </CardContent>

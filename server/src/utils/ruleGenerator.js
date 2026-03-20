@@ -4,9 +4,35 @@
  * as ABC notation — deterministic, no AI needed.
  */
 
-const NOTE_NAMES = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
-const CHROMATIC = ['C', '^C', 'D', '^D', 'E', 'F', '^F', 'G', '^G', 'A', '^A', 'B'];
-const FLAT_CHROMATIC = ['C', '_D', 'D', '_E', 'E', 'F', '_G', 'G', '_A', 'A', '_B', 'B'];
+const NOTE_NAMES = ["C", "D", "E", "F", "G", "A", "B"];
+const CHROMATIC = [
+  "C",
+  "^C",
+  "D",
+  "^D",
+  "E",
+  "F",
+  "^F",
+  "G",
+  "^G",
+  "A",
+  "^A",
+  "B",
+];
+const FLAT_CHROMATIC = [
+  "C",
+  "_D",
+  "D",
+  "_E",
+  "E",
+  "F",
+  "_G",
+  "G",
+  "_A",
+  "A",
+  "_B",
+  "B",
+];
 
 // Scale intervals in semitones from root
 const SCALE_PATTERNS = {
@@ -33,14 +59,61 @@ const ARPEGGIO_PATTERNS = {
 };
 
 const KEY_TO_SEMITONE = {
-  'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3, 'E': 4,
-  'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8, 'A': 9,
-  'A#': 10, 'Bb': 10, 'B': 11,
+  C: 0,
+  "C#": 1,
+  Db: 1,
+  D: 2,
+  "D#": 3,
+  Eb: 3,
+  E: 4,
+  F: 5,
+  "F#": 6,
+  Gb: 6,
+  G: 7,
+  "G#": 8,
+  Ab: 8,
+  A: 9,
+  "A#": 10,
+  Bb: 10,
+  B: 11,
 };
 
-// Flute range: C4 (MIDI 60) to C7 (MIDI 96)
+// Default flute range: C4 (MIDI 60) to C7 (MIDI 96)
 const FLUTE_LOW = 60;
 const FLUTE_HIGH = 96;
+
+// Instrument ranges as MIDI note numbers [low, high]
+const INSTRUMENT_RANGES = {
+  flute: [60, 96], // C4 – C7
+  clarinet: [50, 82], // D3 – Bb5
+  oboe: [58, 84], // Bb3 – C6
+  bassoon: [34, 65], // Bb1 – F4
+  saxophone: [56, 80], // Ab3 – Ab5 (alto sax concert pitch)
+  trumpet: [55, 82], // G3 – Bb5
+  "french horn": [41, 77], // F2 – F5
+  trombone: [40, 72], // E2 – C5
+  tuba: [28, 60], // E1 – C4
+  violin: [55, 96], // G3 – C7
+  viola: [48, 88], // C3 – E6
+  cello: [36, 76], // C2 – E5
+  "double bass": [28, 60], // E1 – C4
+  piano: [21, 108], // A0 – C8
+  guitar: [40, 76], // E2 – E5
+  harp: [24, 96], // C1 – C7
+  voice: [48, 79], // C3 – G5
+  percussion: [60, 84], // C4 – C6 (mallet percussion)
+};
+
+/**
+ * Get the MIDI range for an instrument, defaulting to flute
+ */
+export function getRange(instrument) {
+  if (!instrument) return { low: FLUTE_LOW, high: FLUTE_HIGH };
+  const key = instrument.toLowerCase().trim();
+  const range = INSTRUMENT_RANGES[key];
+  if (range) return { low: range[0], high: range[1] };
+  return { low: FLUTE_LOW, high: FLUTE_HIGH };
+}
 
 function semitoneToAbc(semitone) {
   const useSharps = true; // default to sharps
@@ -55,8 +128,12 @@ function semitoneToAbc(semitone) {
   // C6 = c', D6 = d', ...
   // C3 = C,, D3 = D,,
 
-  let base = noteName.replace('^', '').replace('_', '');
-  const accidental = noteName.startsWith('^') ? '^' : noteName.startsWith('_') ? '_' : '';
+  let base = noteName.replace("^", "").replace("_", "");
+  const accidental = noteName.startsWith("^")
+    ? "^"
+    : noteName.startsWith("_")
+      ? "_"
+      : "";
 
   if (octave >= 5) {
     base = base.toLowerCase();
@@ -70,20 +147,27 @@ function semitoneToAbc(semitone) {
   }
 }
 
-function buildScale(rootSemitone, pattern, octaves = 2, descendingPattern = null) {
+function buildScale(
+  rootSemitone,
+  pattern,
+  octaves = 2,
+  descendingPattern = null,
+  rangeLow = FLUTE_LOW,
+  rangeHigh = FLUTE_HIGH,
+) {
   const notes = [];
   // Ascending
   for (let oct = 0; oct < octaves; oct++) {
     for (const interval of pattern) {
       const semitone = rootSemitone + oct * 12 + interval;
-      if (semitone >= FLUTE_LOW && semitone <= FLUTE_HIGH) {
+      if (semitone >= rangeLow && semitone <= rangeHigh) {
         notes.push(semitone);
       }
     }
   }
   // Top note
   const top = rootSemitone + octaves * 12;
-  if (top >= FLUTE_LOW && top <= FLUTE_HIGH) notes.push(top);
+  if (top >= rangeLow && top <= rangeHigh) notes.push(top);
 
   // Descending — use separate pattern if provided (e.g. melodic minor descends as natural minor)
   if (descendingPattern) {
@@ -92,7 +176,7 @@ function buildScale(rootSemitone, pattern, octaves = 2, descendingPattern = null
       const octNotes = [];
       for (const interval of descendingPattern) {
         const semitone = rootSemitone + oct * 12 + interval;
-        if (semitone >= FLUTE_LOW && semitone <= FLUTE_HIGH) {
+        if (semitone >= rangeLow && semitone <= rangeHigh) {
           octNotes.push(semitone);
         }
       }
@@ -110,29 +194,41 @@ function buildScale(rootSemitone, pattern, octaves = 2, descendingPattern = null
   return [...notes, ...desc];
 }
 
-function buildArpeggio(rootSemitone, pattern, octaves = 2) {
+function buildArpeggio(
+  rootSemitone,
+  pattern,
+  octaves = 2,
+  rangeLow = FLUTE_LOW,
+  rangeHigh = FLUTE_HIGH,
+) {
   const notes = [];
   for (let oct = 0; oct < octaves; oct++) {
     for (const interval of pattern) {
       const semitone = rootSemitone + oct * 12 + interval;
-      if (semitone >= FLUTE_LOW && semitone <= FLUTE_HIGH) {
+      if (semitone >= rangeLow && semitone <= rangeHigh) {
         notes.push(semitone);
       }
     }
   }
   const top = rootSemitone + octaves * 12;
-  if (top >= FLUTE_LOW && top <= FLUTE_HIGH) notes.push(top);
+  if (top >= rangeLow && top <= rangeHigh) notes.push(top);
   const desc = [...notes].reverse().slice(1);
   return [...notes, ...desc];
 }
 
-function buildScaleInThirds(rootSemitone, scalePattern, octaves = 2) {
+function buildScaleInThirds(
+  rootSemitone,
+  scalePattern,
+  octaves = 2,
+  rangeLow = FLUTE_LOW,
+  rangeHigh = FLUTE_HIGH,
+) {
   // Build full scale
   const fullScale = [];
   for (let oct = 0; oct < octaves + 1; oct++) {
     for (const interval of scalePattern) {
       const s = rootSemitone + oct * 12 + interval;
-      if (s >= FLUTE_LOW && s <= FLUTE_HIGH) fullScale.push(s);
+      if (s >= rangeLow && s <= rangeHigh) fullScale.push(s);
     }
   }
   // Thirds: alternate scale[i], scale[i+2]
@@ -143,12 +239,18 @@ function buildScaleInThirds(rootSemitone, scalePattern, octaves = 2) {
   return notes;
 }
 
-function buildIntervalDrill(rootSemitone, intervalSemitones, scalePattern) {
+function buildIntervalDrill(
+  rootSemitone,
+  intervalSemitones,
+  scalePattern,
+  rangeLow = FLUTE_LOW,
+  rangeHigh = FLUTE_HIGH,
+) {
   const fullScale = [];
   for (let oct = 0; oct < 3; oct++) {
     for (const int of scalePattern) {
       const s = rootSemitone + oct * 12 + int;
-      if (s >= FLUTE_LOW && s <= FLUTE_HIGH) fullScale.push(s);
+      if (s >= rangeLow && s <= rangeHigh) fullScale.push(s);
     }
   }
   // Play each note then jump up by the interval
@@ -156,7 +258,7 @@ function buildIntervalDrill(rootSemitone, intervalSemitones, scalePattern) {
   for (const note of fullScale) {
     notes.push(note);
     const target = note + intervalSemitones;
-    if (target <= FLUTE_HIGH) notes.push(target);
+    if (target <= rangeHigh) notes.push(target);
     notes.push(note); // return
   }
   return notes;
@@ -164,20 +266,20 @@ function buildIntervalDrill(rootSemitone, intervalSemitones, scalePattern) {
 
 function notesToAbc(semitones, options = {}) {
   const {
-    title = 'Generated Exercise',
-    key = 'C',
-    timeSignature = '4/4',
+    title = "Generated Exercise",
+    key = "C",
+    timeSignature = "4/4",
     tempo = 80,
-    noteDuration = '', // empty = quarter note in ABC
+    noteDuration = "", // empty = quarter note in ABC
   } = options;
 
-  const abcNotes = semitones.map(s => semitoneToAbc(s) + noteDuration);
+  const abcNotes = semitones.map((s) => semitoneToAbc(s) + noteDuration);
 
   // Group into bars (4 notes per bar for 4/4)
-  const beatsPerBar = parseInt(timeSignature.split('/')[0]) || 4;
+  const beatsPerBar = parseInt(timeSignature.split("/")[0]) || 4;
   const bars = [];
   for (let i = 0; i < abcNotes.length; i += beatsPerBar) {
-    bars.push(abcNotes.slice(i, i + beatsPerBar).join(' '));
+    bars.push(abcNotes.slice(i, i + beatsPerBar).join(" "));
   }
 
   const abc = [
@@ -187,8 +289,8 @@ function notesToAbc(semitones, options = {}) {
     `L:1/4`,
     `Q:1/4=${tempo}`,
     `K:${key}`,
-    bars.join(' | ') + ' |]',
-  ].join('\n');
+    bars.join(" | ") + " |]",
+  ].join("\n");
 
   return abc;
 }
@@ -203,29 +305,55 @@ function notesToAbc(semitones, options = {}) {
  * @param {string} params.pattern - "straight", "thirds", "broken"
  */
 export function generateScale(params) {
-  const { key = 'C', scaleType = 'major', octaves = 2, tempo = 80, pattern = 'straight' } = params;
-  const rootSemitone = FLUTE_LOW + (KEY_TO_SEMITONE[key] ?? 0);
+  const {
+    key = "C",
+    scaleType = "major",
+    octaves = 2,
+    tempo = 80,
+    pattern = "straight",
+    instrument,
+  } = params;
+  const range = getRange(instrument);
+  const rootSemitone = range.low + (KEY_TO_SEMITONE[key] ?? 0);
   const scalePattern = SCALE_PATTERNS[scaleType] || SCALE_PATTERNS.major;
 
   // Melodic minor descends as natural minor (lowered 6th and 7th)
-  const descendingPattern = scaleType === 'melodic_minor' ? SCALE_PATTERNS.minor : null;
+  const descendingPattern =
+    scaleType === "melodic_minor" ? SCALE_PATTERNS.minor : null;
 
   let notes;
-  if (pattern === 'thirds') {
-    notes = buildScaleInThirds(rootSemitone, scalePattern, octaves);
+  if (pattern === "thirds") {
+    notes = buildScaleInThirds(
+      rootSemitone,
+      scalePattern,
+      octaves,
+      range.low,
+      range.high,
+    );
   } else {
-    notes = buildScale(rootSemitone, scalePattern, octaves, descendingPattern);
+    notes = buildScale(
+      rootSemitone,
+      scalePattern,
+      octaves,
+      descendingPattern,
+      range.low,
+      range.high,
+    );
   }
 
-  const title = `${key} ${scaleType} scale${pattern !== 'straight' ? ` in ${pattern}` : ''} (${octaves} oct)`;
+  const title = `${key} ${scaleType} scale${pattern !== "straight" ? ` in ${pattern}` : ""} (${octaves} oct)`;
   return {
     title,
     abc: notesToAbc(notes, { title, key, tempo }),
-    description: `${key} ${scaleType} scale, ${octaves} octave${octaves > 1 ? 's' : ''}, ${pattern} pattern at ${tempo} BPM`,
+    description: `${key} ${scaleType} scale, ${octaves} octave${octaves > 1 ? "s" : ""}, ${pattern} pattern at ${tempo} BPM`,
     key,
-    difficulty: Math.min(10, octaves + (scaleType === 'chromatic' ? 3 : scaleType.includes('minor') ? 2 : 1)),
-    category_hint: 'Scales',
-    tags: ['scales', scaleType, key.toLowerCase(), `${octaves}-octave`],
+    difficulty: Math.min(
+      10,
+      octaves +
+        (scaleType === "chromatic" ? 3 : scaleType.includes("minor") ? 2 : 1),
+    ),
+    category_hint: "Scales",
+    tags: ["scales", scaleType, key.toLowerCase(), `${octaves}-octave`],
   };
 }
 
@@ -233,11 +361,24 @@ export function generateScale(params) {
  * Generate an arpeggio exercise
  */
 export function generateArpeggio(params) {
-  const { key = 'C', chordType = 'major', octaves = 2, tempo = 72 } = params;
-  const rootSemitone = FLUTE_LOW + (KEY_TO_SEMITONE[key] ?? 0);
+  const {
+    key = "C",
+    chordType = "major",
+    octaves = 2,
+    tempo = 72,
+    instrument,
+  } = params;
+  const range = getRange(instrument);
+  const rootSemitone = range.low + (KEY_TO_SEMITONE[key] ?? 0);
   const arpPattern = ARPEGGIO_PATTERNS[chordType] || ARPEGGIO_PATTERNS.major;
 
-  const notes = buildArpeggio(rootSemitone, arpPattern, octaves);
+  const notes = buildArpeggio(
+    rootSemitone,
+    arpPattern,
+    octaves,
+    range.low,
+    range.high,
+  );
   const title = `${key} ${chordType} arpeggio (${octaves} oct)`;
 
   return {
@@ -245,9 +386,9 @@ export function generateArpeggio(params) {
     abc: notesToAbc(notes, { title, key, tempo }),
     description: `${key} ${chordType} arpeggio, ${octaves} octaves at ${tempo} BPM`,
     key,
-    difficulty: Math.min(10, octaves + (chordType.includes('7') ? 3 : 2)),
-    category_hint: 'Arpeggios',
-    tags: ['arpeggios', chordType, key.toLowerCase()],
+    difficulty: Math.min(10, octaves + (chordType.includes("7") ? 3 : 2)),
+    category_hint: "Arpeggios",
+    tags: ["arpeggios", chordType, key.toLowerCase()],
   };
 }
 
@@ -255,14 +396,28 @@ export function generateArpeggio(params) {
  * Generate an interval drill
  */
 export function generateIntervalDrill(params) {
-  const { key = 'C', interval = 'octave', tempo = 60 } = params;
+  const { key = "C", interval = "octave", tempo = 60, instrument } = params;
   const intervalMap = {
-    'third': 4, 'fourth': 5, 'fifth': 7, 'sixth': 9, 'octave': 12,
-    'minor_third': 3, 'tritone': 6, 'minor_sixth': 8, 'minor_seventh': 10,
+    third: 4,
+    fourth: 5,
+    fifth: 7,
+    sixth: 9,
+    octave: 12,
+    minor_third: 3,
+    tritone: 6,
+    minor_sixth: 8,
+    minor_seventh: 10,
   };
   const semitones = intervalMap[interval] || 12;
-  const rootSemitone = FLUTE_LOW + (KEY_TO_SEMITONE[key] ?? 0);
-  const notes = buildIntervalDrill(rootSemitone, semitones, SCALE_PATTERNS.major);
+  const range = getRange(instrument);
+  const rootSemitone = range.low + (KEY_TO_SEMITONE[key] ?? 0);
+  const notes = buildIntervalDrill(
+    rootSemitone,
+    semitones,
+    SCALE_PATTERNS.major,
+    range.low,
+    range.high,
+  );
 
   const title = `${interval} interval drill in ${key}`;
   return {
@@ -271,8 +426,8 @@ export function generateIntervalDrill(params) {
     description: `${interval} intervals ascending through ${key} major at ${tempo} BPM`,
     key,
     difficulty: Math.min(10, Math.ceil(semitones / 3) + 2),
-    category_hint: 'Intervals',
-    tags: ['intervals', interval, key.toLowerCase()],
+    category_hint: "Intervals",
+    tags: ["intervals", interval, key.toLowerCase()],
   };
 }
 
@@ -280,30 +435,50 @@ export function generateIntervalDrill(params) {
  * Generate an articulation exercise
  */
 export function generateArticulationDrill(params) {
-  const { key = 'C', articulation = 'staccato', tempo = 100 } = params;
-  const rootSemitone = FLUTE_LOW + (KEY_TO_SEMITONE[key] ?? 0);
-  const scaleNotes = buildScale(rootSemitone, SCALE_PATTERNS.major, 1);
+  const {
+    key = "C",
+    articulation = "staccato",
+    tempo = 100,
+    instrument,
+  } = params;
+  const range = getRange(instrument);
+  const rootSemitone = range.low + (KEY_TO_SEMITONE[key] ?? 0);
+  const scaleNotes = buildScale(
+    rootSemitone,
+    SCALE_PATTERNS.major,
+    1,
+    null,
+    range.low,
+    range.high,
+  );
 
   // For articulation, we repeat each note with the articulation pattern
   const abcArticulations = {
-    staccato: '.', legato: '(', accent: '!accent!', tenuto: '!tenuto!',
-    double_tongue: '', // handled in description
-    triple_tongue: '',
+    staccato: ".",
+    legato: "(",
+    accent: "!accent!",
+    tenuto: "!tenuto!",
+    double_tongue: "", // handled in description
+    triple_tongue: "",
   };
 
-  const artMark = abcArticulations[articulation] || '';
-  const abcNotes = scaleNotes.map(s => artMark + semitoneToAbc(s));
+  const artMark = abcArticulations[articulation] || "";
+  const abcNotes = scaleNotes.map((s) => artMark + semitoneToAbc(s));
 
   const bars = [];
   for (let i = 0; i < abcNotes.length; i += 4) {
-    bars.push(abcNotes.slice(i, i + 4).join(' '));
+    bars.push(abcNotes.slice(i, i + 4).join(" "));
   }
 
   const abc = [
-    `X:1`, `T:${articulation} drill in ${key}`,
-    `M:4/4`, `L:1/8`, `Q:1/4=${tempo}`, `K:${key}`,
-    bars.join(' | ') + ' |]',
-  ].join('\n');
+    `X:1`,
+    `T:${articulation} drill in ${key}`,
+    `M:4/4`,
+    `L:1/8`,
+    `Q:1/4=${tempo}`,
+    `K:${key}`,
+    bars.join(" | ") + " |]",
+  ].join("\n");
 
   const title = `${articulation} drill in ${key}`;
   return {
@@ -311,9 +486,9 @@ export function generateArticulationDrill(params) {
     abc,
     description: `${articulation} exercise on ${key} major scale at ${tempo} BPM. Focus on evenness and clarity.`,
     key,
-    difficulty: Math.min(10, articulation.includes('tongue') ? 6 : 3),
-    category_hint: 'Articulation',
-    tags: ['articulation', articulation, key.toLowerCase()],
+    difficulty: Math.min(10, articulation.includes("tongue") ? 6 : 3),
+    category_hint: "Articulation",
+    tags: ["articulation", articulation, key.toLowerCase()],
   };
 }
 
@@ -322,24 +497,40 @@ export function generateArticulationDrill(params) {
  * Returns the best matching generator result or null if can't match
  */
 export function generateFromDemand(demand) {
-  const desc = (demand.description || '').toLowerCase();
-  const key = demand.key || extractKey(desc) || 'C';
+  const desc = (demand.description || "").toLowerCase();
+  const key = demand.key || extractKey(desc) || "C";
 
   // Try to match demand description to generator
-  if (desc.includes('scale') && desc.includes('third')) {
-    return generateScale({ key, scaleType: extractScaleType(desc), pattern: 'thirds' });
+  if (desc.includes("scale") && desc.includes("third")) {
+    return generateScale({
+      key,
+      scaleType: extractScaleType(desc),
+      pattern: "thirds",
+    });
   }
-  if (desc.includes('scale')) {
+  if (desc.includes("scale")) {
     return generateScale({ key, scaleType: extractScaleType(desc) });
   }
-  if (desc.includes('arpeggio')) {
+  if (desc.includes("arpeggio")) {
     return generateArpeggio({ key, chordType: extractChordType(desc) });
   }
-  if (desc.includes('interval') || desc.includes('leap') || desc.includes('octave jump')) {
+  if (
+    desc.includes("interval") ||
+    desc.includes("leap") ||
+    desc.includes("octave jump")
+  ) {
     return generateIntervalDrill({ key, interval: extractInterval(desc) });
   }
-  if (desc.includes('staccato') || desc.includes('legato') || desc.includes('tongu') || desc.includes('articulation')) {
-    return generateArticulationDrill({ key, articulation: extractArticulation(desc) });
+  if (
+    desc.includes("staccato") ||
+    desc.includes("legato") ||
+    desc.includes("tongu") ||
+    desc.includes("articulation")
+  ) {
+    return generateArticulationDrill({
+      key,
+      articulation: extractArticulation(desc),
+    });
   }
 
   return null;
@@ -348,47 +539,70 @@ export function generateFromDemand(demand) {
 function extractKey(desc) {
   // Match key names as standalone tokens (e.g. "in G major", "Bb minor", "key of C#")
   // Check sharps/flats first, then naturals — use word boundary matching
-  const keys = ['C#', 'Db', 'D#', 'Eb', 'F#', 'Gb', 'G#', 'Ab', 'A#', 'Bb', 'C', 'D', 'E', 'F', 'G', 'A', 'B'];
+  const keys = [
+    "C#",
+    "Db",
+    "D#",
+    "Eb",
+    "F#",
+    "Gb",
+    "G#",
+    "Ab",
+    "A#",
+    "Bb",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "A",
+    "B",
+  ];
   for (const k of keys) {
     // Match as standalone: preceded by space/start, followed by space/end or "major"/"minor"/etc
-    const pattern = new RegExp(`(?:^|\\s|in\\s)${k.replace('#', '\\#')}(?:\\s|$|\\b)`, 'i');
+    const pattern = new RegExp(
+      `(?:^|\\s|in\\s)${k.replace("#", "\\#")}(?:\\s|$|\\b)`,
+      "i",
+    );
     if (pattern.test(desc)) return k;
   }
   return null;
 }
 
 function extractScaleType(desc) {
-  if (desc.includes('chromatic')) return 'chromatic';
-  if (desc.includes('harmonic minor')) return 'harmonic_minor';
-  if (desc.includes('melodic minor')) return 'melodic_minor';
-  if (desc.includes('whole tone')) return 'whole_tone';
-  if (desc.includes('minor')) return 'minor';
-  if (desc.includes('dorian')) return 'dorian';
-  if (desc.includes('pentatonic')) return 'pentatonic';
-  return 'major';
+  if (desc.includes("chromatic")) return "chromatic";
+  if (desc.includes("harmonic minor")) return "harmonic_minor";
+  if (desc.includes("melodic minor")) return "melodic_minor";
+  if (desc.includes("whole tone")) return "whole_tone";
+  if (desc.includes("minor")) return "minor";
+  if (desc.includes("dorian")) return "dorian";
+  if (desc.includes("pentatonic")) return "pentatonic";
+  return "major";
 }
 
 function extractChordType(desc) {
-  if (desc.includes('diminish')) return 'diminished';
-  if (desc.includes('augment')) return 'augmented';
-  if (desc.includes('dominant') || desc.includes('dom7')) return 'dominant7';
-  if (desc.includes('minor')) return 'minor';
-  return 'major';
+  if (desc.includes("diminish")) return "diminished";
+  if (desc.includes("augment")) return "augmented";
+  if (desc.includes("dominant") || desc.includes("dom7")) return "dominant7";
+  if (desc.includes("minor")) return "minor";
+  return "major";
 }
 
 function extractInterval(desc) {
-  if (desc.includes('third')) return 'third';
-  if (desc.includes('fourth')) return 'fourth';
-  if (desc.includes('fifth')) return 'fifth';
-  if (desc.includes('sixth')) return 'sixth';
-  if (desc.includes('octave')) return 'octave';
-  return 'octave';
+  if (desc.includes("third")) return "third";
+  if (desc.includes("fourth")) return "fourth";
+  if (desc.includes("fifth")) return "fifth";
+  if (desc.includes("sixth")) return "sixth";
+  if (desc.includes("octave")) return "octave";
+  return "octave";
 }
 
 function extractArticulation(desc) {
-  if (desc.includes('double tongu') || desc.includes('double-tongu')) return 'double_tongue';
-  if (desc.includes('triple tongu') || desc.includes('triple-tongu')) return 'triple_tongue';
-  if (desc.includes('staccato')) return 'staccato';
-  if (desc.includes('legato')) return 'legato';
-  return 'staccato';
+  if (desc.includes("double tongu") || desc.includes("double-tongu"))
+    return "double_tongue";
+  if (desc.includes("triple tongu") || desc.includes("triple-tongu"))
+    return "triple_tongue";
+  if (desc.includes("staccato")) return "staccato";
+  if (desc.includes("legato")) return "legato";
+  return "staccato";
 }

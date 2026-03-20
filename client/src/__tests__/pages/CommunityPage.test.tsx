@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render } from '../../test/helpers';
-import { screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { CommunityPage } from '../../pages/CommunityPage';
-import { api } from '../../api/client';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render } from "../../test/helpers";
+import { screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { CommunityPage } from "../../pages/CommunityPage";
+import { api } from "../../api/client";
 
 const mockApi = vi.mocked(api);
 
-describe('CommunityPage', () => {
+describe("CommunityPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockApi.getFeed.mockResolvedValue([]);
@@ -16,95 +16,109 @@ describe('CommunityPage', () => {
     mockApi.searchUsers.mockResolvedValue([]);
   });
 
-  it('renders without crashing', () => {
+  it("renders without crashing", () => {
     render(<CommunityPage />);
-    expect(screen.getByText('Community')).toBeInTheDocument();
+    expect(screen.getByText("Community")).toBeInTheDocument();
   });
 
-  it('shows all tab buttons', () => {
+  it("shows all tab buttons", () => {
     render(<CommunityPage />);
-    expect(screen.getByText('Feed')).toBeInTheDocument();
-    expect(screen.getByText('Challenges')).toBeInTheDocument();
-    expect(screen.getByText('People')).toBeInTheDocument();
-    expect(screen.getByText('Themes')).toBeInTheDocument();
+    expect(screen.getByText("Feed")).toBeInTheDocument();
+    expect(screen.getByText("Challenges")).toBeInTheDocument();
+    expect(screen.getByText("People")).toBeInTheDocument();
+    expect(screen.getByText("Themes")).toBeInTheDocument();
   });
 
-  it('shows empty feed message', async () => {
+  it("shows empty feed message", async () => {
     render(<CommunityPage />);
     await waitFor(() => {
       expect(screen.getByText(/Follow other musicians/)).toBeInTheDocument();
     });
   });
 
-  it('shows Find People button on empty feed', async () => {
+  it("shows Find People button on empty feed", async () => {
     render(<CommunityPage />);
     await waitFor(() => {
-      expect(screen.getByText('Find People')).toBeInTheDocument();
+      expect(screen.getByText("Find People")).toBeInTheDocument();
     });
   });
 
-  it('shows feed events when available', async () => {
+  it("shows feed events when available", async () => {
     mockApi.getFeed.mockResolvedValue([
-      { id: '1', user_id: 'u1', event_type: 'session_completed', title: 'Completed a session', description: '60 min session', data: {}, display_name: 'Alice', instrument: 'violin', created_at: new Date().toISOString() },
+      {
+        id: "1",
+        user_id: "u1",
+        event_type: "session_completed",
+        title: "Completed a session",
+        description: "60 min session",
+        data: {},
+        display_name: "Alice",
+        instrument: "violin",
+        created_at: new Date().toISOString(),
+      },
     ] as any);
     render(<CommunityPage />);
     await waitFor(() => {
-      expect(screen.getByText('Alice')).toBeInTheDocument();
-      expect(screen.getByText('Completed a session')).toBeInTheDocument();
+      expect(screen.getByText("Alice")).toBeInTheDocument();
+      expect(screen.getByText("Completed a session")).toBeInTheDocument();
     });
   });
 
-  it('switches to challenges tab', async () => {
+  it("switches to challenges tab", async () => {
     const user = userEvent.setup();
     render(<CommunityPage />);
-    await user.click(screen.getByText('Challenges'));
+    await user.click(screen.getByText("Challenges"));
     await waitFor(() => {
-      expect(screen.getByText('Create Challenge')).toBeInTheDocument();
+      expect(screen.getByText("Create Challenge")).toBeInTheDocument();
     });
   });
 
-  it('shows empty challenges message', async () => {
+  it("shows empty challenges message", async () => {
     const user = userEvent.setup();
     render(<CommunityPage />);
-    await user.click(screen.getByText('Challenges'));
+    await user.click(screen.getByText("Challenges"));
     await waitFor(() => {
       expect(screen.getByText(/No challenges yet/)).toBeInTheDocument();
     });
   });
 
-  it('switches to people tab and shows search', async () => {
+  it("switches to people tab and shows search", async () => {
     const user = userEvent.setup();
     render(<CommunityPage />);
-    await user.click(screen.getByText('People'));
+    await user.click(screen.getByText("People"));
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('Search musicians...')).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText("Search musicians..."),
+      ).toBeInTheDocument();
     });
   });
 
-  it('shows following section on people tab', async () => {
+  it("shows following section on people tab", async () => {
     const user = userEvent.setup();
     render(<CommunityPage />);
-    await user.click(screen.getByText('People'));
+    await user.click(screen.getByText("People"));
     await waitFor(() => {
       expect(screen.getByText(/Following/)).toBeInTheDocument();
     });
   });
 
-  it('shows not following anyone message', async () => {
+  it("shows not following anyone message", async () => {
     const user = userEvent.setup();
     render(<CommunityPage />);
-    await user.click(screen.getByText('People'));
+    await user.click(screen.getByText("People"));
     await waitFor(() => {
-      expect(screen.getByText('You are not following anyone yet.')).toBeInTheDocument();
+      expect(
+        screen.getByText("You are not following anyone yet."),
+      ).toBeInTheDocument();
     });
   });
 
-  it('switches to themes tab', async () => {
+  it("switches to themes tab", async () => {
     const user = userEvent.setup();
     render(<CommunityPage />);
-    await user.click(screen.getByText('Themes'));
+    await user.click(screen.getByText("Themes"));
     await waitFor(() => {
-      expect(screen.getByTestId('theme-gallery')).toBeInTheDocument();
+      expect(screen.getByTestId("theme-gallery")).toBeInTheDocument();
     });
   });
 });

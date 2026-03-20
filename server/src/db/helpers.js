@@ -1,4 +1,4 @@
-import { getPool } from './connection.js';
+import { getPool } from "./connection.js";
 
 /** Run a SELECT query, return array of row objects */
 export async function queryAll(sql, params = []) {

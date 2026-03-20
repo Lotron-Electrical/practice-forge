@@ -3,7 +3,7 @@
  * Checks user's subscription tier and enforces feature/usage limits.
  */
 
-import { queryOne, queryAll } from '../db/helpers.js';
+import { queryOne, queryAll } from "../db/helpers.js";
 
 // Tier definitions — limits per tier
 const TIER_LIMITS = {
@@ -55,9 +55,9 @@ export function getTierLimits(tier) {
 export async function getUserTier(userId) {
   const sub = await queryOne(
     `SELECT tier, status FROM subscriptions WHERE user_id = $1`,
-    [userId]
+    [userId],
   );
-  if (!sub || sub.status === 'cancelled') return 'free';
+  if (!sub || sub.status === "cancelled") return "free";
   return sub.tier;
 }
 
@@ -69,9 +69,9 @@ export async function getAiUsageThisMonth(userId) {
     `SELECT COUNT(*) as count FROM ai_usage
      WHERE user_id = $1
      AND created_at >= date_trunc('month', NOW())`,
-    [userId]
+    [userId],
   );
-  return parseInt(row?.count || '0', 10);
+  return parseInt(row?.count || "0", 10);
 }
 
 /**
@@ -84,14 +84,14 @@ export function requireTier(...allowedTiers) {
       req.userTier = tier;
       if (allowedTiers.includes(tier)) return next();
       return res.status(403).json({
-        error: 'upgrade_required',
+        error: "upgrade_required",
         message: `This feature requires a ${allowedTiers[0]} plan or higher.`,
         current_tier: tier,
         required_tiers: allowedTiers,
       });
     } catch (err) {
       // If subscriptions table doesn't exist yet, allow through as free
-      req.userTier = 'free';
+      req.userTier = "free";
       next();
     }
   };
@@ -108,22 +108,22 @@ export async function enforceAiLimit(req, res, next) {
 
     if (limits.ai_generations_per_month === 0) {
       return res.status(403).json({
-        error: 'upgrade_required',
-        message: 'AI exercise generation requires a Solo plan or higher.',
+        error: "upgrade_required",
+        message: "AI exercise generation requires a Solo plan or higher.",
         current_tier: tier,
-        required_tiers: ['solo', 'pro', 'teacher'],
+        required_tiers: ["solo", "pro", "teacher"],
       });
     }
 
     const used = await getAiUsageThisMonth(req.user.id);
     if (used >= limits.ai_generations_per_month) {
       return res.status(403).json({
-        error: 'limit_reached',
+        error: "limit_reached",
         message: `You've used all ${limits.ai_generations_per_month} AI generations this month.`,
         current_tier: tier,
         used,
         limit: limits.ai_generations_per_month,
-        upgrade_tier: tier === 'solo' ? 'pro' : null,
+        upgrade_tier: tier === "solo" ? "pro" : null,
       });
     }
 
@@ -150,11 +150,11 @@ export function enforceCountLimit(resource, countQuery) {
       if (limit === Infinity) return next();
 
       const row = await queryOne(countQuery, [req.user.id]);
-      const count = parseInt(row?.count || '0', 10);
+      const count = parseInt(row?.count || "0", 10);
 
       if (count >= limit) {
         return res.status(403).json({
-          error: 'limit_reached',
+          error: "limit_reached",
           message: `Free plan allows up to ${limit} ${resource}. Upgrade to add more.`,
           current_tier: tier,
           count,
@@ -183,13 +183,13 @@ export async function enforceSessionLimit(req, res, next) {
     const row = await queryOne(
       `SELECT COUNT(*) as count FROM practice_sessions
        WHERE created_at >= date_trunc('week', NOW())`,
-      []
+      [],
     );
-    const count = parseInt(row?.count || '0', 10);
+    const count = parseInt(row?.count || "0", 10);
 
     if (count >= limits.sessions_per_week) {
       return res.status(403).json({
-        error: 'limit_reached',
+        error: "limit_reached",
         message: `Free plan allows ${limits.sessions_per_week} sessions per week. Upgrade for unlimited sessions.`,
         current_tier: tier,
         count,

@@ -1,7 +1,7 @@
-import { Lock, ArrowRight } from 'lucide-react';
-import { Button } from '../ui/Button';
-import { api } from '../../api/client';
-import type { SubscriptionTier } from '../../core/types';
+import { Lock, ArrowRight } from "lucide-react";
+import { Button } from "../ui/Button";
+import { api } from "../../api/client";
+import type { SubscriptionTier } from "../../core/types";
 
 interface UpgradePromptProps {
   message: string;
@@ -11,29 +11,34 @@ interface UpgradePromptProps {
 }
 
 const TIER_NAMES: Record<SubscriptionTier, string> = {
-  free: 'Free',
-  solo: 'Solo',
-  pro: 'Pro',
-  teacher: 'Teacher Studio',
+  free: "Free",
+  solo: "Solo",
+  pro: "Pro",
+  teacher: "Teacher Studio",
 };
 
 const TIER_PRICES: Record<SubscriptionTier, string> = {
-  free: '$0',
-  solo: '$9/mo',
-  pro: '$16/mo',
-  teacher: '$49/mo',
+  free: "$0",
+  solo: "$9/mo",
+  pro: "$16/mo",
+  teacher: "$49/mo",
 };
 
-export function UpgradePrompt({ message, currentTier, requiredTiers, onDismiss }: UpgradePromptProps) {
-  const suggestedTier = requiredTiers?.[0] || 'solo';
+export function UpgradePrompt({
+  message,
+  currentTier,
+  requiredTiers,
+  onDismiss,
+}: UpgradePromptProps) {
+  const suggestedTier = requiredTiers?.[0] || "solo";
 
   const handleUpgrade = async () => {
     try {
-      const { url } = await api.createCheckout(suggestedTier, 'monthly');
+      const { url } = await api.createCheckout(suggestedTier, "monthly");
       window.location.href = url;
     } catch {
       // Stripe not configured — redirect to pricing page
-      window.location.href = '/pricing';
+      window.location.href = "/pricing";
     }
   };
 
@@ -43,9 +48,13 @@ export function UpgradePrompt({ message, currentTier, requiredTiers, onDismiss }
         <Lock size={20} className="text-[var(--pf-accent-gold)]" />
       </div>
       <div className="text-center">
-        <p className="font-medium text-[var(--pf-text-primary)] mb-1">{message}</p>
+        <p className="font-medium text-[var(--pf-text-primary)] mb-1">
+          {message}
+        </p>
         <p className="text-sm text-[var(--pf-text-secondary)]">
-          You're on the {TIER_NAMES[currentTier]} plan. Upgrade to {TIER_NAMES[suggestedTier]} ({TIER_PRICES[suggestedTier]}) to unlock this feature.
+          You're on the {TIER_NAMES[currentTier]} plan. Upgrade to{" "}
+          {TIER_NAMES[suggestedTier]} ({TIER_PRICES[suggestedTier]}) to unlock
+          this feature.
         </p>
       </div>
       <div className="flex gap-3">

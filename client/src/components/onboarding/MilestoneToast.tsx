@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Music, Flame, Trophy, Star } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { Music, Flame, Trophy, Star, Clock, CheckCircle } from "lucide-react";
 
 interface Milestone {
   key: string;
@@ -10,15 +10,81 @@ interface Milestone {
 }
 
 const MILESTONES: Milestone[] = [
-  { key: 'first-piece', icon: Music, color: 'var(--pf-accent-gold)', title: 'First piece added!', message: 'Your repertoire has begun. Now try starting a practice session.' },
-  { key: 'first-session', icon: Star, color: 'var(--pf-accent-teal)', title: 'First session complete!', message: 'Great start. Come back tomorrow to build your streak.' },
-  { key: 'streak-3', icon: Flame, color: 'var(--pf-accent-gold)', title: '3-day streak!', message: "Consistency is everything. You're building a habit." },
-  { key: 'streak-7', icon: Trophy, color: 'var(--pf-accent-lavender)', title: '7-day streak!', message: "A full week of practice. That's serious commitment." },
+  {
+    key: "first-piece",
+    icon: Music,
+    color: "var(--pf-accent-gold)",
+    title: "First piece added!",
+    message: "Your repertoire has begun. Now try starting a practice session.",
+  },
+  {
+    key: "first-session",
+    icon: Star,
+    color: "var(--pf-accent-teal)",
+    title: "First session complete!",
+    message: "Great start. Come back tomorrow to build your streak.",
+  },
+  {
+    key: "streak-3",
+    icon: Flame,
+    color: "var(--pf-accent-gold)",
+    title: "3-day streak!",
+    message: "Consistency is everything. You're building a habit.",
+  },
+  {
+    key: "streak-7",
+    icon: Trophy,
+    color: "var(--pf-accent-lavender)",
+    title: "7-day streak!",
+    message: "A full week of practice. That's serious commitment.",
+  },
+  {
+    key: "streak-14",
+    icon: Flame,
+    color: "var(--pf-accent-teal)",
+    title: "14-day streak!",
+    message: "Two solid weeks. This is becoming a real habit.",
+  },
+  {
+    key: "streak-30",
+    icon: Trophy,
+    color: "var(--pf-status-ready)",
+    title: "30-day streak!",
+    message: "A full month of daily practice. Outstanding dedication.",
+  },
+  {
+    key: "first-solid",
+    icon: CheckCircle,
+    color: "var(--pf-status-ready)",
+    title: "First piece marked solid!",
+    message: "You've got one locked in. Keep building your repertoire.",
+  },
+  {
+    key: "hours-10",
+    icon: Clock,
+    color: "var(--pf-accent-gold)",
+    title: "10 hours practised!",
+    message: "Double digits. You're putting in the work.",
+  },
+  {
+    key: "hours-25",
+    icon: Clock,
+    color: "var(--pf-accent-teal)",
+    title: "25 hours practised!",
+    message: "A day's worth of focused practice. Real progress.",
+  },
+  {
+    key: "hours-50",
+    icon: Clock,
+    color: "var(--pf-accent-lavender)",
+    title: "50 hours practised!",
+    message: "Half a century of hours. Your instrument thanks you.",
+  },
 ];
 
 function getDismissedMilestones(): Set<string> {
   try {
-    const stored = localStorage.getItem('pf-milestones-dismissed');
+    const stored = localStorage.getItem("pf-milestones-dismissed");
     return stored ? new Set(JSON.parse(stored)) : new Set();
   } catch {
     return new Set();
@@ -29,7 +95,10 @@ function dismissMilestone(key: string) {
   const dismissed = getDismissedMilestones();
   dismissed.add(key);
   try {
-    localStorage.setItem('pf-milestones-dismissed', JSON.stringify([...dismissed]));
+    localStorage.setItem(
+      "pf-milestones-dismissed",
+      JSON.stringify([...dismissed]),
+    );
   } catch {}
 }
 
@@ -37,24 +106,38 @@ interface MilestoneToastProps {
   activePieces: number;
   totalSessions: number;
   streak: number;
+  totalHours?: number;
+  hasSolidPiece?: boolean;
 }
 
-export function MilestoneToast({ activePieces, totalSessions, streak }: MilestoneToastProps) {
+export function MilestoneToast({
+  activePieces,
+  totalSessions,
+  streak,
+  totalHours = 0,
+  hasSolidPiece = false,
+}: MilestoneToastProps) {
   const [visible, setVisible] = useState<Milestone | null>(null);
   const [dismissed] = useState(getDismissedMilestones);
 
   useEffect(() => {
     // Check milestones in priority order (show only one at a time)
     const checks: [string, boolean][] = [
-      ['streak-7', streak >= 7],
-      ['streak-3', streak >= 3],
-      ['first-session', totalSessions >= 1],
-      ['first-piece', activePieces >= 1],
+      ["hours-50", totalHours >= 50],
+      ["hours-25", totalHours >= 25],
+      ["hours-10", totalHours >= 10],
+      ["streak-30", streak >= 30],
+      ["streak-14", streak >= 14],
+      ["streak-7", streak >= 7],
+      ["streak-3", streak >= 3],
+      ["first-solid", hasSolidPiece],
+      ["first-session", totalSessions >= 1],
+      ["first-piece", activePieces >= 1],
     ];
 
     for (const [key, met] of checks) {
       if (met && !dismissed.has(key)) {
-        const milestone = MILESTONES.find(m => m.key === key);
+        const milestone = MILESTONES.find((m) => m.key === key);
         if (milestone) {
           setVisible(milestone);
           return;
@@ -76,13 +159,17 @@ export function MilestoneToast({ activePieces, totalSessions, streak }: Mileston
       <div className="flex items-start gap-3">
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: `color-mix(in srgb, ${visible.color} 15%, transparent)` }}
+          style={{
+            backgroundColor: `color-mix(in srgb, ${visible.color} 15%, transparent)`,
+          }}
         >
           <Icon size={20} style={{ color: visible.color }} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm">{visible.title}</p>
-          <p className="text-xs text-[var(--pf-text-secondary)] mt-0.5">{visible.message}</p>
+          <p className="text-xs text-[var(--pf-text-secondary)] mt-0.5">
+            {visible.message}
+          </p>
         </div>
         <button
           onClick={() => {

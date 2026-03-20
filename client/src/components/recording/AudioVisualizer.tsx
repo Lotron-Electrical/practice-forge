@@ -1,5 +1,5 @@
-import { useRef, useEffect } from 'react';
-import type { PitchSample, DynamicsSample } from '../../core/types';
+import { useRef, useEffect } from "react";
+import type { PitchSample, DynamicsSample } from "../../core/types";
 
 interface Props {
   currentPitch: PitchSample | null;
@@ -8,18 +8,34 @@ interface Props {
   dynamicsEnvelope: DynamicsSample[];
 }
 
-const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const NOTE_NAMES = [
+  "C",
+  "C#",
+  "D",
+  "D#",
+  "E",
+  "F",
+  "F#",
+  "G",
+  "G#",
+  "A",
+  "A#",
+  "B",
+];
 
 function getThemeColors(el: HTMLElement) {
   const style = getComputedStyle(el);
   return {
-    good: style.getPropertyValue('--pf-status-ready').trim() || '#22c55e',
-    warn: style.getPropertyValue('--pf-accent-gold').trim() || '#eab308',
-    bad: style.getPropertyValue('--pf-status-needs-work').trim() || '#ef4444',
+    good: style.getPropertyValue("--pf-status-ready").trim() || "#22c55e",
+    warn: style.getPropertyValue("--pf-accent-gold").trim() || "#eab308",
+    bad: style.getPropertyValue("--pf-status-needs-work").trim() || "#ef4444",
   };
 }
 
-function centsColor(cents: number, colors: { good: string; warn: string; bad: string }): string {
+function centsColor(
+  cents: number,
+  colors: { good: string; warn: string; bad: string },
+): string {
   const abs = Math.abs(cents);
   if (abs <= 15) return colors.good;
   if (abs <= 30) return colors.warn;
@@ -43,14 +59,19 @@ function noteToY(note: string, canvasHeight: number): number {
   return canvasHeight - (normalized * (canvasHeight - 40) + 20);
 }
 
-export function AudioVisualizer({ currentPitch, currentDynamics, pitchTrace, dynamicsEnvelope }: Props) {
+export function AudioVisualizer({
+  currentPitch,
+  currentDynamics,
+  pitchTrace,
+  dynamicsEnvelope,
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const themeColors = getThemeColors(canvas);
@@ -65,24 +86,37 @@ export function AudioVisualizer({ currentPitch, currentDynamics, pitchTrace, dyn
       const h = canvas.clientHeight;
 
       // Background
-      ctx.fillStyle = getComputedStyle(canvas).getPropertyValue('--pf-bg-secondary').trim() || '#1a1a2e';
+      ctx.fillStyle =
+        getComputedStyle(canvas).getPropertyValue("--pf-bg-secondary").trim() ||
+        "#1a1a2e";
       ctx.fillRect(0, 0, w, h);
 
       const pitchAreaWidth = w - 50; // Leave 50px for dynamics meter
       const pitchAreaHeight = h;
 
       // Draw note reference lines
-      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.strokeStyle = "rgba(255,255,255,0.06)";
       ctx.lineWidth = 1;
-      const refNotes = ['C4', 'E4', 'G4', 'C5', 'E5', 'G5', 'C6', 'E6', 'G6', 'C7'];
+      const refNotes = [
+        "C4",
+        "E4",
+        "G4",
+        "C5",
+        "E5",
+        "G5",
+        "C6",
+        "E6",
+        "G6",
+        "C7",
+      ];
       for (const rn of refNotes) {
         const y = noteToY(rn, pitchAreaHeight);
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(pitchAreaWidth, y);
         ctx.stroke();
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        ctx.font = '9px monospace';
+        ctx.fillStyle = "rgba(255,255,255,0.2)";
+        ctx.font = "9px monospace";
         ctx.fillText(rn, 2, y - 3);
       }
 
@@ -92,8 +126,8 @@ export function AudioVisualizer({ currentPitch, currentDynamics, pitchTrace, dyn
         const minTime = maxTime - 10; // 10 second window
 
         ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
 
         for (let i = 1; i < pitchTrace.length; i++) {
           const prev = pitchTrace[i - 1];
@@ -129,15 +163,19 @@ export function AudioVisualizer({ currentPitch, currentDynamics, pitchTrace, dyn
 
         // Note name
         ctx.fillStyle = centsColor(currentPitch.cents_deviation, themeColors);
-        ctx.font = 'bold 20px monospace';
-        ctx.textAlign = 'center';
+        ctx.font = "bold 20px monospace";
+        ctx.textAlign = "center";
         ctx.fillText(currentPitch.note, pitchAreaWidth - 40, noteY - 15);
 
         // Cents deviation
-        const sign = currentPitch.cents_deviation >= 0 ? '+' : '';
-        ctx.font = '12px monospace';
-        ctx.fillText(`${sign}${currentPitch.cents_deviation}c`, pitchAreaWidth - 40, noteY + 20);
-        ctx.textAlign = 'left';
+        const sign = currentPitch.cents_deviation >= 0 ? "+" : "";
+        ctx.font = "12px monospace";
+        ctx.fillText(
+          `${sign}${currentPitch.cents_deviation}c`,
+          pitchAreaWidth - 40,
+          noteY + 20,
+        );
+        ctx.textAlign = "left";
       }
 
       // Dynamics meter (right strip)
@@ -146,7 +184,7 @@ export function AudioVisualizer({ currentPitch, currentDynamics, pitchTrace, dyn
       const meterH = h - 20;
 
       // Meter background
-      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.fillStyle = "rgba(255,255,255,0.05)";
       ctx.fillRect(meterX, 10, meterW, meterH);
 
       if (currentDynamics) {
@@ -155,37 +193,43 @@ export function AudioVisualizer({ currentPitch, currentDynamics, pitchTrace, dyn
         const barH = level * meterH;
 
         const gradient = ctx.createLinearGradient(0, h - 10, 0, 10);
-        gradient.addColorStop(0, '#22c55e');
-        gradient.addColorStop(0.6, '#eab308');
-        gradient.addColorStop(1, '#ef4444');
+        gradient.addColorStop(0, "#22c55e");
+        gradient.addColorStop(0.6, "#eab308");
+        gradient.addColorStop(1, "#ef4444");
 
         ctx.fillStyle = gradient;
         ctx.fillRect(meterX, 10 + meterH - barH, meterW, barH);
       }
 
       // Label
-      ctx.fillStyle = 'rgba(255,255,255,0.3)';
-      ctx.font = '8px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('dB', meterX + meterW / 2, h - 2);
-      ctx.textAlign = 'left';
+      ctx.fillStyle = "rgba(255,255,255,0.3)";
+      ctx.font = "8px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("dB", meterX + meterW / 2, h - 2);
+      ctx.textAlign = "left";
 
       rafRef.current = requestAnimationFrame(draw);
     };
 
     rafRef.current = requestAnimationFrame(draw);
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
   }, [currentPitch, currentDynamics, pitchTrace, dynamicsEnvelope]);
 
   return (
     <canvas
       ref={canvasRef}
       role="img"
-      aria-label={currentPitch ? `Pitch visualizer — current note: ${currentPitch.note}, ${currentPitch.cents_deviation > 0 ? '+' : ''}${currentPitch.cents_deviation} cents` : 'Pitch visualizer — waiting for audio input'}
+      aria-label={
+        currentPitch
+          ? `Pitch visualizer — current note: ${currentPitch.note}, ${currentPitch.cents_deviation > 0 ? "+" : ""}${currentPitch.cents_deviation} cents`
+          : "Pitch visualizer — waiting for audio input"
+      }
       className="w-full rounded-pf"
       style={{
         height: 280,
-        ['--pf-bg-secondary' as string]: 'var(--pf-bg-secondary)',
+        ["--pf-bg-secondary" as string]: "var(--pf-bg-secondary)",
       }}
     />
   );

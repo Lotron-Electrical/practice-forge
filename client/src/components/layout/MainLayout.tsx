@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
-import { Sidebar } from './Sidebar';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { Menu } from 'lucide-react';
-import { QuickLogFab } from '../QuickLogFab';
+import { useState, useEffect } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import { Sidebar } from "./Sidebar";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { Menu } from "lucide-react";
+import { QuickLogFab } from "../QuickLogFab";
 
 export function MainLayout() {
-  const isMobile = useMediaQuery('(max-width: 767px)');
+  const isMobile = useMediaQuery("(max-width: 767px)");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
 
@@ -18,14 +18,20 @@ export function MainLayout() {
   // Lock body scroll when drawer is open on mobile
   useEffect(() => {
     if (isMobile && drawerOpen) {
-      document.body.style.overflow = 'hidden';
-      return () => { document.body.style.overflow = ''; };
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "";
+      };
     }
   }, [isMobile, drawerOpen]);
 
   return (
     <div className="flex min-h-screen bg-[var(--pf-bg-primary)]">
-      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-pf focus:text-sm focus:font-medium" style={{ backgroundColor: 'var(--pf-accent-gold)', color: 'white' }}>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-pf focus:text-sm focus:font-medium"
+        style={{ backgroundColor: "var(--pf-accent-gold)", color: "white" }}
+      >
         Skip to main content
       </a>
 
@@ -40,15 +46,29 @@ export function MainLayout() {
             <Menu size={22} />
           </button>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-white font-heading font-bold text-base tracking-tight">PRACTICE</span>
-            <span className="font-heading font-bold text-base tracking-tight" style={{ color: 'var(--pf-accent-gold)' }}>FORGE</span>
+            <span className="text-white font-heading font-bold text-base tracking-tight">
+              PRACTICE
+            </span>
+            <span
+              className="font-heading font-bold text-base tracking-tight"
+              style={{ color: "var(--pf-accent-gold)" }}
+            >
+              FORGE
+            </span>
           </div>
         </header>
       )}
 
-      <Sidebar isMobile={isMobile} isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <Sidebar
+        isMobile={isMobile}
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
 
-      <main id="main-content" className={`flex-1 overflow-auto ${isMobile ? 'pt-14' : ''}`}>
+      <main
+        id="main-content"
+        className={`flex-1 overflow-auto ${isMobile ? "pt-14" : ""}`}
+      >
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
           <Outlet />
         </div>

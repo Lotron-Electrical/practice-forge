@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render } from '../../test/helpers';
-import { screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { AnalyticsPage } from '../../pages/AnalyticsPage';
-import { api } from '../../api/client';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render } from "../../test/helpers";
+import { screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { AnalyticsPage } from "../../pages/AnalyticsPage";
+import { api } from "../../api/client";
 
 const mockApi = vi.mocked(api);
 
-describe('AnalyticsPage', () => {
+describe("AnalyticsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockApi.getAnalyticsTrends.mockResolvedValue(null);
@@ -17,76 +17,93 @@ describe('AnalyticsPage', () => {
     mockApi.getSessionHistory.mockResolvedValue(null);
   });
 
-  it('renders without crashing', () => {
+  it("renders without crashing", () => {
     render(<AnalyticsPage />);
-    expect(screen.getByText('Analytics')).toBeInTheDocument();
+    expect(screen.getByText("Analytics")).toBeInTheDocument();
   });
 
-  it('shows period toggle buttons', () => {
+  it("shows period toggle buttons", () => {
     render(<AnalyticsPage />);
-    expect(screen.getByText('Week')).toBeInTheDocument();
-    expect(screen.getByText('Month')).toBeInTheDocument();
+    expect(screen.getByText("Week")).toBeInTheDocument();
+    expect(screen.getByText("Month")).toBeInTheDocument();
   });
 
-  it('shows Time Distribution section', () => {
+  it("shows Time Distribution section", () => {
     render(<AnalyticsPage />);
     // May match both CardHeader and mocked component — just verify at least one exists
-    expect(screen.getAllByText('Time Distribution').length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByText("Time Distribution").length,
+    ).toBeGreaterThanOrEqual(1);
   });
 
-  it('shows Needs Attention section', () => {
+  it("shows Needs Attention section", () => {
     render(<AnalyticsPage />);
-    expect(screen.getByText('Needs Attention')).toBeInTheDocument();
+    expect(screen.getByText("Needs Attention")).toBeInTheDocument();
   });
 
-  it('shows no stalled pieces message when empty', async () => {
+  it("shows no stalled pieces message when empty", async () => {
     render(<AnalyticsPage />);
     await waitFor(() => {
-      expect(screen.getByText('All pieces are progressing nicely.')).toBeInTheDocument();
+      expect(
+        screen.getByText("All pieces are progressing nicely."),
+      ).toBeInTheDocument();
     });
   });
 
-  it('shows Period Summary when trends data available', async () => {
-    mockApi.getAnalyticsTrends.mockResolvedValue({ totalMinutes: 120, sessions: 5 });
+  it("shows Period Summary when trends data available", async () => {
+    mockApi.getAnalyticsTrends.mockResolvedValue({
+      totalMinutes: 120,
+      sessions: 5,
+    });
     render(<AnalyticsPage />);
     await waitFor(() => {
-      expect(screen.getAllByText('Period Summary').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getByTestId('period-summary')).toBeInTheDocument();
+      expect(
+        screen.getAllByText("Period Summary").length,
+      ).toBeGreaterThanOrEqual(1);
+      expect(screen.getByTestId("period-summary")).toBeInTheDocument();
     });
   });
 
-  it('shows Allocation Drift when drift data available', async () => {
+  it("shows Allocation Drift when drift data available", async () => {
     mockApi.getAnalyticsDrift.mockResolvedValue({ categories: [] });
     render(<AnalyticsPage />);
     await waitFor(() => {
-      expect(screen.getByText('Planned vs Actual')).toBeInTheDocument();
-      expect(screen.getByTestId('drift-chart')).toBeInTheDocument();
+      expect(screen.getByText("Planned vs Actual")).toBeInTheDocument();
+      expect(screen.getByTestId("drift-chart")).toBeInTheDocument();
     });
   });
 
-  it('shows Session History when data available', async () => {
+  it("shows Session History when data available", async () => {
     mockApi.getSessionHistory.mockResolvedValue({ total: 10, sessions: [] });
     render(<AnalyticsPage />);
     await waitFor(() => {
-      expect(screen.getAllByText('Session History').length).toBeGreaterThanOrEqual(1);
+      expect(
+        screen.getAllByText("Session History").length,
+      ).toBeGreaterThanOrEqual(1);
     });
   });
 
-  it('shows stalled pieces from API', async () => {
+  it("shows stalled pieces from API", async () => {
     mockApi.getAnalyticsStalledPieces.mockResolvedValue([
-      { piece_id: '1', title: 'Stuck Piece', composer: 'Someone', total_minutes: 120, days_since_change: 14 },
+      {
+        piece_id: "1",
+        title: "Stuck Piece",
+        composer: "Someone",
+        total_minutes: 120,
+        days_since_change: 14,
+      },
     ] as any);
     render(<AnalyticsPage />);
     await waitFor(() => {
-      expect(screen.getByText('Stuck Piece')).toBeInTheDocument();
+      expect(screen.getByText("Stuck Piece")).toBeInTheDocument();
     });
   });
 
-  it('switches period on toggle click', async () => {
+  it("switches period on toggle click", async () => {
     const user = userEvent.setup();
     render(<AnalyticsPage />);
-    await user.click(screen.getByText('Month'));
+    await user.click(screen.getByText("Month"));
     // Should call API with month period
-    expect(mockApi.getAnalyticsTrends).toHaveBeenCalledWith('month');
+    expect(mockApi.getAnalyticsTrends).toHaveBeenCalledWith("month");
   });
 });
