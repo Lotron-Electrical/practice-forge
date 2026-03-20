@@ -291,7 +291,8 @@ router.post(
   asyncHandler(async (req, res) => {
     // Pick a random excerpt or scale as content
     const excerpt = await queryOne(
-      "SELECT * FROM excerpts ORDER BY RANDOM() LIMIT 1",
+      "SELECT * FROM excerpts WHERE user_id = $1 ORDER BY RANDOM() LIMIT 1",
+      [req.user.id],
     );
     const contentType = excerpt ? "excerpt" : null;
     const contentId = excerpt ? excerpt.id : null;

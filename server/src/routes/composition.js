@@ -142,18 +142,19 @@ router.post("/generate/ai", enforceAiLimit, async (req, res) => {
     // Track AI spend
     if (result.cost) {
       const existing = await queryOne(
-        "SELECT * FROM settings WHERE key = 'ai_spend_total'",
+        "SELECT * FROM settings WHERE key = 'ai_spend_total' AND user_id = $1",
+        [req.user.id],
       );
       if (existing) {
         const newTotal = parseFloat(existing.value) + result.cost;
         await execute(
-          "UPDATE settings SET value = $1, updated_at = NOW() WHERE key = 'ai_spend_total'",
-          [String(newTotal)],
+          "UPDATE settings SET value = $1, updated_at = NOW() WHERE key = 'ai_spend_total' AND user_id = $2",
+          [String(newTotal), req.user.id],
         );
       } else {
         await execute(
-          "INSERT INTO settings (key, value, updated_at) VALUES ('ai_spend_total', $1, NOW())",
-          [String(result.cost)],
+          "INSERT INTO settings (key, value, user_id, updated_at) VALUES ('ai_spend_total', $1, $2, NOW())",
+          [String(result.cost), req.user.id],
         );
       }
     }
@@ -276,18 +277,19 @@ router.post("/generate/excerpt-prep", enforceAiLimit, async (req, res) => {
     // Track cost
     if (result.cost) {
       const existing = await queryOne(
-        "SELECT * FROM settings WHERE key = 'ai_spend_total'",
+        "SELECT * FROM settings WHERE key = 'ai_spend_total' AND user_id = $1",
+        [req.user.id],
       );
       if (existing) {
         const newTotal = parseFloat(existing.value) + result.cost;
         await execute(
-          "UPDATE settings SET value = $1, updated_at = NOW() WHERE key = 'ai_spend_total'",
-          [String(newTotal)],
+          "UPDATE settings SET value = $1, updated_at = NOW() WHERE key = 'ai_spend_total' AND user_id = $2",
+          [String(newTotal), req.user.id],
         );
       } else {
         await execute(
-          "INSERT INTO settings (key, value, updated_at) VALUES ('ai_spend_total', $1, NOW())",
-          [String(result.cost)],
+          "INSERT INTO settings (key, value, user_id, updated_at) VALUES ('ai_spend_total', $1, $2, NOW())",
+          [String(result.cost), req.user.id],
         );
       }
     }
@@ -364,18 +366,19 @@ router.post("/generate/warmup", enforceAiLimit, async (req, res) => {
 
     if (result.cost) {
       const existing = await queryOne(
-        "SELECT * FROM settings WHERE key = 'ai_spend_total'",
+        "SELECT * FROM settings WHERE key = 'ai_spend_total' AND user_id = $1",
+        [req.user.id],
       );
       if (existing) {
         const newTotal = parseFloat(existing.value) + result.cost;
         await execute(
-          "UPDATE settings SET value = $1, updated_at = NOW() WHERE key = 'ai_spend_total'",
-          [String(newTotal)],
+          "UPDATE settings SET value = $1, updated_at = NOW() WHERE key = 'ai_spend_total' AND user_id = $2",
+          [String(newTotal), req.user.id],
         );
       } else {
         await execute(
-          "INSERT INTO settings (key, value, updated_at) VALUES ('ai_spend_total', $1, NOW())",
-          [String(result.cost)],
+          "INSERT INTO settings (key, value, user_id, updated_at) VALUES ('ai_spend_total', $1, $2, NOW())",
+          [String(result.cost), req.user.id],
         );
       }
     }

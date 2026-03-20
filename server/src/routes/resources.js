@@ -13,8 +13,8 @@ router.get("/", async (req, res) => {
       .json({ error: "linked_type and linked_id required" });
   res.json(
     await queryAll(
-      "SELECT * FROM resources WHERE linked_type = $1 AND linked_id = $2 ORDER BY created_at DESC",
-      [linked_type, linked_id],
+      "SELECT * FROM resources WHERE linked_type = $1 AND linked_id = $2 AND user_id = $3 ORDER BY created_at DESC",
+      [linked_type, linked_id, req.user.id],
     ),
   );
 });
@@ -47,9 +47,10 @@ router.post("/", async (req, res) => {
   }
   const id = uuid();
   await execute(
-    "INSERT INTO resources (id, linked_type, linked_id, resource_type, title, url, source, description, thumbnail_url, attribution) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
+    "INSERT INTO resources (id, user_id, linked_type, linked_id, resource_type, title, url, source, description, thumbnail_url, attribution) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
     [
       id,
+      req.user.id,
       linked_type,
       linked_id,
       resource_type,
@@ -69,10 +70,16 @@ router.post("/", async (req, res) => {
 // Delete a resource
 router.delete("/:id", async (req, res) => {
   if (
-    !(await queryOne("SELECT id FROM resources WHERE id = $1", [req.params.id]))
+    !(await queryOne(
+      "SELECT id FROM resources WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.user.id],
+    ))
   )
     return res.status(404).json({ error: "Not found" });
-  await execute("DELETE FROM resources WHERE id = $1", [req.params.id]);
+  await execute("DELETE FROM resources WHERE id = $1 AND user_id = $2", [
+    req.params.id,
+    req.user.id,
+  ]);
   res.json({ deleted: true });
 });
 

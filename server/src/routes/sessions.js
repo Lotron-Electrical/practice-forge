@@ -16,7 +16,8 @@ router.get("/rotation/today", async (req, res) => {
 
   if (rotation.length === 0) {
     const countRow = await queryOne(
-      "SELECT value FROM settings WHERE key = 'excerptRotationCount'",
+      "SELECT value FROM settings WHERE key = 'excerptRotationCount' AND user_id = $1",
+      [req.user.id],
     );
     const count = countRow ? JSON.parse(countRow.value) : 3;
 
@@ -132,7 +133,8 @@ router.post("/generate", enforceSessionLimit, async (req, res) => {
   const { duration_min = 60, audition_mode } = req.body;
 
   const allocRow = await queryOne(
-    "SELECT value FROM settings WHERE key = 'timeAllocation'",
+    "SELECT value FROM settings WHERE key = 'timeAllocation' AND user_id = $1",
+    [req.user.id],
   );
   let alloc = allocRow
     ? JSON.parse(allocRow.value)
@@ -536,7 +538,7 @@ router.post("/templates", async (req, res) => {
     return res.status(400).json({ error: "name and blocks[] are required" });
   }
   const id = uuid();
-  const userId = req.user?.id || null;
+  const userId = req.user.id;
   await execute(
     "INSERT INTO session_templates (id, user_id, name, planned_duration_min, blocks) VALUES ($1, $2, $3, $4, $5)",
     [
@@ -560,18 +562,10 @@ router.post("/templates", async (req, res) => {
 
 // GET list user's templates
 router.get("/templates", async (req, res) => {
-  const userId = req.user?.id || null;
-  let templates;
-  if (userId) {
-    templates = await queryAll(
-      "SELECT * FROM session_templates WHERE user_id = $1 ORDER BY created_at DESC",
-      [userId],
-    );
-  } else {
-    templates = await queryAll(
-      "SELECT * FROM session_templates ORDER BY created_at DESC",
-    );
-  }
+  const templates = await queryAll(
+    "SELECT * FROM session_templates WHERE user_id = $1 ORDER BY created_at DESC",
+    [req.user.id],
+  );
   for (const t of templates) {
     t.blocks = typeof t.blocks === "string" ? JSON.parse(t.blocks) : t.blocks;
   }
@@ -948,7 +942,8 @@ router.get("/analytics/stalled-pieces", async (req, res) => {
 // GET analytics: drift
 router.get("/analytics/drift", async (req, res) => {
   const allocRow = await queryOne(
-    "SELECT value FROM settings WHERE key = 'timeAllocation'",
+    "SELECT value FROM settings WHERE key = 'timeAllocation' AND user_id = $1",
+    [req.user.id],
   );
   const target = allocRow
     ? JSON.parse(allocRow.value)

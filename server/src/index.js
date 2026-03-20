@@ -81,7 +81,7 @@ app.use("/api/auth", authRouter);
 // Billing routes — webhook is public (Stripe signature verification), rest requires auth
 app.use("/api/billing", billingRouter);
 
-// Protected API Routes — requireAuth skips in dev mode unless AUTH_REQUIRED=true
+// Protected API Routes — requireAuth enforced unless AUTH_BYPASS=true
 app.use("/api", requireAuth);
 app.use("/api/settings", settingsRouter);
 app.use("/api/taxonomy", taxonomyRouter);

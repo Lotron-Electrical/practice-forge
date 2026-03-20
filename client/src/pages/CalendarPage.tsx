@@ -149,7 +149,9 @@ export function CalendarPage() {
                 <Flame size={18} className="text-[var(--pf-accent-gold)]" />
               </div>
               <div>
-                <p className="text-xl sm:text-2xl font-bold">{streaks.current_streak}</p>
+                <p className="text-xl sm:text-2xl font-bold">
+                  {streaks.current_streak}
+                </p>
                 <p className="text-xs text-[var(--pf-text-secondary)]">
                   Day streak
                 </p>
@@ -165,7 +167,9 @@ export function CalendarPage() {
                 />
               </div>
               <div>
-                <p className="text-xl sm:text-2xl font-bold">{streaks.longest_streak}</p>
+                <p className="text-xl sm:text-2xl font-bold">
+                  {streaks.longest_streak}
+                </p>
                 <p className="text-xs text-[var(--pf-text-secondary)]">
                   Best streak
                 </p>
@@ -199,7 +203,9 @@ export function CalendarPage() {
                 />
               </div>
               <div>
-                <p className="text-xl sm:text-2xl font-bold">{streaks.total_hours}</p>
+                <p className="text-xl sm:text-2xl font-bold">
+                  {streaks.total_hours}
+                </p>
                 <p className="text-xs text-[var(--pf-text-secondary)]">
                   Total hours
                 </p>

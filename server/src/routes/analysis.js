@@ -330,13 +330,23 @@ router.post("/demands/:demandId/import", async (req, res) => {
     if (!piece_id)
       return res.status(400).json({ error: "piece_id is required" });
 
+    // Verify the target piece belongs to the user
+    if (
+      !(await queryOne("SELECT id FROM pieces WHERE id = $1 AND user_id = $2", [
+        piece_id,
+        req.user.id,
+      ]))
+    )
+      return res.status(404).json({ error: "Piece not found" });
+
     const newId = uuid();
     await execute(
-      `INSERT INTO technical_demands (id, piece_id, description, category_id, difficulty, bar_range, auto_detected, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, TRUE, NOW(), NOW())`,
+      `INSERT INTO technical_demands (id, piece_id, user_id, description, category_id, difficulty, bar_range, auto_detected, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, NOW(), NOW())`,
       [
         newId,
         piece_id,
+        req.user.id,
         demand.description,
         demand.category_id,
         demand.difficulty,

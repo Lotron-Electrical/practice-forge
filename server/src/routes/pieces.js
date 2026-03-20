@@ -243,6 +243,13 @@ router.post(
 router.put(
   "/:pieceId/sections/:sectionId",
   asyncHandler(async (req, res) => {
+    if (
+      !(await queryOne("SELECT id FROM pieces WHERE id = $1 AND user_id = $2", [
+        req.params.pieceId,
+        req.user.id,
+      ]))
+    )
+      return res.status(404).json({ error: "Piece not found" });
     const existing = await queryOne(
       "SELECT * FROM sections WHERE id = $1 AND piece_id = $2",
       [req.params.sectionId, req.params.pieceId],
@@ -271,6 +278,13 @@ router.put(
 router.delete(
   "/:pieceId/sections/:sectionId",
   asyncHandler(async (req, res) => {
+    if (
+      !(await queryOne("SELECT id FROM pieces WHERE id = $1 AND user_id = $2", [
+        req.params.pieceId,
+        req.user.id,
+      ]))
+    )
+      return res.status(404).json({ error: "Piece not found" });
     await execute(
       "DELETE FROM session_blocks WHERE linked_type = 'section' AND linked_id = $1",
       [req.params.sectionId],
@@ -331,6 +345,13 @@ router.post(
 router.put(
   "/:pieceId/demands/:demandId",
   asyncHandler(async (req, res) => {
+    if (
+      !(await queryOne("SELECT id FROM pieces WHERE id = $1 AND user_id = $2", [
+        req.params.pieceId,
+        req.user.id,
+      ]))
+    )
+      return res.status(404).json({ error: "Piece not found" });
     const existing = await queryOne(
       "SELECT * FROM technical_demands WHERE id = $1 AND piece_id = $2",
       [req.params.demandId, req.params.pieceId],
@@ -359,6 +380,13 @@ router.put(
 router.delete(
   "/:pieceId/demands/:demandId",
   asyncHandler(async (req, res) => {
+    if (
+      !(await queryOne("SELECT id FROM pieces WHERE id = $1 AND user_id = $2", [
+        req.params.pieceId,
+        req.user.id,
+      ]))
+    )
+      return res.status(404).json({ error: "Piece not found" });
     await execute(
       "DELETE FROM technical_demands WHERE id = $1 AND piece_id = $2",
       [req.params.demandId, req.params.pieceId],
@@ -370,6 +398,13 @@ router.delete(
 router.post(
   "/:pieceId/demands/:demandId/exercises",
   asyncHandler(async (req, res) => {
+    if (
+      !(await queryOne("SELECT id FROM pieces WHERE id = $1 AND user_id = $2", [
+        req.params.pieceId,
+        req.user.id,
+      ]))
+    )
+      return res.status(404).json({ error: "Piece not found" });
     const { exercise_id } = req.body;
     if (!exercise_id)
       return res.status(400).json({ error: "exercise_id is required" });
@@ -384,6 +419,13 @@ router.post(
 router.delete(
   "/:pieceId/demands/:demandId/exercises/:exerciseId",
   asyncHandler(async (req, res) => {
+    if (
+      !(await queryOne("SELECT id FROM pieces WHERE id = $1 AND user_id = $2", [
+        req.params.pieceId,
+        req.user.id,
+      ]))
+    )
+      return res.status(404).json({ error: "Piece not found" });
     await execute(
       "DELETE FROM demand_exercises WHERE demand_id = $1 AND exercise_id = $2",
       [req.params.demandId, req.params.exerciseId],
