@@ -145,11 +145,11 @@ export function CalendarPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <Card>
             <CardContent className="flex items-center gap-3 py-3">
-              <div className="w-10 h-10 rounded-full bg-[var(--pf-accent-gold)]/10 flex items-center justify-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[var(--pf-accent-gold)]/10 flex items-center justify-center">
                 <Flame size={18} className="text-[var(--pf-accent-gold)]" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{streaks.current_streak}</p>
+                <p className="text-xl sm:text-2xl font-bold">{streaks.current_streak}</p>
                 <p className="text-xs text-[var(--pf-text-secondary)]">
                   Day streak
                 </p>
@@ -158,14 +158,14 @@ export function CalendarPage() {
           </Card>
           <Card>
             <CardContent className="flex items-center gap-3 py-3">
-              <div className="w-10 h-10 rounded-full bg-[var(--pf-accent-blue, #3b82f6)]/10 flex items-center justify-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[var(--pf-accent-blue, #3b82f6)]/10 flex items-center justify-center">
                 <Trophy
                   size={18}
                   style={{ color: "var(--pf-accent-blue, #3b82f6)" }}
                 />
               </div>
               <div>
-                <p className="text-2xl font-bold">{streaks.longest_streak}</p>
+                <p className="text-xl sm:text-2xl font-bold">{streaks.longest_streak}</p>
                 <p className="text-xs text-[var(--pf-text-secondary)]">
                   Best streak
                 </p>
@@ -174,14 +174,14 @@ export function CalendarPage() {
           </Card>
           <Card>
             <CardContent className="flex items-center gap-3 py-3">
-              <div className="w-10 h-10 rounded-full bg-[var(--pf-status-ready)]/10 flex items-center justify-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[var(--pf-status-ready)]/10 flex items-center justify-center">
                 <Calendar
                   size={18}
                   style={{ color: "var(--pf-status-ready)" }}
                 />
               </div>
               <div>
-                <p className="text-2xl font-bold">
+                <p className="text-xl sm:text-2xl font-bold">
                   {streaks.total_practice_days}
                 </p>
                 <p className="text-xs text-[var(--pf-text-secondary)]">
@@ -192,14 +192,14 @@ export function CalendarPage() {
           </Card>
           <Card>
             <CardContent className="flex items-center gap-3 py-3">
-              <div className="w-10 h-10 rounded-full bg-[var(--pf-accent-purple, #9b59b6)]/10 flex items-center justify-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[var(--pf-accent-purple, #9b59b6)]/10 flex items-center justify-center">
                 <Clock
                   size={18}
                   style={{ color: "var(--pf-accent-purple, #9b59b6)" }}
                 />
               </div>
               <div>
-                <p className="text-2xl font-bold">{streaks.total_hours}</p>
+                <p className="text-xl sm:text-2xl font-bold">{streaks.total_hours}</p>
                 <p className="text-xs text-[var(--pf-text-secondary)]">
                   Total hours
                 </p>
@@ -212,13 +212,13 @@ export function CalendarPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Calendar grid */}
         <Card className="lg:col-span-2">
-          <CardHeader>
+          <CardHeader className="!px-3 sm:!px-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
                   <ChevronLeft size={16} />
                 </Button>
-                <h2 className="text-lg font-semibold min-w-[180px] text-center">
+                <h2 className="text-base sm:text-lg font-semibold text-center flex-1">
                   {MONTH_NAMES[month]} {year}
                 </h2>
                 <Button variant="ghost" size="sm" onClick={() => navigate(1)}>
@@ -230,7 +230,7 @@ export function CalendarPage() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="!px-3 sm:!px-5">
             {/* Day headers */}
             <div className="grid grid-cols-7 gap-1 mb-1">
               {DAY_LABELS.map((d) => (
