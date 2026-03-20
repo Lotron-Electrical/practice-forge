@@ -269,11 +269,13 @@ CREATE TABLE IF NOT EXISTS analysis_demands (
 );
 
 CREATE INDEX IF NOT EXISTS idx_analysis_demands_analysis ON analysis_demands(analysis_id);
+CREATE INDEX IF NOT EXISTS idx_analysis_demands_user_id ON analysis_demands(user_id);
 
 -- Phase: Resource Finder
 
 CREATE TABLE IF NOT EXISTS resources (
   id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   linked_type TEXT NOT NULL CHECK(linked_type IN ('piece','excerpt')),
   linked_id TEXT NOT NULL,
   resource_type TEXT NOT NULL CHECK(resource_type IN ('score','recording','article','other')),
@@ -286,6 +288,7 @@ CREATE TABLE IF NOT EXISTS resources (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_resources_linked ON resources(linked_type, linked_id);
+CREATE INDEX IF NOT EXISTS idx_resources_user_id ON resources(user_id);
 
 -- Phase 10: Audio Listening & Feedback Engine
 

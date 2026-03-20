@@ -397,8 +397,15 @@ router.post("/generate", enforceSessionLimit, async (req, res) => {
   const sessionId = uuid();
   const today = new Date().toISOString().slice(0, 10);
   await execute(
-    "INSERT INTO practice_sessions (id, date, planned_duration_min, status, time_allocation) VALUES ($1, $2, $3, $4, $5)",
-    [sessionId, today, duration_min, "planned", JSON.stringify(alloc)],
+    "INSERT INTO practice_sessions (id, date, planned_duration_min, status, time_allocation, user_id) VALUES ($1, $2, $3, $4, $5, $6)",
+    [
+      sessionId,
+      today,
+      duration_min,
+      "planned",
+      JSON.stringify(alloc),
+      req.user.id,
+    ],
   );
 
   for (const block of blocks) {
@@ -435,8 +442,8 @@ router.post("/generate", enforceSessionLimit, async (req, res) => {
 router.get("/current", async (req, res) => {
   const today = new Date().toISOString().slice(0, 10);
   const session = await queryOne(
-    "SELECT * FROM practice_sessions WHERE date = $1 AND status IN ('planned','in_progress') ORDER BY created_at DESC LIMIT 1",
-    [today],
+    "SELECT * FROM practice_sessions WHERE date = $1 AND status IN ('planned','in_progress') AND user_id = $2 ORDER BY created_at DESC LIMIT 1",
+    [today, req.user.id],
   );
   if (!session) return res.json(null);
   session.blocks = await queryAll(
@@ -449,7 +456,8 @@ router.get("/current", async (req, res) => {
 // GET latest completed session (for repeat feature)
 router.get("/latest-completed", async (req, res) => {
   const session = await queryOne(
-    "SELECT * FROM practice_sessions WHERE status = 'completed' ORDER BY date DESC, created_at DESC LIMIT 1",
+    "SELECT * FROM practice_sessions WHERE status = 'completed' AND user_id = $1 ORDER BY date DESC, created_at DESC LIMIT 1",
+    [req.user.id],
   );
   if (!session) return res.json(null);
   session.blocks = await queryAll(

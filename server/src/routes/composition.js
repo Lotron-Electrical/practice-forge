@@ -225,8 +225,8 @@ router.post("/generate/save", async (req, res) => {
     }
 
     const exercise = await queryOne(
-      "SELECT e.*, tc.name as category_name FROM exercises e LEFT JOIN taxonomy_categories tc ON e.category_id = tc.id WHERE e.id = $1",
-      [id],
+      "SELECT e.*, tc.name as category_name FROM exercises e LEFT JOIN taxonomy_categories tc ON e.category_id = tc.id WHERE e.id = $1 AND e.user_id = $2",
+      [id, req.user.id],
     );
     res.status(201).json(exercise);
   } catch (err) {

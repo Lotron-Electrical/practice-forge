@@ -58,8 +58,8 @@ router.post("/", (req, res) => {
 
       // Create audio_recordings row
       await execute(
-        `INSERT INTO audio_recordings (id, file_id, session_id, block_id, linked_type, linked_id, title, duration_seconds, target_bpm, target_key, score_file_id, start_bar, end_bar)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+        `INSERT INTO audio_recordings (id, file_id, session_id, block_id, linked_type, linked_id, title, duration_seconds, target_bpm, target_key, score_file_id, start_bar, end_bar, user_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
         [
           recordingId,
           fileId,
@@ -76,6 +76,7 @@ router.post("/", (req, res) => {
           req.body.score_file_id || null,
           req.body.start_bar ? parseInt(req.body.start_bar) : null,
           req.body.end_bar ? parseInt(req.body.end_bar) : null,
+          req.user?.id || null,
         ],
       );
 
@@ -108,6 +109,9 @@ router.get(
     WHERE 1=1`;
     const params = [];
     let idx = 1;
+
+    sql += ` AND r.user_id = $${idx++}`;
+    params.push(req.user.id);
 
     if (linked_type) {
       sql += ` AND r.linked_type = $${idx++}`;
