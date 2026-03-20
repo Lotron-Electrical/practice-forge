@@ -239,10 +239,10 @@ router.post("/generate/excerpt-prep", enforceAiLimit, async (req, res) => {
   try {
     const { excerpt_id, confirmed } = req.body;
 
-    const excerpt = await queryOne("SELECT * FROM excerpts WHERE id = $1 AND user_id = $2", [
-      excerpt_id,
-      req.user.id,
-    ]);
+    const excerpt = await queryOne(
+      "SELECT * FROM excerpts WHERE id = $1 AND user_id = $2",
+      [excerpt_id, req.user.id],
+    );
     if (!excerpt) return res.status(404).json({ error: "Excerpt not found" });
 
     if (!process.env.ANTHROPIC_API_KEY) {

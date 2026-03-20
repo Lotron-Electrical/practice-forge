@@ -129,10 +129,10 @@ router.post(
 router.put(
   "/:id",
   asyncHandler(async (req, res) => {
-    const existing = await queryOne("SELECT * FROM exercises WHERE id = $1 AND user_id = $2", [
-      req.params.id,
-      req.user.id,
-    ]);
+    const existing = await queryOne(
+      "SELECT * FROM exercises WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.user.id],
+    );
     if (!existing) return res.status(404).json({ error: "Not found" });
     const {
       title,
@@ -178,10 +178,10 @@ router.delete(
   "/:id",
   asyncHandler(async (req, res) => {
     if (
-      !(await queryOne("SELECT id FROM exercises WHERE id = $1 AND user_id = $2", [
-        req.params.id,
-        req.user.id,
-      ]))
+      !(await queryOne(
+        "SELECT id FROM exercises WHERE id = $1 AND user_id = $2",
+        [req.params.id, req.user.id],
+      ))
     )
       return res.status(404).json({ error: "Not found" });
     await execute(

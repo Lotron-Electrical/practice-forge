@@ -38,12 +38,12 @@
 
 ### Would Use/Recommend Summary
 
-| Response                  | R1 Count | R2 Count | Personas (R2)                                          |
-| ------------------------- | -------- | -------- | ------------------------------------------------------ |
-| Yes                       | 3        | 0        | —                                                      |
-| Maybe (leaning yes)       | 4        | 7        | Maya, Priya, Zoe, Marcus, Alexei, Tomoko, Dr. Elena    |
+| Response                  | R1 Count | R2 Count | Personas (R2)                                           |
+| ------------------------- | -------- | -------- | ------------------------------------------------------- |
+| Yes                       | 3        | 0        | —                                                       |
+| Maybe (leaning yes)       | 4        | 7        | Maya, Priya, Zoe, Marcus, Alexei, Tomoko, Dr. Elena     |
 | Maybe (with reservations) | 8        | 8        | Kenji, Diego, Sarah, Rachel, James, Raj, Takeshi, Chris |
-| Not yet                   | 3        | 3        | Lin, Fatima, Nadia                                     |
+| Not yet                   | 3        | 3        | Lin, Fatima, Nadia                                      |
 
 **Key shift:** Three "Yes" votes from R1 (Maya, Marcus, Alexei) moved to "Maybe leaning yes" — the fixes addressed their stated issues but surfaced new awareness of remaining structural problems (user_id, PWA). The "leaning yes" pool grew from 4 to 7 as mid-tier personas moved up.
 
@@ -76,6 +76,7 @@ These themes emerged independently from multiple personas:
 ### UX & Design
 
 **Strengths (improved or confirmed):**
+
 - Theme token discipline now excellent — PostPlayReport uses only CSS custom properties, zero hardcoded hex (Tomoko)
 - Touch-friendly template delete: `opacity-100` on mobile, hover-revealed on desktop (Tomoko, Raj)
 - Audition repertoire chips with colour-coded excerpt (gold) vs piece (teal) selection (Tomoko, Maya)
@@ -83,6 +84,7 @@ These themes emerged independently from multiple personas:
 - Session page remains the best-designed component — state machine with block timers, metronome, inline recorder (Tomoko, Maya, Kenji)
 
 **Weaknesses (remaining or new):**
+
 - Level-gating still silently redirects with no explanation (Tomoko — unchanged from R1)
 - Duplicate quick-log affordances on Dashboard — "Start Session" vs "Log Practice" unclear (Tomoko — unchanged from R1)
 - Raw `<input>` tags with hand-rolled focus styles bypass the `<Input>` component in PostPlayReport, SessionPage template name, Dashboard quick-log (Tomoko — new finding)
@@ -92,6 +94,7 @@ These themes emerged independently from multiple personas:
 ### Features & Functionality
 
 **Strengths (improved or confirmed):**
+
 - Audition repertoire with readiness summary: status counts (ready/solid/needs work) + countdown with urgency colouring (Maya, Kenji, Takeshi)
 - Excerpt rotation algorithm remains universally praised — staleness + status + difficulty + audition urgency (Maya, Kenji, Dr. Elena)
 - Audition-aware session generation: auto-boosts excerpt allocation when audition within 14 days (Takeshi, Dr. Elena)
@@ -99,6 +102,7 @@ These themes emerged independently from multiple personas:
 - Audition result tracking with 5 outcome types (won/callback/unsuccessful/pending/cancelled) (Kenji)
 
 **Weaknesses (remaining or new):**
+
 - No recording comparison / trend view — data exists in `audio_analyses` but no UI surfaces it (Kenji, Takeshi)
 - No simulated audition mode — session planner builds by category, not by audition repertoire list (Takeshi)
 - No pre-seeded excerpt library — all manual entry, empty-state for new users (Kenji, Rachel)
@@ -112,12 +116,14 @@ These themes emerged independently from multiple personas:
 ### Technical & Architecture
 
 **Strengths (improved or confirmed):**
+
 - Auth bypass correctly inverted: `AUTH_BYPASS === "true"` explicit check with production warning (Fatima)
 - Tier/subscription infrastructure properly user-scoped — Stripe integration, webhook lifecycle, AI cost tracking (Fatima, Alexei)
 - Instrument parameter threaded through all four rule generators + AI system prompt (Fatima)
 - N+1 prevention, path traversal protection, CORS allowlist still solid (Fatima)
 
 **Weaknesses (remaining or new):**
+
 - **CRITICAL:** No `user_id` on `pieces`, `excerpts`, `exercises`, `sections`, `practice_sessions`, `session_blocks`, `auditions`, `settings`, `uploaded_files`, `resources`, `assessments`, `audio_recordings` (Fatima, Lin)
 - **CRITICAL:** `enforceSessionLimit` counts ALL sessions globally — `SELECT COUNT(*) FROM practice_sessions WHERE created_at >= date_trunc('week', NOW())` with empty params array (Fatima, Lin, Marcus)
 - **CRITICAL:** `enforceCountLimit` receives SQL with no `WHERE user_id = $1` — pieces.js and excerpts.js count globally (Fatima)
@@ -129,6 +135,7 @@ These themes emerged independently from multiple personas:
 ### Business & Growth
 
 **Strengths (improved or confirmed):**
+
 - TAM expanded from flute niche (~$50M) to 18-instrument practice tool (~$2B+) via Fix #11 (Alexei)
 - Mature monetization scaffold with 4 tiers, Stripe integration, AI usage tracking (Alexei)
 - Teacher Studio honestly labelled "Coming Soon" — trust restored (Sarah, Lin, Marcus, Alexei)
@@ -136,6 +143,7 @@ These themes emerged independently from multiple personas:
 - Audition lifecycle tracking is a differentiated feature vs SmartMusic/Modacity/Tonara (Rachel)
 
 **Weaknesses (remaining or new):**
+
 - Community cold-start only half-solved — feed is readable but empty for free users who can't follow anyone (Marcus, Zoe)
 - No push notifications / email digest for re-engagement (Marcus, Zoe)
 - No demo/sandbox mode for pre-signup experience (Marcus)
@@ -147,6 +155,7 @@ These themes emerged independently from multiple personas:
 ### Accessibility (WCAG 2.2)
 
 **Strengths (improved or confirmed):**
+
 - Global `*:focus-visible` rule with `box-shadow: var(--pf-focus-ring)` — system-level fix (James)
 - High-contrast mode increases ring to 4px at 0.8 opacity (James)
 - `aria-pressed` on duration toggle buttons correctly implemented (James)
@@ -155,6 +164,7 @@ These themes emerged independently from multiple personas:
 - Bar results have `aria-label` with bar number, status, and accuracy percentage (James)
 
 **Weaknesses (remaining or new):**
+
 - Colour-only status indicators in section progress bars, pitch trace, dynamics envelope — no text/pattern fallback (James)
 - Rating buttons (Good/Okay/Tough) lack `aria-pressed` despite being toggles — inconsistent with duration buttons (James — new)
 - Repertoire chip toggles and audition result buttons also missing `aria-pressed` (James — new)
@@ -165,12 +175,14 @@ These themes emerged independently from multiple personas:
 ### Practice Science & Methodology
 
 **Strengths (improved or confirmed):**
+
 - Expanded milestone thresholds bridge the day-7 to day-30 gap (Dr. Elena)
 - Instrument-aware range clamping prevents pedagogically harmful out-of-range exercises (Dr. Elena)
 - Audition-aware session allocation reflects real practice psychology (Dr. Elena)
 - Excerpt rotation approximates spaced repetition via staleness + status weighting (Dr. Elena)
 
 **Weaknesses (remaining or new):**
+
 - No actual SRS / forgetting curve — staleness is linear, no difficulty feedback loop (Dr. Elena)
 - No in-block data capture — only `actual_duration_min` and `notes` recorded per block (Dr. Elena)
 - Streak mechanics have no rest-day grace — expanded milestones amplify the anxiety (Dr. Elena)
@@ -241,29 +253,29 @@ These themes emerged independently from multiple personas:
 
 ## Feature Requests — Ranked by Frequency
 
-| Feature                                        | Requested By                              | Count |
-| ---------------------------------------------- | ----------------------------------------- | ----- |
-| Recording comparison / trend view              | Kenji, Takeshi, Rachel                    | 3     |
-| PWA / offline support                          | Raj, Alexei, Nadia                        | 3     |
-| Shareable progress cards / moments             | Chris, Zoe, Marcus                        | 3     |
-| Push notifications / email retention           | Marcus, Zoe, Dr. Elena                    | 3     |
-| Community discover feed (not just followed)    | Marcus, Zoe, Chris                        | 3     |
-| Pre-seeded excerpt library                     | Kenji, Rachel, Takeshi                    | 3     |
-| Public profile URLs                            | Chris, Zoe, Marcus                        | 3     |
-| Simulated audition mode                        | Takeshi, Kenji                            | 2     |
-| Score annotation                               | Nadia, Maya                               | 2     |
-| Streak grace period / rest days                | Dr. Elena, Priya                          | 2     |
-| Teacher Studio waitlist capture                | Sarah, Lin                                | 2     |
-| 15-minute session option                       | Priya                                     | 1     |
-| Audition round tracking                        | Takeshi                                   | 1     |
-| Improvisation practice block                   | Diego                                     | 1     |
-| Demo/sandbox mode                              | Marcus                                    | 1     |
-| Level-gate explanation screen                  | Tomoko                                    | 1     |
-| Collaborative rehearsal calendar               | Nadia                                     | 1     |
-| In-block data capture (difficulty, tempo)      | Dr. Elena                                 | 1     |
-| Spaced repetition with forgetting curve        | Dr. Elena                                 | 1     |
-| Jazz scale types (bebop, altered, diminished)  | Diego                                     | 1     |
-| Weekly platform-wide challenge                 | Chris                                     | 1     |
+| Feature                                       | Requested By           | Count |
+| --------------------------------------------- | ---------------------- | ----- |
+| Recording comparison / trend view             | Kenji, Takeshi, Rachel | 3     |
+| PWA / offline support                         | Raj, Alexei, Nadia     | 3     |
+| Shareable progress cards / moments            | Chris, Zoe, Marcus     | 3     |
+| Push notifications / email retention          | Marcus, Zoe, Dr. Elena | 3     |
+| Community discover feed (not just followed)   | Marcus, Zoe, Chris     | 3     |
+| Pre-seeded excerpt library                    | Kenji, Rachel, Takeshi | 3     |
+| Public profile URLs                           | Chris, Zoe, Marcus     | 3     |
+| Simulated audition mode                       | Takeshi, Kenji         | 2     |
+| Score annotation                              | Nadia, Maya            | 2     |
+| Streak grace period / rest days               | Dr. Elena, Priya       | 2     |
+| Teacher Studio waitlist capture               | Sarah, Lin             | 2     |
+| 15-minute session option                      | Priya                  | 1     |
+| Audition round tracking                       | Takeshi                | 1     |
+| Improvisation practice block                  | Diego                  | 1     |
+| Demo/sandbox mode                             | Marcus                 | 1     |
+| Level-gate explanation screen                 | Tomoko                 | 1     |
+| Collaborative rehearsal calendar              | Nadia                  | 1     |
+| In-block data capture (difficulty, tempo)     | Dr. Elena              | 1     |
+| Spaced repetition with forgetting curve       | Dr. Elena              | 1     |
+| Jazz scale types (bebop, altered, diminished) | Diego                  | 1     |
+| Weekly platform-wide challenge                | Chris                  | 1     |
 
 ---
 
@@ -311,41 +323,41 @@ These themes emerged independently from multiple personas:
 
 ### Score Movement
 
-| Metric         | Round 1 | Round 2 | Change |
-| -------------- | ------- | ------- | ------ |
-| Mean           | 6.0     | 6.7     | +0.7   |
-| Median         | 6.0     | 7.0     | +1.0   |
-| Min            | 5.0     | 5.5     | +0.5   |
-| Max            | 7.0     | 8.0     | +1.0   |
-| Std Dev        | 0.82    | 0.82    | 0.0    |
+| Metric  | Round 1 | Round 2 | Change |
+| ------- | ------- | ------- | ------ |
+| Mean    | 6.0     | 6.7     | +0.7   |
+| Median  | 6.0     | 7.0     | +1.0   |
+| Min     | 5.0     | 5.5     | +0.5   |
+| Max     | 7.0     | 8.0     | +1.0   |
+| Std Dev | 0.82    | 0.82    | 0.0    |
 
 ### Biggest Movers
 
-| Persona | Delta | Primary Driver |
-| ------- | ----- | -------------- |
+| Persona | Delta | Primary Driver                                                |
+| ------- | ----- | ------------------------------------------------------------- |
 | Diego   | +1.5  | Fix #11 — instrument-aware generators resolved his #1 blocker |
-| Maya    | +1.0  | Fix #10 — audition repertoire field was transformative |
-| Kenji   | +1.0  | Fix #10 — audition tracking now professional-grade |
-| Priya   | +1.0  | Fix #6 — returner option + Fix #9 milestones |
-| James   | +1.0  | Fix #2 focus rings + Fix #3 aria-pressed |
-| Takeshi | +1.0  | Fix #10 — repertoire chips + readiness summary |
-| Chris   | 0.0   | No shareability features added — his core need unaddressed |
+| Maya    | +1.0  | Fix #10 — audition repertoire field was transformative        |
+| Kenji   | +1.0  | Fix #10 — audition tracking now professional-grade            |
+| Priya   | +1.0  | Fix #6 — returner option + Fix #9 milestones                  |
+| James   | +1.0  | Fix #2 focus rings + Fix #3 aria-pressed                      |
+| Takeshi | +1.0  | Fix #10 — repertoire chips + readiness summary                |
+| Chris   | 0.0   | No shareability features added — his core need unaddressed    |
 
 ### Round 1 Action Items — Resolution Status
 
-| R1 # | Item | Status |
-| ---- | ---- | ------ |
-| 1 | Add `user_id` to all core tables | **Still outstanding** — unchanged |
-| 2 | Invert auth bypass default | **Resolved** (Fix #1) |
-| 3 | Remove or honestly label Teacher Studio | **Resolved** (Fix #8) — "Coming Soon" badge |
-| 4 | Wire instrument field to AI/generators | **Resolved** (Fix #11) — 18 instruments, dynamic prompt |
-| 5 | Build audition repertoire dashboard | **Resolved** (Fix #10) — chips + readiness summary |
-| 6 | Add PWA manifest + service worker | **Still outstanding** |
-| 7 | Open community to free/Solo tier | **Partially resolved** (Fix #7) — read-only, but feed empty for free users |
-| 8 | Fix focus ring suppression | **Resolved** (Fix #2) — global `*:focus-visible` rule |
-| 9 | Add text/pattern fallback to colour indicators | **Still outstanding** |
-| 10 | Add more milestone thresholds | **Resolved** (Fix #9) — 10 milestones now |
-| 11-25 | Nice-to-have items | Most still outstanding |
+| R1 #  | Item                                           | Status                                                                     |
+| ----- | ---------------------------------------------- | -------------------------------------------------------------------------- |
+| 1     | Add `user_id` to all core tables               | **Still outstanding** — unchanged                                          |
+| 2     | Invert auth bypass default                     | **Resolved** (Fix #1)                                                      |
+| 3     | Remove or honestly label Teacher Studio        | **Resolved** (Fix #8) — "Coming Soon" badge                                |
+| 4     | Wire instrument field to AI/generators         | **Resolved** (Fix #11) — 18 instruments, dynamic prompt                    |
+| 5     | Build audition repertoire dashboard            | **Resolved** (Fix #10) — chips + readiness summary                         |
+| 6     | Add PWA manifest + service worker              | **Still outstanding**                                                      |
+| 7     | Open community to free/Solo tier               | **Partially resolved** (Fix #7) — read-only, but feed empty for free users |
+| 8     | Fix focus ring suppression                     | **Resolved** (Fix #2) — global `*:focus-visible` rule                      |
+| 9     | Add text/pattern fallback to colour indicators | **Still outstanding**                                                      |
+| 10    | Add more milestone thresholds                  | **Resolved** (Fix #9) — 10 milestones now                                  |
+| 11-25 | Nice-to-have items                             | Most still outstanding                                                     |
 
 ### New Issues Identified in Round 2
 

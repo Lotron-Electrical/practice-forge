@@ -38,8 +38,8 @@ router.post("/", (req, res) => {
     try {
       // Create uploaded_files row
       await execute(
-        `INSERT INTO uploaded_files (id, original_filename, file_type, mime_type, file_size_bytes, file_path, processing_status, linked_type, linked_id, notes, tags)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+        `INSERT INTO uploaded_files (id, original_filename, file_type, mime_type, file_size_bytes, file_path, processing_status, linked_type, linked_id, notes, tags, user_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
         [
           fileId,
           req.file.originalname,
@@ -52,6 +52,7 @@ router.post("/", (req, res) => {
           req.body.linked_id || null,
           "",
           "[]",
+          req.user?.id || null,
         ],
       );
 

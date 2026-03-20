@@ -360,7 +360,10 @@ router.post(
       [email],
     );
     if (existing) {
-      return res.json({ already_registered: true, message: "You're already on the waitlist!" });
+      return res.json({
+        already_registered: true,
+        message: "You're already on the waitlist!",
+      });
     }
 
     const id = uuid();

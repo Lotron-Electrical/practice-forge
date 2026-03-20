@@ -194,7 +194,9 @@ function buildVariationPrompt(prompt, context) {
 }
 
 function buildCustomStudyPrompt(prompt, context, instrument) {
-  const parts = [`Generate a custom technical study for ${instrument || 'flute'}.`];
+  const parts = [
+    `Generate a custom technical study for ${instrument || "flute"}.`,
+  ];
   if (prompt) parts.push(`Request: ${prompt}`);
   if (context.key) parts.push(`Key: ${context.key}`);
   if (context.difficulty) parts.push(`Difficulty: ${context.difficulty}/10`);

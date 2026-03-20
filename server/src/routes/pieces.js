@@ -52,10 +52,10 @@ router.get(
 router.get(
   "/:id",
   asyncHandler(async (req, res) => {
-    const piece = await queryOne("SELECT * FROM pieces WHERE id = $1 AND user_id = $2", [
-      req.params.id,
-      req.user.id,
-    ]);
+    const piece = await queryOne(
+      "SELECT * FROM pieces WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.user.id],
+    );
     if (!piece) return res.status(404).json({ error: "Not found" });
     piece.sections = await queryAll(
       "SELECT * FROM sections WHERE piece_id = $1 ORDER BY sort_order",
@@ -131,10 +131,10 @@ router.post(
 router.put(
   "/:id",
   asyncHandler(async (req, res) => {
-    const existing = await queryOne("SELECT * FROM pieces WHERE id = $1 AND user_id = $2", [
-      req.params.id,
-      req.user.id,
-    ]);
+    const existing = await queryOne(
+      "SELECT * FROM pieces WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.user.id],
+    );
     if (!existing) return res.status(404).json({ error: "Not found" });
     const {
       title,
@@ -176,7 +176,10 @@ router.delete(
   "/:id",
   asyncHandler(async (req, res) => {
     if (
-      !(await queryOne("SELECT id FROM pieces WHERE id = $1 AND user_id = $2", [req.params.id, req.user.id]))
+      !(await queryOne("SELECT id FROM pieces WHERE id = $1 AND user_id = $2", [
+        req.params.id,
+        req.user.id,
+      ]))
     )
       return res.status(404).json({ error: "Not found" });
 
@@ -211,7 +214,12 @@ router.post(
   "/:pieceId/sections",
   asyncHandler(async (req, res) => {
     const { pieceId } = req.params;
-    if (!(await queryOne("SELECT id FROM pieces WHERE id = $1 AND user_id = $2", [pieceId, req.user.id])))
+    if (
+      !(await queryOne("SELECT id FROM pieces WHERE id = $1 AND user_id = $2", [
+        pieceId,
+        req.user.id,
+      ]))
+    )
       return res.status(404).json({ error: "Piece not found" });
     const {
       name,
@@ -280,7 +288,12 @@ router.post(
   "/:pieceId/demands",
   asyncHandler(async (req, res) => {
     const { pieceId } = req.params;
-    if (!(await queryOne("SELECT id FROM pieces WHERE id = $1 AND user_id = $2", [pieceId, req.user.id])))
+    if (
+      !(await queryOne("SELECT id FROM pieces WHERE id = $1 AND user_id = $2", [
+        pieceId,
+        req.user.id,
+      ]))
+    )
       return res.status(404).json({ error: "Piece not found" });
     const {
       description,

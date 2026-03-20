@@ -85,7 +85,14 @@ router.post(
     const id = uuid();
     await execute(
       "INSERT INTO auditions (id, title, audition_date, notes, repertoire, user_id) VALUES ($1, $2, $3, $4, $5, $6)",
-      [id, title, audition_date, notes, JSON.stringify(repertoire), req.user.id],
+      [
+        id,
+        title,
+        audition_date,
+        notes,
+        JSON.stringify(repertoire),
+        req.user.id,
+      ],
     );
 
     const row = await queryOne("SELECT * FROM auditions WHERE id = $1", [id]);
@@ -102,9 +109,10 @@ router.put(
   "/:id",
   asyncHandler(async (req, res) => {
     const { title, audition_date, result, notes, repertoire } = req.body;
-    const existing = await queryOne("SELECT * FROM auditions WHERE id = $1 AND user_id = $2", [
-      req.params.id, req.user.id,
-    ]);
+    const existing = await queryOne(
+      "SELECT * FROM auditions WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.user.id],
+    );
     if (!existing) return res.status(404).json({ error: "Not found" });
 
     await execute(
@@ -136,11 +144,15 @@ router.put(
 router.delete(
   "/:id",
   asyncHandler(async (req, res) => {
-    const existing = await queryOne("SELECT * FROM auditions WHERE id = $1 AND user_id = $2", [
-      req.params.id, req.user.id,
-    ]);
+    const existing = await queryOne(
+      "SELECT * FROM auditions WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.user.id],
+    );
     if (!existing) return res.status(404).json({ error: "Not found" });
-    await execute("DELETE FROM auditions WHERE id = $1 AND user_id = $2", [req.params.id, req.user.id]);
+    await execute("DELETE FROM auditions WHERE id = $1 AND user_id = $2", [
+      req.params.id,
+      req.user.id,
+    ]);
     res.json({ ok: true });
   }),
 );

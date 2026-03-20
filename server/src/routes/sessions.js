@@ -21,12 +21,15 @@ router.get("/rotation/today", async (req, res) => {
     const count = countRow ? JSON.parse(countRow.value) : 3;
 
     // Smart rotation: weighted scoring algorithm
-    const excerpts = await queryAll(`
+    const excerpts = await queryAll(
+      `
       SELECT e.*,
         COALESCE(e.last_practiced, '2000-01-01') as last_p
       FROM excerpts e
       WHERE e.user_id = $1
-    `, [req.user.id]);
+    `,
+      [req.user.id],
+    );
 
     // Score each excerpt
     const now = Date.now();
@@ -241,7 +244,8 @@ router.post("/generate", enforceSessionLimit, async (req, res) => {
 
   // 3. Technique
   if (minutes.technique > 0) {
-    const techExercises = await queryAll(`
+    const techExercises = await queryAll(
+      `
       SELECT DISTINCT ON (e.id) e.*, td.description as demand_desc, p.title as piece_title, tc.name as category_name
       FROM exercises e
       JOIN demand_exercises de ON e.id = de.exercise_id
@@ -251,7 +255,9 @@ router.post("/generate", enforceSessionLimit, async (req, res) => {
       WHERE p.status = 'in_progress' AND p.user_id = $1
       ORDER BY e.id, p.priority DESC, td.difficulty DESC
       LIMIT 4
-    `, [req.user.id]);
+    `,
+      [req.user.id],
+    );
 
     if (techExercises.length > 0) {
       const perEx = Math.round(minutes.technique / techExercises.length);
@@ -285,7 +291,8 @@ router.post("/generate", enforceSessionLimit, async (req, res) => {
 
   // 4. Repertoire
   if (minutes.repertoire > 0) {
-    const sections = await queryAll(`
+    const sections = await queryAll(
+      `
       SELECT s.*, p.title as piece_title, p.priority, p.target_date,
         CASE s.status
           WHEN 'not_started' THEN 4
@@ -302,7 +309,9 @@ router.post("/generate", enforceSessionLimit, async (req, res) => {
         status_priority DESC,
         s.sort_order ASC
       LIMIT 4
-    `, [req.user.id]);
+    `,
+      [req.user.id],
+    );
 
     if (sections.length > 0) {
       const perSection = Math.round(minutes.repertoire / sections.length);
