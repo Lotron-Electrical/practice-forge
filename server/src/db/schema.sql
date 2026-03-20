@@ -294,6 +294,7 @@ CREATE INDEX IF NOT EXISTS idx_resources_user_id ON resources(user_id);
 
 CREATE TABLE IF NOT EXISTS audio_recordings (
   id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   file_id TEXT REFERENCES uploaded_files(id) ON DELETE SET NULL,
   session_id TEXT REFERENCES practice_sessions(id) ON DELETE SET NULL,
   block_id TEXT,
@@ -310,6 +311,7 @@ CREATE TABLE IF NOT EXISTS audio_recordings (
 );
 CREATE INDEX IF NOT EXISTS idx_recordings_linked ON audio_recordings(linked_type, linked_id);
 CREATE INDEX IF NOT EXISTS idx_recordings_session ON audio_recordings(session_id);
+CREATE INDEX IF NOT EXISTS idx_audio_recordings_user_id ON audio_recordings(user_id);
 
 CREATE TABLE IF NOT EXISTS audio_analyses (
   id TEXT PRIMARY KEY,
@@ -331,6 +333,7 @@ CREATE INDEX IF NOT EXISTS idx_audio_analysis_recording ON audio_analyses(record
 
 CREATE TABLE IF NOT EXISTS assessments (
   id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   type TEXT NOT NULL CHECK(type IN ('piece_audit','excerpt_spot_check','technique_assessment','weekly_review')),
   piece_id TEXT REFERENCES pieces(id) ON DELETE SET NULL,
   status TEXT NOT NULL DEFAULT 'in_progress' CHECK(status IN ('in_progress','completed')),
@@ -343,6 +346,7 @@ CREATE TABLE IF NOT EXISTS assessments (
 );
 CREATE INDEX IF NOT EXISTS idx_assessments_type ON assessments(type);
 CREATE INDEX IF NOT EXISTS idx_assessments_piece ON assessments(piece_id);
+CREATE INDEX IF NOT EXISTS idx_assessments_user_id ON assessments(user_id);
 
 CREATE TABLE IF NOT EXISTS assessment_recordings (
   id TEXT PRIMARY KEY,
@@ -530,6 +534,7 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS auditions (
   id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   audition_date TEXT NOT NULL,
   result TEXT CHECK(result IN ('won','callback','unsuccessful','pending','cancelled') OR result IS NULL),
@@ -539,6 +544,7 @@ CREATE TABLE IF NOT EXISTS auditions (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_auditions_date ON auditions(audition_date);
+CREATE INDEX IF NOT EXISTS idx_auditions_user_id ON auditions(user_id);
 
 -- Phase 14: Analytics — add started_at to practice_sessions
 DO $$

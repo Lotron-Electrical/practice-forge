@@ -470,8 +470,8 @@ router.get("/latest-completed", async (req, res) => {
 // POST duplicate a session's block structure into a new session
 router.post("/:id/duplicate", async (req, res) => {
   const source = await queryOne(
-    "SELECT * FROM practice_sessions WHERE id = $1",
-    [req.params.id],
+    "SELECT * FROM practice_sessions WHERE id = $1 AND user_id = $2",
+    [req.params.id, req.user.id],
   );
   if (!source) return res.status(404).json({ error: "Not found" });
 
@@ -486,13 +486,14 @@ router.post("/:id/duplicate", async (req, res) => {
   const today = new Date().toISOString().slice(0, 10);
 
   await execute(
-    "INSERT INTO practice_sessions (id, date, planned_duration_min, status, time_allocation) VALUES ($1, $2, $3, $4, $5)",
+    "INSERT INTO practice_sessions (id, date, planned_duration_min, status, time_allocation, user_id) VALUES ($1, $2, $3, $4, $5, $6)",
     [
       sessionId,
       today,
       source.planned_duration_min,
       "planned",
       source.time_allocation || "{}",
+      req.user.id,
     ],
   );
 
@@ -606,8 +607,15 @@ router.post("/templates/:id/use", async (req, res) => {
   const today = new Date().toISOString().slice(0, 10);
 
   await execute(
-    "INSERT INTO practice_sessions (id, date, planned_duration_min, status, time_allocation) VALUES ($1, $2, $3, $4, $5)",
-    [sessionId, today, template.planned_duration_min, "planned", "{}"],
+    "INSERT INTO practice_sessions (id, date, planned_duration_min, status, time_allocation, user_id) VALUES ($1, $2, $3, $4, $5, $6)",
+    [
+      sessionId,
+      today,
+      template.planned_duration_min,
+      "planned",
+      "{}",
+      req.user.id,
+    ],
   );
 
   for (const block of blocks) {
@@ -643,7 +651,8 @@ router.post("/templates/:id/use", async (req, res) => {
 // GET all sessions (history) — bulk fetch blocks (fixes N+1)
 router.get("/", async (req, res) => {
   const sessions = await queryAll(
-    "SELECT * FROM practice_sessions ORDER BY date DESC, created_at DESC LIMIT 50",
+    "SELECT * FROM practice_sessions WHERE user_id = $1 ORDER BY date DESC, created_at DESC LIMIT 50",
+    [req.user.id],
   );
   if (sessions.length > 0) {
     const sessionIds = sessions.map((s) => s.id);
@@ -665,8 +674,8 @@ router.get("/", async (req, res) => {
 // PUT start session
 router.put("/:id/start", async (req, res) => {
   const session = await queryOne(
-    "SELECT * FROM practice_sessions WHERE id = $1",
-    [req.params.id],
+    "SELECT * FROM practice_sessions WHERE id = $1 AND user_id = $2",
+    [req.params.id, req.user.id],
   );
   if (!session) return res.status(404).json({ error: "Not found" });
   await execute(
@@ -696,6 +705,11 @@ router.put("/:id/start", async (req, res) => {
 // PUT complete a block
 router.put("/:sessionId/blocks/:blockId/complete", async (req, res) => {
   const { sessionId, blockId } = req.params;
+  const ownerCheck = await queryOne(
+    "SELECT id FROM practice_sessions WHERE id = $1 AND user_id = $2",
+    [sessionId, req.user.id],
+  );
+  if (!ownerCheck) return res.status(404).json({ error: "Not found" });
   const { actual_duration_min, notes } = req.body;
   await execute(
     "UPDATE session_blocks SET status = 'completed', actual_duration_min = $1, notes = $2, completed_at = NOW() WHERE id = $3 AND session_id = $4",
@@ -726,6 +740,11 @@ router.put("/:sessionId/blocks/:blockId/complete", async (req, res) => {
 // PUT skip a block
 router.put("/:sessionId/blocks/:blockId/skip", async (req, res) => {
   const { sessionId, blockId } = req.params;
+  const ownerCheck = await queryOne(
+    "SELECT id FROM practice_sessions WHERE id = $1 AND user_id = $2",
+    [sessionId, req.user.id],
+  );
+  if (!ownerCheck) return res.status(404).json({ error: "Not found" });
   await execute(
     "UPDATE session_blocks SET status = 'skipped' WHERE id = $1 AND session_id = $2",
     [blockId, sessionId],
@@ -756,8 +775,8 @@ router.put("/:sessionId/blocks/:blockId/skip", async (req, res) => {
 router.put("/:id/complete", async (req, res) => {
   const { rating, notes } = req.body;
   const session = await queryOne(
-    "SELECT * FROM practice_sessions WHERE id = $1",
-    [req.params.id],
+    "SELECT * FROM practice_sessions WHERE id = $1 AND user_id = $2",
+    [req.params.id, req.user.id],
   );
   if (!session) return res.status(404).json({ error: "Not found" });
 
@@ -802,11 +821,11 @@ router.get("/analytics/time-by-category", async (req, res) => {
       COALESCE(SUM(sb.actual_duration_min), SUM(sb.planned_duration_min)) AS minutes
     FROM practice_sessions ps
     JOIN session_blocks sb ON sb.session_id = ps.id
-    WHERE ps.status = 'completed' AND ps.date >= $1 AND sb.status = 'completed'
+    WHERE ps.status = 'completed' AND ps.date >= $1 AND sb.status = 'completed' AND ps.user_id = $2
     GROUP BY week, sb.category
     ORDER BY week
   `,
-    [startDate],
+    [startDate, req.user.id],
   );
 
   const weekMap = {};

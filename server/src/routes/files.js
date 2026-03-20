@@ -41,8 +41,8 @@ router.post("/", (req, res, next) => {
 
     try {
       await execute(
-        `INSERT INTO uploaded_files (id, original_filename, file_type, mime_type, file_size_bytes, file_path, processing_status, linked_type, linked_id, notes, tags)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+        `INSERT INTO uploaded_files (id, original_filename, file_type, mime_type, file_size_bytes, file_path, processing_status, linked_type, linked_id, notes, tags, user_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
         [
           id,
           req.file.originalname,
@@ -55,6 +55,7 @@ router.post("/", (req, res, next) => {
           linkedId,
           notes,
           tags,
+          req.user?.id || null,
         ],
       );
       const created = await queryOne(
@@ -80,6 +81,9 @@ router.get(
     let sql = "SELECT * FROM uploaded_files WHERE 1=1";
     const params = [];
     let idx = 1;
+
+    sql += ` AND user_id = $${idx++}`;
+    params.push(req.user.id);
 
     if (file_type) {
       sql += ` AND file_type = $${idx++}`;
@@ -113,9 +117,10 @@ router.get(
 router.get(
   "/:id",
   asyncHandler(async (req, res) => {
-    const file = await queryOne("SELECT * FROM uploaded_files WHERE id = $1", [
-      req.params.id,
-    ]);
+    const file = await queryOne(
+      "SELECT * FROM uploaded_files WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.user.id],
+    );
     if (!file) return res.status(404).json({ error: "Not found" });
     res.json(file);
   }),
@@ -125,9 +130,10 @@ router.get(
 router.get(
   "/:id/download",
   asyncHandler(async (req, res) => {
-    const file = await queryOne("SELECT * FROM uploaded_files WHERE id = $1", [
-      req.params.id,
-    ]);
+    const file = await queryOne(
+      "SELECT * FROM uploaded_files WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.user.id],
+    );
     if (!file) return res.status(404).json({ error: "Not found" });
 
     const filePath = safePath(file.file_path);
@@ -142,8 +148,8 @@ router.put(
   "/:id",
   asyncHandler(async (req, res) => {
     const existing = await queryOne(
-      "SELECT * FROM uploaded_files WHERE id = $1",
-      [req.params.id],
+      "SELECT * FROM uploaded_files WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.user.id],
     );
     if (!existing) return res.status(404).json({ error: "Not found" });
 
@@ -175,9 +181,10 @@ router.put(
 router.delete(
   "/:id",
   asyncHandler(async (req, res) => {
-    const file = await queryOne("SELECT * FROM uploaded_files WHERE id = $1", [
-      req.params.id,
-    ]);
+    const file = await queryOne(
+      "SELECT * FROM uploaded_files WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.user.id],
+    );
     if (!file) return res.status(404).json({ error: "Not found" });
 
     try {
@@ -185,7 +192,10 @@ router.delete(
       fs.unlinkSync(filePath);
     } catch {}
 
-    await execute("DELETE FROM uploaded_files WHERE id = $1", [req.params.id]);
+    await execute("DELETE FROM uploaded_files WHERE id = $1 AND user_id = $2", [
+      req.params.id,
+      req.user.id,
+    ]);
     res.json({ deleted: true });
   }),
 );

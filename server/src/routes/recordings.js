@@ -137,8 +137,8 @@ router.get(
   "/:id",
   asyncHandler(async (req, res) => {
     const recording = await queryOne(
-      `SELECT r.*, f.file_path, f.original_filename FROM audio_recordings r LEFT JOIN uploaded_files f ON r.file_id = f.id WHERE r.id = $1`,
-      [req.params.id],
+      `SELECT r.*, f.file_path, f.original_filename FROM audio_recordings r LEFT JOIN uploaded_files f ON r.file_id = f.id WHERE r.id = $1 AND r.user_id = $2`,
+      [req.params.id, req.user.id],
     );
     if (!recording) return res.status(404).json({ error: "Not found" });
 
@@ -156,8 +156,8 @@ router.delete(
   "/:id",
   asyncHandler(async (req, res) => {
     const recording = await queryOne(
-      "SELECT * FROM audio_recordings WHERE id = $1",
-      [req.params.id],
+      "SELECT * FROM audio_recordings WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.user.id],
     );
     if (!recording) return res.status(404).json({ error: "Not found" });
 
@@ -190,8 +190,8 @@ router.post(
   "/:id/analysis",
   asyncHandler(async (req, res) => {
     const recording = await queryOne(
-      "SELECT * FROM audio_recordings WHERE id = $1",
-      [req.params.id],
+      "SELECT * FROM audio_recordings WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.user.id],
     );
     if (!recording)
       return res.status(404).json({ error: "Recording not found" });
