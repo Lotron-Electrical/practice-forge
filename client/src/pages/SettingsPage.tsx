@@ -784,7 +784,7 @@ export function SettingsPage() {
 
       {/* Version */}
       <p className="text-xs text-[var(--pf-text-secondary)] text-center mt-8">
-        Practice Forge v0.20.Jolivet
+        Practice Forge v0.20.Korngold
       </p>
 
       <ThemeCreator

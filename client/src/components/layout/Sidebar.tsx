@@ -262,7 +262,7 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
                 className="text-[10px] tracking-wide mt-0.5"
                 style={{ color: "var(--pf-text-nav)", opacity: 0.4 }}
               >
-                v0.20.Jolivet
+                v0.20.Korngold
               </span>
             </div>
             <button
@@ -311,7 +311,7 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
               className="text-[10px] tracking-wide mt-0.5"
               style={{ color: "var(--pf-text-nav)", opacity: 0.4 }}
             >
-              v0.20.Jolivet
+              v0.20.Korngold
             </span>
           </div>
         )}

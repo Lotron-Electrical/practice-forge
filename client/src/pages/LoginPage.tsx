@@ -63,7 +63,7 @@ export function LoginPage() {
             className="text-xs mt-1"
             style={{ color: "var(--pf-text-secondary)", opacity: 0.5 }}
           >
-            v0.20.Jolivet
+            v0.20.Korngold
           </p>
         </div>
 
