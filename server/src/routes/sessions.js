@@ -1157,8 +1157,9 @@ router.get("/analytics/calendar", async (req, res) => {
     SELECT
       date,
       COUNT(*) as session_count,
-      COALESCE(SUM(actual_duration_min), SUM(planned_duration_min)) as total_minutes,
-      MAX(rating) as best_rating
+      SUM(COALESCE(actual_duration_min, planned_duration_min)) as total_minutes,
+      MAX(rating) as best_rating,
+      STRING_AGG(DISTINCT NULLIF(notes, ''), '; ') as notes
     FROM practice_sessions
     WHERE status = 'completed' AND date >= $1 AND user_id = $2
     GROUP BY date
@@ -1173,6 +1174,7 @@ router.get("/analytics/calendar", async (req, res) => {
       sessions: parseInt(r.session_count),
       minutes: parseInt(r.total_minutes) || 0,
       rating: r.best_rating,
+      notes: r.notes || null,
     })),
   );
 });
@@ -1187,36 +1189,39 @@ router.get("/analytics/streaks", async (req, res) => {
   const totalDays = practiceDates.length;
   let currentStreak = 0;
   let longestStreak = 0;
+  const graceDays = 1;
 
   if (practiceDates.length > 0) {
     const todayStr = new Date().toISOString().slice(0, 10);
-    const yesterdayStr = new Date(Date.now() - 86400000)
-      .toISOString()
-      .slice(0, 10);
-    const dateSet = new Set(practiceDates.map((d) => d.date));
+    const dates = practiceDates.map((d) => d.date); // already DESC
 
-    // Current streak
-    let checkDate = todayStr;
-    if (!dateSet.has(todayStr)) {
-      checkDate = dateSet.has(yesterdayStr) ? yesterdayStr : null;
-    }
-    if (checkDate) {
-      let d = new Date(checkDate);
-      while (dateSet.has(d.toISOString().slice(0, 10))) {
-        currentStreak++;
-        d = new Date(d.getTime() - 86400000);
+    // Current streak with grace period (matches /stats endpoint)
+    const mostRecent = new Date(dates[0]);
+    const today = new Date(todayStr);
+    const daysSinceLast = Math.round((today - mostRecent) / 86400000);
+    if (daysSinceLast <= graceDays + 1) {
+      currentStreak = 1;
+      for (let i = 1; i < dates.length; i++) {
+        const prev = new Date(dates[i - 1]);
+        const curr = new Date(dates[i]);
+        const gap = Math.round((prev - curr) / 86400000);
+        if (gap <= graceDays + 1) {
+          currentStreak++;
+        } else {
+          break;
+        }
       }
     }
 
-    // Longest streak — walk all dates
-    const sortedDates = practiceDates.map((d) => d.date).sort();
+    // Longest streak with grace period
+    const sortedDates = [...dates].sort(); // ASC
     let running = 1;
     longestStreak = 1;
     for (let i = 1; i < sortedDates.length; i++) {
       const prev = new Date(sortedDates[i - 1]);
       const curr = new Date(sortedDates[i]);
-      const diffDays = Math.round((curr - prev) / 86400000);
-      if (diffDays === 1) {
+      const gap = Math.round((curr - prev) / 86400000);
+      if (gap <= graceDays + 1) {
         running++;
         longestStreak = Math.max(longestStreak, running);
       } else {
@@ -1228,7 +1233,7 @@ router.get("/analytics/streaks", async (req, res) => {
 
   // Total hours all time
   const totalRow = await queryOne(
-    "SELECT COALESCE(SUM(actual_duration_min), SUM(planned_duration_min), 0) as total FROM practice_sessions WHERE status = 'completed' AND user_id = $1",
+    "SELECT COALESCE(SUM(COALESCE(actual_duration_min, planned_duration_min)), 0) as total FROM practice_sessions WHERE status = 'completed' AND user_id = $1",
     [req.user.id],
   );
   const totalMinutes = parseInt(totalRow?.total || "0");

@@ -16,6 +16,7 @@ interface DayData {
   sessions: number;
   minutes: number;
   rating: string | null;
+  notes: string | null;
 }
 
 interface StreakData {
@@ -49,15 +50,13 @@ function getIntensity(minutes: number): number {
   return 4;
 }
 
-const INTENSITY_COLORS = [
+const INTENSITY_BG = [
   "var(--pf-bg-hover)", // 0: no practice
-  "var(--pf-accent-gold)", // 1: light
-  "var(--pf-accent-gold)", // 2: moderate
-  "var(--pf-accent-gold)", // 3: solid
-  "var(--pf-accent-gold)", // 4: heavy
+  "color-mix(in srgb, var(--pf-accent-gold) 15%, transparent)", // 1: light
+  "color-mix(in srgb, var(--pf-accent-gold) 35%, transparent)", // 2: moderate
+  "color-mix(in srgb, var(--pf-accent-gold) 60%, transparent)", // 3: solid
+  "color-mix(in srgb, var(--pf-accent-gold) 90%, transparent)", // 4: heavy
 ];
-
-const INTENSITY_OPACITY = [0.08, 0.25, 0.5, 0.75, 1.0];
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -265,6 +264,7 @@ export function CalendarPage() {
                           sessions: 0,
                           minutes: 0,
                           rating: null,
+                          notes: null,
                         },
                       )
                     }
@@ -273,15 +273,7 @@ export function CalendarPage() {
                       isSelected ? "ring-2 ring-[var(--pf-accent-gold)]" : ""
                     } ${isFuture ? "opacity-30 cursor-default" : "cursor-pointer hover:ring-1 hover:ring-[var(--pf-border-color)]"}`}
                     style={{
-                      backgroundColor:
-                        intensity > 0
-                          ? INTENSITY_COLORS[intensity]
-                          : "var(--pf-bg-hover)",
-                      opacity: isFuture
-                        ? 0.3
-                        : intensity > 0
-                          ? INTENSITY_OPACITY[intensity]
-                          : 0.4,
+                      backgroundColor: INTENSITY_BG[intensity],
                     }}
                   >
                     <span
@@ -319,11 +311,7 @@ export function CalendarPage() {
                     key={level}
                     className="w-4 h-4 rounded-sm"
                     style={{
-                      backgroundColor:
-                        level > 0
-                          ? INTENSITY_COLORS[level]
-                          : "var(--pf-bg-hover)",
-                      opacity: INTENSITY_OPACITY[level],
+                      backgroundColor: INTENSITY_BG[level],
                     }}
                   />
                 ))}
@@ -436,6 +424,16 @@ export function CalendarPage() {
                         >
                           {selectedDay.rating}
                         </span>
+                      </div>
+                    )}
+                    {selectedDay.notes && (
+                      <div className="text-sm pt-1 border-t border-[var(--pf-border-color)]">
+                        <span className="text-[var(--pf-text-secondary)] block mb-1">
+                          Notes
+                        </span>
+                        <p className="text-[var(--pf-text-primary)]">
+                          {selectedDay.notes}
+                        </p>
                       </div>
                     )}
                   </div>

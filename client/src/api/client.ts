@@ -241,6 +241,7 @@ export const api = {
         sessions: number;
         minutes: number;
         rating: string | null;
+        notes: string | null;
       }>
     >(`/sessions/analytics/calendar${months ? `?months=${months}` : ""}`),
   getAnalyticsStreaks: () =>
